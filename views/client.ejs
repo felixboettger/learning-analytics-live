@@ -1,0 +1,29 @@
+<%- include("partials/header") -%>
+
+<p class="hidden">paticipantId = <%=participantId%></p>
+<p class="hidden">participantName = <%=participantName%></p>
+<p class="hidden">sessionKey = <%=sessionKey%></p>
+<p class="hidden" id="emotion-status">Emotion: </p>
+
+<div class="container">
+  <div class="video-container">
+
+
+      <video id="webcam" autoplay playsinline width="640" height="480"></video>
+      <p class="video-text">Session Key: <%=sessionKey%></p>
+      <canvas id="canvas" class="d-none hidden"></canvas>
+
+      </div>
+</div>
+<script type="text/javascript" src="https://unpkg.com/webcam-easy/dist/webcam-easy.min.js"></script>
+<script type ="module" src="/client.js" charset="utf-8"></script>
+<script type="text/javascript" src="/face-api.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.7.0/dist/tf.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
+
+
+<script type ="module" src="/client.js" charset="utf-8"></script>
+
+
+<%- include("partials/footer") -%>

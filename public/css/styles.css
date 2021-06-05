@@ -1,0 +1,111 @@
+/* Styles were taken from a project from "The Complete 2021 Web Development Bootcamp by Dr. Angela Yu" */
+
+html {
+  min-height: 100%;
+  position: relative;
+}
+
+.container-fluid {
+    padding-top: 70px;
+    padding-bottom: 70px;
+}
+.navbar {
+    background-color: #DCD6F7; /* selbst gemacht */
+    padding-top: 5px; /* selbst gemacht */
+    padding-bottom: 5px; /* selbst gemacht */
+    border: 0;
+    border-radius: 0;
+    margin-bottom: 50;
+    font-size: 12px;
+    letter-spacing: 5px;
+}
+.navbar-nav  li a:hover {
+    color: #A6B1E1 !important; /* selbst gemacht */
+}
+
+.footer-padding {
+	padding-bottom: 60px;
+}
+
+.footer {
+	position: absolute;
+	text-align: center;
+	bottom: 0;
+	width: 100%;
+	height: 60px;
+	background-color: #424874; /* selbst gemacht */
+}
+
+.footer p {
+	margin-top: 30px;
+	font-size: 12px;
+  color: #fff;
+}
+
+/* Styles were taken from a project from Bootstrap Examples https://getbootstrap.com/docs/4.0/examples/product/product.css */
+
+.text-center {
+    text-align: center;
+    margin-left: auto; /* own */
+    margin-right: auto;/* own */
+}
+
+.container {
+  max-width: 960px;
+}
+
+.btn {
+  margin-bottom: 20px;
+}
+
+.overflow-hidden { overflow: hidden; }
+
+.btn-outline-secondary{
+    color: #fff;
+    background-color: #6c757d;
+    border-color: #6c757d;
+
+}
+
+.btn-outline-secondary:hover{
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+/* Custom Styles */
+
+.form-top{
+  margin-bottom: -1px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.form-bottom{
+  margin-bottom: 10px;
+  border-top-right-radius: 0;
+  border-top-left-radius: 0;
+}
+
+.form-signin{
+  max-width: 250px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 100px;
+}
+
+video {
+  background-color: grey;
+  width: 100%;
+  height: auto;
+  margin-left: 0
+}
+
+.video-text {
+font-size: 3em;
+color: white;
+text-align: center;
+  background-color: grey;
+  width: 100%;
+  height: auto;
+  margin-left: 0
+}

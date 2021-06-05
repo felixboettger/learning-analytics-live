@@ -1,0 +1,15 @@
+<%- include("partials/header") -%>
+
+<div class="text-center">
+
+    <form class="form-signin">
+      <i class="far fa-address-card fa-5x" alt="" width="720" height="720"></i>
+      <h1 class="h3 mb-3 font-weight-normal">Host</h1>
+      <input type="text" id="outputSessionKey" class="form-control text-center" value="<%="Session Key:   " + sessionKey%>" required autofocus>
+      <a class="btn btn-lg btn-primary btn-block" onclick="window.open('<%="/dashboard/" + sessionKey%>', '_blank', 'location=yes,height=1000,width=520,scrollbars=yes,status=yes');">
+  Open Dashboard
+</a>
+    </form>
+</div>
+
+<%- include("partials/footer") -%>
