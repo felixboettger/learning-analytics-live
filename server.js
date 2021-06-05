@@ -9,10 +9,12 @@ const localEnv = true;
 
 // MongoDB URL. A MongoDB is required for running the server.
 
+var mongodbURL;
+
 if (localEnv) {
-  const mongodbURL = "mongodb+srv://server-admin:PmNpZDqNTxNzm82@mmla.p8d9g.mongodb.net/mmlaDB?retryWrites=true&w=majority";
+  mongodbURL = "mongodb+srv://server-admin:PmNpZDqNTxNzm82@mmla.p8d9g.mongodb.net/mmlaDB?retryWrites=true&w=majority";
 } else {
-  const mongodbURL = "mongodb://localhost:27017/mmlaDB";
+  mongodbURL = "mongodb://localhost:27017/mmlaDB";
 }
 
 // ----------------------------------REQUIRES------------------------------------
@@ -23,7 +25,6 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const https = require("https");
 const http = require("http");
-// const md5 = require('md5');
 
 // ------------------------------------------------------------------------------
 
@@ -62,7 +63,7 @@ const statusSchema = {
   gender: String,
   objects: [String],
   looks: Boolean,
-  attentionScore: Number,
+  emotionScore: Number,
   time: Date
 };
 
@@ -185,7 +186,7 @@ app.post("/participant", function(req, res) {
 
       const newStatus = new Status({
         emotion: "newUser",
-        attentionScore: "50",
+        emotionScore: "50",
         time: new Date(),
       });
 
@@ -220,7 +221,7 @@ app.post("/api/participant", (req, res) => {
 
   const newStatus = new Status({
     emotion: b.emotion,
-    attentionScore: b.attentionScore,
+    emotionScore: b.emotionScore,
     time: new Date(),
     age: b.age,
     looks: b.looks,

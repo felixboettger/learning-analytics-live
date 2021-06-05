@@ -29,16 +29,6 @@ webcam.start();
   }, interval)
 });
 
-const emotionDictionary = {
-  "happy": "😀",
-  "sad": "☹️",
-  "neutral": "😐",
-  "disgusted": "🤢",
-  "fearful": "😨",
-  "surprised": "😲",
-  "angry": "😡"
-};
-
 var detectedObjects = {
   "cell phone": 0,
   "laptop": 0,
@@ -58,8 +48,10 @@ var detectedObjects = {
 
 async function updateStatus(){
   const image = await document.querySelector('canvas');
-  const faceDetection = await faceapi.detectAllFaces(image).withFaceLandmarks().withFaceExpressions().withAgeAndGender();
+  const faceDetection = await faceapi.detectSingleFace(image).withFaceExpressions().withAgeAndGender();
   const resizedDimensions = faceapi.resizeResults(faceDetection, {width: 640, height: 480});
+
+  // console.log(resizedDimensions);
 
   const predictions = await cocoSsdModel.detect(image);
   predictions.forEach(prediction => {
@@ -86,7 +78,7 @@ async function updateStatus(){
   });
 
   if (resizedDimensions.length !== 0){
-    const expressions = resizedDimensions[0].expressions;
+    const expressions = resizedDimensions.expressions;
     // console.log(resizedDimensions);
     const e = expressions; // shortcut to make code below more readable
     const expressionArray = [e.neutral, e.happy, e.sad, e.fearful, e.angry, e.disgusted, e.surprised];
@@ -98,18 +90,16 @@ async function updateStatus(){
 
     var emotion = expressionArrayTranslate[arrayMaxIndex(expressionArray)];
 
-    document.getElementById("emotion-status").innerHTML = "Emotion: " + emotion + " (" + emotionDictionary[emotion] + ")";
-
     const statusVector = {
       userId: userId,
       userName: userName,
       sessionKey: sessionKey,
       emotion: emotion,
-      age: Math.round(resizedDimensions[0].age),
+      age: Math.round(resizedDimensions.age),
       looks: lookingAtCamera,
-      gender: resizedDimensions[0].gender,
+      gender: resizedDimensions.gender,
       objects: detectedObjectsArray,
-      attentionScore: getAttentionScore()
+      emotionScore: getEmotionScore()
     }
 
     sendStatusVector(statusVector);
@@ -121,7 +111,7 @@ async function updateStatus(){
 
 };
 
-function getAttentionScore() {
+function getEmotionScore() {
   const elementsInArray = recentStatusArray.length;
   if (elementsInArray > 20) {
     recentStatusArray.shift();
@@ -145,8 +135,8 @@ function getAttentionScore() {
     emotionScore = 50;
   }
 
-  const attentionScore = emotionScore; // e.g.  attentionScore = (emotionScore + screenLookScore) /2
-  return attentionScore;
+  // e.g.  emotionScore = (emotionScore + screenLookScore) /2
+  return emotionScore;
 
 }
 

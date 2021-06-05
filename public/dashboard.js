@@ -147,10 +147,10 @@ setInterval(function() {
 
 // --------------------------------------------------------------------------------------------------------------------------------------
 
-function getRatingOfScore(attentionScore) {
-  if (attentionScore > 50) {
+function getRatingOfScore(emotionScore) {
+  if (emotionScore > 50) {
     return "good-score";
-  } else if (attentionScore > 25) {
+  } else if (emotionScore > 25) {
     return "neutral-score";
   } else {
     return "bad-score";
@@ -188,7 +188,7 @@ function generateParticipantElements(participant) {
     participantStatus
   } = participant;
   const {
-    attentionScore,
+    emotionScore,
     emotion,
     time,
     age,
@@ -196,7 +196,7 @@ function generateParticipantElements(participant) {
     objects,
     gender
   } = participantStatus;
-  const ratingOfScore = getRatingOfScore(attentionScore);
+  const ratingOfScore = getRatingOfScore(emotionScore);
 
   const objectsEmojiArray = [];
 
@@ -214,7 +214,7 @@ function generateParticipantElements(participant) {
     <td>` + looks + `</td>
     <td>
       <div class="progress">
-        <div class="progress-bar bg-green" role="progressbar" aria-valuenow="` + attentionScore + `" aria-valuemin="0" aria-valuemax="100" style="width: ` + attentionScore + `%"></div>
+        <div class="progress-bar bg-green" role="progressbar" aria-valuenow="` + emotionScore + `" aria-valuemin="0" aria-valuemax="100" style="width: ` + emotionScore + `%"></div>
       </div>
     </td>
   `;
