@@ -8,8 +8,13 @@ const portNr = 443;
 const localEnv = true;
 
 // MongoDB URL. A MongoDB is required for running the server.
-// const mongodbURL = "mongodb://localhost:27017/mmlaDB";
-const mongodbURL = "mongodb+srv://server-admin:PmNpZDqNTxNzm82@mmla.p8d9g.mongodb.net/mmlaDB?retryWrites=true&w=majority";
+
+if (localEnv) {
+  const mongodbURL = "mongodb+srv://server-admin:PmNpZDqNTxNzm82@mmla.p8d9g.mongodb.net/mmlaDB?retryWrites=true&w=majority";
+} else {
+  const mongodbURL = "mongodb://localhost:27017/mmlaDB";
+}
+
 // ----------------------------------REQUIRES------------------------------------
 
 const fs = require("fs");
