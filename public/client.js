@@ -77,7 +77,7 @@ async function updateStatus(){
   }
   });
 
-  if (resizedDimensions.length !== 0){
+  if (!(typeof resizedDimensions.expressions === undefined)){
     const expressions = resizedDimensions.expressions;
     // console.log(resizedDimensions);
     const e = expressions; // shortcut to make code below more readable
@@ -150,21 +150,24 @@ function sendStatusVector(statusVector){
     body: JSON.stringify(statusVector)
   }
   fetch("/api/participant", fetchOptions).then(res => {
-    res.json().then(function(data){
-        if (data.status === 1){
-          // console.log("Response OK");
-        } else {
-          if (confirm("Error: Please join the session through the Participant page")){
-            location = "/participant"
-          };
-
-          throw new Error("Repsonse NOT OK. Terminating Client");
-        }
+      res.json().then(function(data){
+      if (data.status === 1){
+        // console.log("Response OK");
+      } else {
+        if (confirm("Error: Please join the session through the Participant page")){
+          location = "/participant"
+        };
+        throw new Error("Repsonse NOT OK. Terminating Client");
+      }
     });
+  }).catch((error) => {
+        if (confirm("Error: The server is not responding. Please try again later")){
+
+        };
+        throw new Error("Repsonse NOT OK. Terminating Client");
+      })}
 
 
-  });
-}
 
 function checkIfLookingAtCamera(blazefacePredictions){
   const rightEyeX = blazefacePredictions[0]["landmarks"][0][0];
