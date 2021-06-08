@@ -252,34 +252,7 @@ function generateParticipants(sessionData){
   return participants;
 };
 
-function generateCounterElements(sessionData){
-  var counterElements = {
-    activeParticipantCounter: 0,
-    emotionCounters: {
-      "happy": 0,
-      "sad": 0,
-      "neutral": 0,
-      "disgusted": 0,
-      "fearful": 0,
-      "surprised": 0,
-      "angry": 0
-    },
-    lookingAtCamera: 0
-  }
 
-  sessionData.participants.forEach(function(participant){
-    const currentStatus = participant.participantStatus.pop();
-    const currentEmotion = currentStatus.emotion;
-    if (!isInactive(currentStatus.time)){
-      counterElements.emotionCounters[currentEmotion] += 1;
-      if (currentStatus.looks){
-        counterElements.lookingAtCamera += 1;
-      }
-      counterElements.activeParticipantCounter += 1;
-    }
-  });
-  return counterElements;
-}
 
 app.put("/api/participant", (req, res) => {
   b = req.body;
@@ -329,76 +302,76 @@ app.put("/api/participant", (req, res) => {
       });
     }
   });
-
-
 });
 
-app.post("/api/dashboard", (req, res) => {
-  const requestIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+// Cleaning Routine is executed every 10 minutes, deletes every session that had no access in last 10 minutes before running.
+// Therefore inactive sessions will be deleted after at max. 20 Minutes
+setInterval(cleaningRoutine, 600000);
 
-  Session.findOneAndUpdate({
-    sessionKey: req.body.sessionKey
-  }, {
-    "$set": {
-      lastDashboardAccess: new Date()
-    }
+// ------------------------------------------------------------------------------
+
+// Running server as actual server, with security etc
+
+if (!(localEnv)) {
+
+  // https server for running the actual communication, serving the website etc.
+  https.createServer({
+    key: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/privkey.pem"),
+    cert: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/cert.pem"),
+    ca: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/chain.pem")
+  }, app).listen(portNr, function() {
+    console.log("Server started on Port: " + portNr);
   });
 
-  Session.findOne({
-    sessionKey: req.body.sessionKey
-  }, function(err, foundSession) {
-    // console.log("Session Found");
-    if (foundSession == null) {
-      res.redirect("not-allowed");
-    } else if (foundSession.hostIp === requestIp) {
-      const responseVector = {
-        status: 1,
-        sessionKey: req.body.sessionKey,
-        session: foundSession
-      };
-      res.json({
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        response: responseVector
-      });
-    } else {
-      console.log("No Permission!");
-      res.json({
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        response: "no access"
-      });
-    }
-  });
-});
-
-sessionKeyList = [];
-// I was removed from character list, as I and l are sometimes hard to tell apart
-const characters = "ABCDEFGHJKLMNOPQRSTUVWXYZ"
-
-function generateSessionKey() {
-  var newKey = "";
-  for (var i = 0; i < 3; i++) {
-    for (var j = 0; j < 4; j++) {
-      newKey += characters[Math.floor(Math.random() * 25)];
-    }
-    newKey += "-";
-  }
-  newKey = newKey.slice(0, 14);
-  if (!sessionKeyList.includes(newKey)) {
-    sessionKeyList.push(newKey);
-    return newKey;
-  } else {
-    generateSessionKey();
-  }
+  // This Server is used to forward incoming http requests to https to enable encrypted data transfer
+  http.createServer(function(req, res) {
+    res.writeHead(301, {
+      "Location": "https://" + req.headers["host"] + req.url
+    });
+    res.end();
+  }).listen(80);
 }
 
-async function getSessionData(sessionKey){
-  return await Session.findOne({
-    sessionKey: sessionKey
+// Running the server locally for development or testing, no security etc.
+
+if (localEnv) {
+
+  app.listen(3000, function() {
+    console.log("Server started on Port: " + 3000);
   });
+}
+
+// ------------------------------------------------------------------------------
+
+// Helper functions
+
+function generateCounterElements(sessionData){
+  var counterElements = {
+    activeParticipantCounter: 0,
+    emotionCounters: {
+      "happy": 0,
+      "sad": 0,
+      "neutral": 0,
+      "disgusted": 0,
+      "fearful": 0,
+      "surprised": 0,
+      "angry": 0
+    },
+    lookingAtCamera: 0
+  }
+
+  sessionData.participants.forEach(function(participant){
+    const currentStatus = participant.participantStatus.pop();
+    const currentEmotion = currentStatus.emotion;
+    if (!isInactive(currentStatus.time)){
+      counterElements.emotionCounters[currentEmotion] += 1;
+      if (currentStatus.looks){
+        counterElements.lookingAtCamera += 1;
+      }
+      counterElements.activeParticipantCounter += 1;
+    }
+  });
+  return counterElements;
 }
 
 function isInactive(time) {
@@ -441,41 +414,23 @@ function cleaningRoutine() {
   })
 }
 
-// Cleaning Routine is executed every 10 minutes, deletes every session that had no access in last 10 minutes before running.
-// Therefore inactive sessions will be deleted after at max. 20 Minutes
-setInterval(cleaningRoutine, 600000);
-
-// ------------------------------------------------------------------------------
-
-// Running server as actual server, with security etc
-
-if (!(localEnv)) {
-
-  // https server for running the actual communication, serving the website etc.
-  https.createServer({
-    key: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/privkey.pem"),
-    cert: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/cert.pem"),
-    ca: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/chain.pem")
-  }, app).listen(portNr, function() {
-    console.log("Server started on Port: " + portNr);
-  });
-
-  // This Server is used to forward incoming http requests to https to enable encrypted data transfer
-  http.createServer(function(req, res) {
-    res.writeHead(301, {
-      "Location": "https://" + req.headers["host"] + req.url
-    });
-    res.end();
-  }).listen(80);
+function generateSessionKey() {
+  const characters = "ABCDEFGHJKLMNOPQRSTUVWXYZ"
+  var newKey = "";
+  for (var i = 0; i < 3; i++) {
+    for (var j = 0; j < 4; j++) {
+      newKey += characters[Math.floor(Math.random() * 25)];
+    }
+    newKey += "-";
+  }
+  newKey = newKey.slice(0, 14);
+  return newKey;
 }
 
-// Running the server locally for development or testing, no security etc.
-
-if (localEnv) {
-
-  app.listen(3000, function() {
-    console.log("Server started on Port: " + 3000);
-  });
-}
-
-// ------------------------------------------------------------------------------
+async function getSessionData(sessionKey){
+  return await Session.findOneAndUpdate({
+    sessionKey: sessionKey
+  }, {"$set": {
+    lastDashboardAccess: new Date()
+  }});
+};
