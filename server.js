@@ -70,7 +70,7 @@ const statusSchema = {
 const participantSchema = {
   participantId: Number,
   participantName: String,
-  participantStatus: statusSchema
+  participantStatus: [statusSchema]
 };
 
 const sessionSchema = {
@@ -164,13 +164,11 @@ app.get("/legal", function(req, res) {
   res.render("legal-notice");
 });
 
-// ----------------------------------POSTS---------------------------------------
+// ----------------------------------API---------------------------------------
 
 app.post("/participant", function(req, res) {
   const sessionKey = req.body.sessionKey;
   const participantName = req.body.participantName === "" ? "Anonymous" : req.body.participantName;
-
-
 
   Session.findOne({
     sessionKey: sessionKey
@@ -185,15 +183,13 @@ app.post("/participant", function(req, res) {
       const nrOfUsers = foundSession.participants.length;
 
       const newStatus = new Status({
-        emotion: "newUser",
-        emotionScore: "50",
         time: new Date(),
       });
 
       const newParticipant = new Participant({
         participantId: nrOfUsers,
         participantName: participantName,
-        participantStatus: newStatus
+        participantStatus: [newStatus]
       });
 
       Session.findOneAndUpdate({
@@ -214,9 +210,78 @@ app.post("/participant", function(req, res) {
   })
 });
 
-// API to fetch data from users
+// API: Allow data download at end of session
+app.get("/api/dashboard/download", (req, res) => {
+  validateIp(req).then(isValid => {
+    if (isValid) {
+      getSessionData(req.query.sessionKey).then(exportData => res.send(exportData));
+  } else {
+    res.send("The session key is not valid or you are not allowed to access the session");
+  }
+});
+});
 
-app.post("/api/participant", (req, res) => {
+// API: Get current counters for session
+app.get("/api/dashboard/counters", (req, res) => {
+  validateIp(req).then(isValid => {
+    if (isValid) {
+      getSessionData(req.query.sessionKey).then(sessionData => res.send(generateCounterElements(sessionData)));
+  } else {
+    res.send("The session key is not valid or you are not allowed to access the session");
+  }
+});
+});
+
+// API: Get all participants + their current status
+app.get("/api/dashboard/participants", (req, res) => {
+  validateIp(req).then(isValid => {
+    if (isValid) {
+      getSessionData(req.query.sessionKey).then(sessionData => res.send(generateParticipants(sessionData)));
+  } else {
+    res.send("The session key is not valid or you are not allowed to access the session");
+  }
+});
+});
+
+function generateParticipants(sessionData){
+  participants = [];
+  sessionData.participants.forEach(function(participant){
+    participants.push({id: participant.participantId, name: participant.participantName, status: participant.participantStatus[participant.participantStatus.length - 1]});
+  });
+  console.log(participants);
+  return participants;
+};
+
+function generateCounterElements(sessionData){
+  var counterElements = {
+    activeParticipantCounter: 0,
+    emotionCounters: {
+      "happy": 0,
+      "sad": 0,
+      "neutral": 0,
+      "disgusted": 0,
+      "fearful": 0,
+      "surprised": 0,
+      "angry": 0
+    },
+    lookingAtCamera: 0
+  }
+
+  sessionData.participants.forEach(function(participant){
+    const currentStatus = participant.participantStatus.pop();
+    const currentEmotion = currentStatus.emotion;
+    if (!isInactive(currentStatus.time)){
+      counterElements.emotionCounters[currentEmotion] += 1;
+      if (currentStatus.looks){
+        counterElements.lookingAtCamera += 1;
+      }
+      counterElements.activeParticipantCounter += 1;
+    }
+  });
+  return counterElements;
+}
+
+app.put("/api/participant", (req, res) => {
   b = req.body;
 
   const newStatus = new Status({
@@ -227,7 +292,6 @@ app.post("/api/participant", (req, res) => {
     looks: b.looks,
     gender: b.gender,
     objects: b.objects
-
   });
 
   const newParticipant = new Participant({
@@ -240,7 +304,7 @@ app.post("/api/participant", (req, res) => {
     sessionKey: b.sessionKey,
     "participants.participantId": b.userId
   }, {
-    "$set": {
+    "$addToSet": {
       "participants.$.participantStatus": newStatus
     }
   }, {
@@ -330,6 +394,26 @@ function generateSessionKey() {
     generateSessionKey();
   }
 }
+
+async function getSessionData(sessionKey){
+  return await Session.findOne({
+    sessionKey: sessionKey
+  });
+}
+
+function isInactive(time) {
+  return new Date().getTime() - new Date(time).getTime() < 30000 ? false : true;
+  // 3000 is 1000 (ms in a s) * 30 (30 second timeout)
+}
+
+
+async function validateIp(req){
+  const requestIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  console.log(requestIp);
+  console.log(await Session.exists({sessionKey: req.query.sessionKey, hostIp: requestIp}));
+  return await Session.exists({sessionKey: req.query.sessionKey, hostIp: requestIp});
+};
+
 
 function cleaningRoutine() {
   console.log("Cleaning routine initiated!");

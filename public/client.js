@@ -1,6 +1,6 @@
 //jshint esversion:6
 
-const interval = 500; // interval in milliseconds
+const interval = 10000; // interval in milliseconds
 const path = location.pathname.split("/");
 const userId = path[3];
 const userName = path[4];
@@ -146,7 +146,7 @@ function sendStatusVector(statusVector){
     headers: {
       'Content-Type': 'application/json'
     },
-    method: "POST",
+    method: "PUT",
     body: JSON.stringify(statusVector)
   }
   fetch("/api/participant", fetchOptions).then(res => {
