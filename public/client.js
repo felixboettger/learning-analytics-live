@@ -1,18 +1,16 @@
 //jshint esversion:6
 
 const interval = 1000; // interval in milliseconds
-const path = location.pathname.split("/");
 const secret = document.getElementById("participantSecret").textContent;
 const userId = parseInt(document.getElementById("participantId").textContent);
 const userName = document.getElementById("participantName").textContent;
 const sessionKey = document.getElementById("sessionKey").textContent;
-const recentStatusArray = [];
+const recentEmotionsArray = [];
+const webcamElement = document.getElementById('webcam');
+const canvasElement = document.getElementById('canvas');
 
 var blazefaceModel;
 var cocoSsdModel;
-
-const webcamElement = document.getElementById('webcam');
-const canvasElement = document.getElementById('canvas');
 
 const webcam = new Webcam(webcamElement, 'user', canvasElement);
 webcam.start();
@@ -29,23 +27,6 @@ webcam.start();
     updateStatus();
   }, interval)
 });
-
-var detectedObjects = {
-  "cell phone": 0,
-  "laptop": 0,
-  "cat": 0,
-  "dog": 0,
-  "sports ball": 0,
-  "bottle": 0,
-  "wine glass": 0,
-  "cup": 0,
-  "pizza": 0,
-  "tv": 0,
-  "remote": 0,
-  "book": 0,
-  "scissors": 0,
-  "teddy bear": 0
-};
 
 async function updateStatus(){
   const image = await document.querySelector('canvas');
@@ -91,7 +72,7 @@ async function updateStatus(){
   }
   });
 
-  if (!(typeof faceDetection.expressions === undefined)){
+  if (!(faceDetection === undefined)){
     const expressions = faceDetection.expressions;
     // console.log(resizedDimensions);
     const e = expressions; // shortcut to make code below more readable
@@ -103,6 +84,7 @@ async function updateStatus(){
     };
 
     var emotion = expressionArrayTranslate[arrayMaxIndex(expressionArray)];
+    recentEmotionsArray.push(emotion);
 
     const statusVector = {
       participantSecret: secret,
@@ -114,24 +96,22 @@ async function updateStatus(){
       objects: detectedObjectsArray,
       emotionScore: getEmotionScore()
     }
-
     sendStatusVector(statusVector);
-    recentStatusArray.push(statusVector);
   }
 };
 
 function getEmotionScore() {
-  const elementsInArray = recentStatusArray.length;
+  const elementsInArray = recentEmotionsArray.length;
   if (elementsInArray > 20) {
-    recentStatusArray.shift();
+    recentEmotionsArray.shift();
   }
 
   var emotionScore = 0;
 
-  recentStatusArray.forEach(statusVector => {
-    if (statusVector.emotion == "happy"){
+  recentEmotionsArray.forEach(emotion => {
+    if (emotion == "happy"){
       emotionScore += 100;
-    } else if (statusVector.emotion == "sad") {
+    } else if (emotion === "sad" || emotion === "fearful" || emotion === "disgusted") {
       emotionScore += 0;
     } else {
       emotionScore += 50;

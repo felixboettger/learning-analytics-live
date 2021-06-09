@@ -1,24 +1,13 @@
 //jshint esversion:6
 
-const path = location.pathname.split("/");
-const interval = 10000;
-const sessionKey = path[2];
-
-const apiRequest = {
-  sessionKey: sessionKey
-};
-const fetchOptions = {
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  method: "GET"
-};
+const interval = 1000;
+const sessionKey = document.getElementById("sessionKey").textContent;
+const apiRequest = {sessionKey: sessionKey};
+const fetchOptions = {headers: {'Content-Type': 'application/json'},method: "GET"};
 
 function refreshDashboard(){
   refreshCounterElements();
   refreshParticipantList();
-
-
 }
 
 async function refreshCounterElements(){
@@ -53,21 +42,8 @@ function addOrCreateParticipant(participant){
 }
 
 function generateParticipantElements(participant) {
-  const {
-    id,
-    name,
-    status
-  } = participant;
-  const {
-    emotionScore,
-    emotion,
-    time,
-    age,
-    looks,
-    objects,
-    gender
-  } = status; // this accesses the last status
-
+  const {id, name, status} = participant;
+  const {emotionScore, emotion, time, looks, objects} = status; // this accesses the last status
   const htmlParticipantElement = `
     <td>` + emotion + `</td>
     <td>` + name + `</td>
