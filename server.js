@@ -93,7 +93,11 @@ app.get("/", function(req, res) {
 });
 
 app.get("/participant", function(req, res) {
-  res.render("participant");
+  res.render("participant", {sessionKey: ""});
+});
+
+app.get("/join/:sessionKey", function(req, res) {
+  res.render("participant", {sessionKey: req.params.sessionKey});
 });
 
 app.get("/about", function(req, res) {
@@ -121,8 +125,10 @@ app.get("/host", function(req, res) {
       console.log("New Session " + newKey + " was successfully created.");
     }
   })
+  const url = req.protocol + '://' + req.get('host');
   res.render("host", {
-    sessionKey: newKey
+    sessionKey: newKey,
+    url: url
   });
 });
 

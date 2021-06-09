@@ -12,9 +12,6 @@ const canvasElement = document.getElementById('canvas');
 var blazefaceModel;
 var cocoSsdModel;
 
-const webcam = new Webcam(webcamElement, 'user', canvasElement);
-webcam.start();
-
 (async () => {
   blazefaceModel = await blazeface.load();
   cocoSsdModel = await cocoSsd.load();
@@ -22,6 +19,8 @@ webcam.start();
   await faceapi.nets.faceExpressionNet.loadFromUri("/models");
   await faceapi.nets.ageGenderNet.loadFromUri("/models");
 })().then(function (){
+  const webcam = new Webcam(webcamElement, 'user', canvasElement);
+  webcam.start();
   setInterval(function(){
     const snap = webcam.snap();
     updateStatus();
