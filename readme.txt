@@ -1,4 +1,4 @@
-This is a prototypical implementation of a Multimodal Learning Analytics Live Data Collection Tool implemented as part of my Bachelor-Thesis.
+This is a prototypical implementation of a Learning Analytics Live Data Collection Tool implemented as part of my Bachelor-Thesis.
 
 --- INSTALLATION ---
 

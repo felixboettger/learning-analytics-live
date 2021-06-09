@@ -96,6 +96,15 @@ app.get("/participant", function(req, res) {
   res.render("participant");
 });
 
+app.get("/about", function(req, res) {
+  res.render("about");
+});
+
+app.get("/legal", function(req, res) {
+  res.render("legal-notice");
+});
+
+// This doubles as API request and delivery of host site. Possibly separate
 app.get("/host", function(req, res) {
   const newKey = generateSessionKey();
   const allowedIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -143,14 +152,6 @@ app.get("/dashboard/:sessionKey", function(req, res) {
       }
     }
   });
-});
-
-app.get("/about", function(req, res) {
-  res.render("about");
-});
-
-app.get("/legal", function(req, res) {
-  res.render("legal-notice");
 });
 
 // ----------------------------------API---------------------------------------
@@ -287,47 +288,38 @@ if (localEnv) {
 
 // Helper functions
 
+// generates counters (used for API requests)
 function generateCounterElements(sessionData){
   var counterElements = {
     activeParticipantCounter: 0,
-    emotionCounters: {
-      "happy": 0,
-      "sad": 0,
-      "neutral": 0,
-      "disgusted": 0,
-      "fearful": 0,
-      "surprised": 0,
-      "angry": 0
-    },
+    emotionCounters: {"happy": 0, "sad": 0, "neutral": 0, "disgusted": 0, "fearful": 0, "surprised": 0, "angry": 0},
     lookingAtCamera: 0
   }
-
   sessionData.participants.forEach(function(participant){
     const currentStatus = participant.participantStatus.pop();
     const currentEmotion = currentStatus.emotion;
     if (!isInactive(currentStatus.time)){
       counterElements.emotionCounters[currentEmotion] += 1;
-      if (currentStatus.looks){
-        counterElements.lookingAtCamera += 1;
-      }
       counterElements.activeParticipantCounter += 1;
+      if (currentStatus.looks){counterElements.lookingAtCamera += 1;}
     }
   });
   return counterElements;
 }
 
+// Check if timestamp is more than 30 seconds ago
 function isInactive(time) {
   return new Date().getTime() - new Date(time).getTime() < 30000 ? false : true;
   // 3000 is 1000 (ms in a s) * 30 (30 second timeout)
 }
 
-
+// Checks if request ip matches session host ip
 async function validateIp(req){
   const requestIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
   return await Session.exists({sessionKey: req.query.sessionKey, hostIp: requestIp});
 };
 
-
+// Deletes all sessions from database that have not been accessed in the last 10 minutes
 function cleaningRoutine() {
   console.log("Cleaning routine initiated!");
   Session.find({}, function(err, foundSessions) {
@@ -354,6 +346,7 @@ function cleaningRoutine() {
   })
 }
 
+// Generates a 14 digit session key
 function generateSessionKey() {
   const characters = "ABCDEFGHJKLMNOPQRSTUVWXYZ"
   var newKey = "";
@@ -367,6 +360,7 @@ function generateSessionKey() {
   return newKey;
 }
 
+// returns session data and updates last dashboard access parameter for this session
 async function getSessionData(sessionKey){
   return await Session.findOneAndUpdate({
     sessionKey: sessionKey
@@ -375,10 +369,14 @@ async function getSessionData(sessionKey){
   }});
 };
 
+// generates a list of active participants
 function generateParticipants(sessionData){
   participants = [];
   sessionData.participants.forEach(function(participant){
-    participants.push({id: participant.participantId, name: participant.participantName, status: participant.participantStatus[participant.participantStatus.length - 1]});
+    const time = participant.participantStatus[participant.participantStatus.length - 1].time;
+    if (!isInactive(time)) {
+      participants.push({id: participant.participantId, name: participant.participantName, status: participant.participantStatus[participant.participantStatus.length - 1]});
+    }
   });
   return participants;
 };
