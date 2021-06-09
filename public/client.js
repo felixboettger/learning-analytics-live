@@ -2,6 +2,7 @@
 
 const interval = 1000; // interval in milliseconds
 const path = location.pathname.split("/");
+const secret = document.getElementById("participantSecret").textContent;
 const userId = parseInt(document.getElementById("participantId").textContent);
 const userName = document.getElementById("participantName").textContent;
 const sessionKey = document.getElementById("sessionKey").textContent;
@@ -104,6 +105,7 @@ async function updateStatus(){
     var emotion = expressionArrayTranslate[arrayMaxIndex(expressionArray)];
 
     const statusVector = {
+      participantSecret: secret,
       userId: userId,
       userName: userName,
       sessionKey: sessionKey,

@@ -25,6 +25,7 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const https = require("https");
 const http = require("http");
+const crypto = require("crypto");
 
 // ------------------------------------------------------------------------------
 
@@ -68,6 +69,7 @@ const statusSchema = {
 const participantSchema = {
   participantId: Number,
   participantName: String,
+  participantSecret: String,
   participantStatus: [statusSchema]
 };
 
@@ -168,16 +170,18 @@ app.post("/participant", function(req, res) {
         time: new Date(),
       });
       const participantId = foundSession.participants.length;
+      const participantSecret = crypto.randomBytes(4).toString('hex');
       const newParticipant = new Participant({
         participantId: participantId,
         participantName: b.participantName,
+        participantSecret: participantSecret,
         participantStatus: [newStatus]
       });
       Session.findOneAndUpdate({sessionKey: b.sessionKey}, {"$addToSet": {"participants": newParticipant}},
       {new: true}, function(err, foundSession){
         // console.log("New participant created");
       });
-      res.render("client", {sessionKey: b.sessionKey, participantName: b.participantName, participantId: participantId});
+      res.render("client", {sessionKey: b.sessionKey, participantName: b.participantName, participantId: participantId, participantSecret: participantSecret});
     }
   });
 });
@@ -227,7 +231,7 @@ app.put("/api/participant", (req, res) => {
     objects: b.objects
   });
 
-  Session.findOneAndUpdate({sessionKey: b.sessionKey, "participants.participantId": b.userId},
+  Session.findOneAndUpdate({sessionKey: b.sessionKey, "participants.participantId": b.userId, "participants.participantSecret": b.participantSecret},
   {"$addToSet": {"participants.$.participantStatus": newStatus}}, {new: true}, function(err, foundParticipant) {
     if (foundParticipant == null) {
       console.log("Session for sessionKey " + b.sessionKey +" not found!");
