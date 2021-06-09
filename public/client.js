@@ -1,10 +1,10 @@
 //jshint esversion:6
 
-const interval = 10000; // interval in milliseconds
+const interval = 1000; // interval in milliseconds
 const path = location.pathname.split("/");
-const userId = path[3];
-const userName = path[4];
-const sessionKey = path[2];
+const userId = parseInt(document.getElementById("participantId").textContent);
+const userName = document.getElementById("participantName").textContent;
+const sessionKey = document.getElementById("sessionKey").textContent;
 const recentStatusArray = [];
 
 var blazefaceModel;
@@ -49,19 +49,32 @@ var detectedObjects = {
 async function updateStatus(){
   const image = await document.querySelector('canvas');
   const faceDetection = await faceapi.detectSingleFace(image).withFaceExpressions().withAgeAndGender();
-  const resizedDimensions = faceapi.resizeResults(faceDetection, {width: 640, height: 480});
+  const objectDetections = await cocoSsdModel.detect(image);
+  const blazefacePredictions = await blazefaceModel.estimateFaces(image, false);
 
-  // console.log(resizedDimensions);
+  var detectedObjects = {
+    "cell phone": 0,
+    "laptop": 0,
+    "cat": 0,
+    "dog": 0,
+    "sports ball": 0,
+    "bottle": 0,
+    "wine glass": 0,
+    "cup": 0,
+    "pizza": 0,
+    "tv": 0,
+    "remote": 0,
+    "book": 0,
+    "scissors": 0,
+    "teddy bear": 0
+  };
 
-  const predictions = await cocoSsdModel.detect(image);
-  predictions.forEach(prediction => {
-    var currentItem = prediction.class;
-    if (prediction.class in detectedObjects) {
-      detectedObjects[prediction.class] = 1;
+  objectDetections.forEach(detection => {
+    var currentItem = detection.class;
+    if (detection.class in detectedObjects) {
+      detectedObjects[prediction.detection] = 1;
     }
   });
-
-  const blazefacePredictions = await blazefaceModel.estimateFaces(image, false);
 
   var lookingAtCamera = false;
 
@@ -77,8 +90,8 @@ async function updateStatus(){
   }
   });
 
-  if (!(typeof resizedDimensions.expressions === undefined)){
-    const expressions = resizedDimensions.expressions;
+  if (!(typeof faceDetection.expressions === undefined)){
+    const expressions = faceDetection.expressions;
     // console.log(resizedDimensions);
     const e = expressions; // shortcut to make code below more readable
     const expressionArray = [e.neutral, e.happy, e.sad, e.fearful, e.angry, e.disgusted, e.surprised];
@@ -95,20 +108,14 @@ async function updateStatus(){
       userName: userName,
       sessionKey: sessionKey,
       emotion: emotion,
-      age: Math.round(resizedDimensions.age),
       looks: lookingAtCamera,
-      gender: resizedDimensions.gender,
       objects: detectedObjectsArray,
       emotionScore: getEmotionScore()
     }
 
     sendStatusVector(statusVector);
     recentStatusArray.push(statusVector);
-
   }
-
-  resetDetectedObjects();
-
 };
 
 function getEmotionScore() {
@@ -137,7 +144,6 @@ function getEmotionScore() {
 
   // e.g.  emotionScore = (emotionScore + screenLookScore) /2
   return emotionScore;
-
 }
 
 // Function that sends a status vector to the server
@@ -162,12 +168,9 @@ function sendStatusVector(statusVector){
     });
   }).catch((error) => {
         if (confirm("Error: The server is not responding. Please try again later")){
-
         };
         throw new Error("Repsonse NOT OK. Terminating Client");
       })}
-
-
 
 function checkIfLookingAtCamera(blazefacePredictions){
   const rightEyeX = blazefacePredictions[0]["landmarks"][0][0];
@@ -182,23 +185,4 @@ function checkIfLookingAtCamera(blazefacePredictions){
   } else {
     return false;
   }
-}
-
-function resetDetectedObjects(){
-  detectedObjects = {
-    "cell phone": 0,
-    "laptop": 0,
-    "cat": 0,
-    "dog": 0,
-    "sports ball": 0,
-    "bottle": 0,
-    "wine glass": 0,
-    "cup": 0,
-    "pizza": 0,
-    "tv": 0,
-    "remote": 0,
-    "book": 0,
-    "scissors": 0,
-    "teddy bear": 0
-  };
 }

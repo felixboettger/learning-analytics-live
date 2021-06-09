@@ -59,8 +59,6 @@ mongoose.connect(mongodbURL, {
 
 const statusSchema = {
   emotion: String,
-  age: Number,
-  gender: String,
   objects: [String],
   looks: Boolean,
   emotionScore: Number,
@@ -145,17 +143,6 @@ app.get("/dashboard/:sessionKey", function(req, res) {
   });
 });
 
-app.get("/participant/:sessionKey/:participantId/:participantName", function(req, res) {
-  const sessionKey = req.params.sessionKey;
-  const participantId = req.params.participantId;
-  participantName = req.params.participantName;
-  res.render("client", {
-    sessionKey: sessionKey,
-    participantId: participantId,
-    participantName: participantName
-  });
-});
-
 app.get("/about", function(req, res) {
   res.render("about");
 });
@@ -166,48 +153,33 @@ app.get("/legal", function(req, res) {
 
 // ----------------------------------API---------------------------------------
 
+// API: Creation of new participant
 app.post("/participant", function(req, res) {
-  const sessionKey = req.body.sessionKey;
-  const participantName = req.body.participantName === "" ? "Anonymous" : req.body.participantName;
+  const b = req.body;
 
-  Session.findOne({
-    sessionKey: sessionKey
-  }, function(err, foundSession) {
+  Session.findOne({sessionKey: b.sessionKey}, function(err, foundSession){
     if (err) {
       console.log(err);
     } else if (foundSession == null) {
-      console.log("Session does not exist");
-      res.render("client-session-not-found", {sessionKey: sessionKey});
-  } else {
-
-      const nrOfUsers = foundSession.participants.length;
-
+      console.log("Session " + b.sessionKey + "does not exist.");
+      res.render("client-session-not-found", {sessionKey: b.sessionKey});
+    } else {
       const newStatus = new Status({
         time: new Date(),
       });
-
+      const participantId = foundSession.participants.length;
       const newParticipant = new Participant({
-        participantId: nrOfUsers,
-        participantName: participantName,
+        participantId: participantId,
+        participantName: b.participantName,
         participantStatus: [newStatus]
       });
-
-      Session.findOneAndUpdate({
-        sessionKey: sessionKey
-      }, {
-        "$addToSet": {
-          "participants": newParticipant
-        }
-      }, {
-        new: true
-      }, (err, foundSession) => {
-        if (err) {
-          console.log(err);
-        }
+      Session.findOneAndUpdate({sessionKey: b.sessionKey}, {"$addToSet": {"participants": newParticipant}},
+      {new: true}, function(err, foundSession){
+        // console.log("New participant created");
       });
-      res.redirect("/participant/" + sessionKey + "/" + nrOfUsers + "/" + participantName)
+      res.render("client", {sessionKey: b.sessionKey, participantName: b.participantName, participantId: participantId});
     }
-  })
+  });
 });
 
 // API: Allow data download at end of session
@@ -243,17 +215,7 @@ app.get("/api/dashboard/participants", (req, res) => {
 });
 });
 
-function generateParticipants(sessionData){
-  participants = [];
-  sessionData.participants.forEach(function(participant){
-    participants.push({id: participant.participantId, name: participant.participantName, status: participant.participantStatus[participant.participantStatus.length - 1]});
-  });
-  console.log(participants);
-  return participants;
-};
-
-
-
+// API: Update status of existing participant
 app.put("/api/participant", (req, res) => {
   b = req.body;
 
@@ -261,47 +223,23 @@ app.put("/api/participant", (req, res) => {
     emotion: b.emotion,
     emotionScore: b.emotionScore,
     time: new Date(),
-    age: b.age,
     looks: b.looks,
-    gender: b.gender,
     objects: b.objects
   });
 
-  const newParticipant = new Participant({
-    participantId: b.userId,
-    participantName: b.userName,
-    participantStatus: newStatus
-  });
-
-  Session.findOneAndUpdate({
-    sessionKey: b.sessionKey,
-    "participants.participantId": b.userId
-  }, {
-    "$addToSet": {
-      "participants.$.participantStatus": newStatus
-    }
-  }, {
-    new: true
-  }, function(err, foundParticipant) {
+  Session.findOneAndUpdate({sessionKey: b.sessionKey, "participants.participantId": b.userId},
+  {"$addToSet": {"participants.$.participantStatus": newStatus}}, {new: true}, function(err, foundParticipant) {
     if (foundParticipant == null) {
-      console.log("Session not found!");
-      res.json({
-        status: 0,
-        userId: req.body.userId
-      });
+      console.log("Session for sessionKey " + b.sessionKey +" not found!");
+      res.json({status: 0, userId: b.userId});
     } else if (foundParticipant.n == 0) {
-      console.log("Participant not found!");
-      res.json({
-        status: 0,
-        userId: req.body.userId
-      });
+      console.log("Participant with ID" + b.userId + "not found in session with sessionKey" + b.sessionKey + "!");
+      res.json({status: 0, userId: b.userId});
     } else {
-      res.json({
-        status: 1,
-        userId: req.body.userId
-      });
+      res.json({status: 1, userId: b.userId});
     }
-  });
+  }
+);
 });
 
 // Cleaning Routine is executed every 10 minutes, deletes every session that had no access in last 10 minutes before running.
@@ -382,8 +320,6 @@ function isInactive(time) {
 
 async function validateIp(req){
   const requestIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-  console.log(requestIp);
-  console.log(await Session.exists({sessionKey: req.query.sessionKey, hostIp: requestIp}));
   return await Session.exists({sessionKey: req.query.sessionKey, hostIp: requestIp});
 };
 
@@ -433,4 +369,12 @@ async function getSessionData(sessionKey){
   }, {"$set": {
     lastDashboardAccess: new Date()
   }});
+};
+
+function generateParticipants(sessionData){
+  participants = [];
+  sessionData.participants.forEach(function(participant){
+    participants.push({id: participant.participantId, name: participant.participantName, status: participant.participantStatus[participant.participantStatus.length - 1]});
+  });
+  return participants;
 };
