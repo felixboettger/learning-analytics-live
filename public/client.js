@@ -6,8 +6,8 @@ const userId = parseInt(document.getElementById("participantId").textContent);
 const userName = document.getElementById("participantName").textContent;
 const sessionKey = document.getElementById("sessionKey").textContent;
 const recentEmotionsArray = [];
-const webcamElement = document.getElementById('webcam');
-const canvasElement = document.getElementById('canvas');
+const webcamElement = document.getElementById("webcam");
+const canvasElement = document.getElementById("canvas");
 
 var blazefaceModel;
 var cocoSsdModel;
@@ -18,35 +18,38 @@ var cocoSsdModel;
   await faceapi.nets.ssdMobilenetv1.loadFromUri("/models");
   await faceapi.nets.faceExpressionNet.loadFromUri("/models");
   await faceapi.nets.ageGenderNet.loadFromUri("/models");
-})().then(function (){
-  const webcam = new Webcam(webcamElement, 'user', canvasElement);
+})().then(function() {
+  const webcam = new Webcam(webcamElement, "user", canvasElement);
   webcam.start();
-  setInterval(function(){
+  setInterval(function() {
     const snap = webcam.snap();
     updateStatus();
-  }, interval)
+  }, interval);
 });
 
-async function updateStatus(){
-  const image = await document.querySelector('canvas');
-  const faceDetection = await faceapi.detectSingleFace(image).withFaceExpressions().withAgeAndGender();
+async function updateStatus() {
+  const image = await document.querySelector("canvas");
+  const faceDetection = await faceapi
+    .detectSingleFace(image)
+    .withFaceExpressions()
+    .withAgeAndGender();
   const objectDetections = await cocoSsdModel.detect(image);
   const blazefacePredictions = await blazefaceModel.estimateFaces(image, false);
 
   var detectedObjects = {
     "cell phone": 0,
-    "laptop": 0,
-    "cat": 0,
-    "dog": 0,
+    laptop: 0,
+    cat: 0,
+    dog: 0,
     "sports ball": 0,
-    "bottle": 0,
+    bottle: 0,
     "wine glass": 0,
-    "cup": 0,
-    "pizza": 0,
-    "tv": 0,
-    "remote": 0,
-    "book": 0,
-    "scissors": 0,
+    cup: 0,
+    pizza: 0,
+    tv: 0,
+    remote: 0,
+    book: 0,
+    scissors: 0,
     "teddy bear": 0
   };
 
@@ -59,24 +62,40 @@ async function updateStatus(){
 
   var lookingAtCamera = false;
 
-  if (!(blazefacePredictions.length === 0)){
+  if (!(blazefacePredictions.length === 0)) {
     lookingAtCamera = checkIfLookingAtCamera(blazefacePredictions);
   }
 
   var detectedObjectsArray = [];
 
   Object.keys(detectedObjects).forEach(key => {
-    if (detectedObjects[key] === 1){
-    detectedObjectsArray.push(key);
-  }
+    if (detectedObjects[key] === 1) {
+      detectedObjectsArray.push(key);
+    }
   });
 
-  if (!(faceDetection === undefined)){
+  if (!(faceDetection === undefined)) {
     const expressions = faceDetection.expressions;
     // console.log(resizedDimensions);
     const e = expressions; // shortcut to make code below more readable
-    const expressionArray = [e.neutral, e.happy, e.sad, e.fearful, e.angry, e.disgusted, e.surprised];
-    const expressionArrayTranslate = ["neutral", "happy", "sad", "fearful", "angry", "disgusted", "surprised"]
+    const expressionArray = [
+      e.neutral,
+      e.happy,
+      e.sad,
+      e.fearful,
+      e.angry,
+      e.disgusted,
+      e.surprised
+    ];
+    const expressionArrayTranslate = [
+      "neutral",
+      "happy",
+      "sad",
+      "fearful",
+      "angry",
+      "disgusted",
+      "surprised"
+    ];
 
     var arrayMaxIndex = function(array) {
       return array.indexOf(Math.max.apply(null, array));
@@ -94,10 +113,10 @@ async function updateStatus(){
       looks: lookingAtCamera,
       objects: detectedObjectsArray,
       emotionScore: getEmotionScore()
-    }
+    };
     sendStatusVector(statusVector);
   }
-};
+}
 
 function getEmotionScore() {
   const elementsInArray = recentEmotionsArray.length;
@@ -108,9 +127,13 @@ function getEmotionScore() {
   var emotionScore = 0;
 
   recentEmotionsArray.forEach(emotion => {
-    if (emotion == "happy"){
+    if (emotion == "happy") {
       emotionScore += 100;
-    } else if (emotion === "sad" || emotion === "fearful" || emotion === "disgusted") {
+    } else if (
+      emotion === "sad" ||
+      emotion === "fearful" ||
+      emotion === "disgusted"
+    ) {
       emotionScore += 0;
     } else {
       emotionScore += 50;
@@ -118,7 +141,7 @@ function getEmotionScore() {
   });
 
   if (elementsInArray > 0) {
-    emotionScore = Math.floor(emotionScore/elementsInArray);
+    emotionScore = Math.floor(emotionScore / elementsInArray);
   } else {
     emotionScore = 50;
   }
@@ -128,32 +151,41 @@ function getEmotionScore() {
 }
 
 // Function that sends a status vector to the server
-function sendStatusVector(statusVector){
+function sendStatusVector(statusVector) {
   const fetchOptions = {
     headers: {
-      'Content-Type': 'application/json'
+      "Content-Type": "application/json"
     },
     method: "PUT",
     body: JSON.stringify(statusVector)
-  }
-  fetch("/api/participant", fetchOptions).then(res => {
-      res.json().then(function(data){
-      if (data.status === 1){
-        // console.log("Response OK");
-      } else {
-        if (confirm("Error: Please join the session through the Participant page")){
-          location = "/participant"
-        };
-        throw new Error("Repsonse NOT OK. Terminating Client");
+  };
+  fetch("/api/participant", fetchOptions)
+    .then(res => {
+      res.json().then(function(data) {
+        if (data.status === 1) {
+          // console.log("Response OK");
+        } else {
+          if (
+            confirm(
+              "Error: Please join the session through the Participant page"
+            )
+          ) {
+            location = "/participant";
+          }
+          throw new Error("Repsonse NOT OK. Terminating Client");
+        }
+      });
+    })
+    .catch(error => {
+      if (
+        confirm("Error: The server is not responding. Please try again later")
+      ) {
       }
+      throw new Error("Repsonse NOT OK. Terminating Client");
     });
-  }).catch((error) => {
-        if (confirm("Error: The server is not responding. Please try again later")){
-        };
-        throw new Error("Repsonse NOT OK. Terminating Client");
-      })}
+}
 
-function checkIfLookingAtCamera(blazefacePredictions){
+function checkIfLookingAtCamera(blazefacePredictions) {
   const rightEyeX = blazefacePredictions[0]["landmarks"][0][0];
   const leftEyeX = blazefacePredictions[0]["landmarks"][1][0];
   const noseY = blazefacePredictions[0]["landmarks"][2][1];

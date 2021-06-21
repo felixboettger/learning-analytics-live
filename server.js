@@ -12,7 +12,8 @@ const localEnv = true;
 var mongodbURL;
 
 if (localEnv) {
-  mongodbURL = "mongodb+srv://server-admin:PmNpZDqNTxNzm82@mmla.p8d9g.mongodb.net/mmlaDB?retryWrites=true&w=majority";
+  mongodbURL =
+    "mongodb+srv://server-admin:PmNpZDqNTxNzm82@mmla.p8d9g.mongodb.net/mmlaDB?retryWrites=true&w=majority";
 } else {
   mongodbURL = "mongodb://localhost:27017/mmlaDB";
 }
@@ -33,28 +34,34 @@ const app = express();
 
 // ------------------------------------------------------------------------------
 
-app.set('view engine', 'ejs');
+app.set("view engine", "ejs");
 
 // ------------------------------------------------------------------------------
 
-app.use(bodyParser.urlencoded({
-  extended: true
-}));
+app.use(
+  bodyParser.urlencoded({
+    extended: true
+  })
+);
 app.use(express.static("public"));
-app.use(express.json({
-  limit: "1mb"
-}));
+app.use(
+  express.json({
+    limit: "1mb"
+  })
+);
 
 // ------------------------------------------------------------------------------
 
 // Establising connection with the MongoDB
-mongoose.connect(mongodbURL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true, // check if any errors occur...
-  useFindAndModify: false
-}).then(function() {
-  console.log("Connected to DB: " + mongodbURL);
-});
+mongoose
+  .connect(mongodbURL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true, // check if any errors occur...
+    useFindAndModify: false
+  })
+  .then(function() {
+    console.log("Connected to DB: " + mongodbURL);
+  });
 
 // Schemas for database entries are being defined
 
@@ -111,7 +118,8 @@ app.get("/legal", function(req, res) {
 // This doubles as API request and delivery of host site. Possibly separate
 app.get("/host", function(req, res) {
   const newKey = generateSessionKey();
-  const allowedIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  const allowedIp =
+    req.headers["x-forwarded-for"] || req.connection.remoteAddress;
   const newSession = new Session({
     lastDashboardAccess: new Date(),
     sessionKey: newKey,
@@ -124,8 +132,8 @@ app.get("/host", function(req, res) {
     } else {
       console.log("New Session " + newKey + " was successfully created.");
     }
-  })
-  const url = req.protocol + '://' + req.get('host');
+  });
+  const url = req.protocol + "://" + req.get("host");
   res.render("host", {
     sessionKey: newKey,
     url: url
@@ -133,31 +141,35 @@ app.get("/host", function(req, res) {
 });
 
 app.get("/dashboard/:sessionKey", function(req, res) {
-  const requestIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-  Session.find({
-    sessionKey: req.params.sessionKey
-  }, function(err, foundSession) {
-    if (err) {
-      console.log(err);
-      res.render("host-session-not-found", {
-        sessionKey: req.params.sessionKey
-      });
-    } else if (foundSession.length === 0) {
-      res.render("host-session-not-found", {
-        sessionKey: req.params.sessionKey
-      });
-    } else {
-      if (foundSession[0].hostIp === requestIp) {
-        res.render("dashboard", {
+  const requestIp =
+    req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  Session.find(
+    {
+      sessionKey: req.params.sessionKey
+    },
+    function(err, foundSession) {
+      if (err) {
+        console.log(err);
+        res.render("host-session-not-found", {
+          sessionKey: req.params.sessionKey
+        });
+      } else if (foundSession.length === 0) {
+        res.render("host-session-not-found", {
           sessionKey: req.params.sessionKey
         });
       } else {
-        res.render("not-allowed", {
-          sessionKey: req.params.sessionKey
-        });
+        if (foundSession[0].hostIp === requestIp) {
+          res.render("dashboard", {
+            sessionKey: req.params.sessionKey
+          });
+        } else {
+          res.render("not-allowed", {
+            sessionKey: req.params.sessionKey
+          });
+        }
       }
     }
-  });
+  );
 });
 
 // ----------------------------------API---------------------------------------
@@ -166,7 +178,7 @@ app.get("/dashboard/:sessionKey", function(req, res) {
 app.post("/participant", function(req, res) {
   const b = req.body;
 
-  Session.findOne({sessionKey: b.sessionKey}, function(err, foundSession){
+  Session.findOne({sessionKey: b.sessionKey}, function(err, foundSession) {
     if (err) {
       console.log(err);
     } else if (foundSession == null) {
@@ -174,21 +186,30 @@ app.post("/participant", function(req, res) {
       res.render("client-session-not-found", {sessionKey: b.sessionKey});
     } else {
       const newStatus = new Status({
-        time: new Date(),
+        time: new Date()
       });
       const participantId = foundSession.participants.length;
-      const participantSecret = crypto.randomBytes(4).toString('hex');
+      const participantSecret = crypto.randomBytes(4).toString("hex");
       const newParticipant = new Participant({
         participantId: participantId,
         participantName: b.participantName,
         participantSecret: participantSecret,
         participantStatus: [newStatus]
       });
-      Session.findOneAndUpdate({sessionKey: b.sessionKey}, {"$addToSet": {"participants": newParticipant}},
-      {new: true}, function(err, foundSession){
-        // console.log("New participant created");
+      Session.findOneAndUpdate(
+        {sessionKey: b.sessionKey},
+        {$addToSet: {participants: newParticipant}},
+        {new: true},
+        function(err, foundSession) {
+          // console.log("New participant created");
+        }
+      );
+      res.render("client", {
+        sessionKey: b.sessionKey,
+        participantName: b.participantName,
+        participantId: participantId,
+        participantSecret: participantSecret
       });
-      res.render("client", {sessionKey: b.sessionKey, participantName: b.participantName, participantId: participantId, participantSecret: participantSecret});
     }
   });
 });
@@ -197,33 +218,45 @@ app.post("/participant", function(req, res) {
 app.get("/api/dashboard/download", (req, res) => {
   validateIp(req).then(isValid => {
     if (isValid) {
-      getSessionData(req.query.sessionKey).then(exportData => res.send(exportData));
-  } else {
-    res.send("The session key is not valid or you are not allowed to access the session");
-  }
-});
+      getSessionData(req.query.sessionKey).then(exportData =>
+        res.send(exportData)
+      );
+    } else {
+      res.send(
+        "The session key is not valid or you are not allowed to access the session"
+      );
+    }
+  });
 });
 
 // API: Get current counters for session
 app.get("/api/dashboard/counters", (req, res) => {
   validateIp(req).then(isValid => {
     if (isValid) {
-      getSessionData(req.query.sessionKey).then(sessionData => res.send(generateCounterElements(sessionData)));
-  } else {
-    res.send("The session key is not valid or you are not allowed to access the session");
-  }
-});
+      getSessionData(req.query.sessionKey).then(sessionData =>
+        res.send(generateCounterElements(sessionData))
+      );
+    } else {
+      res.send(
+        "The session key is not valid or you are not allowed to access the session"
+      );
+    }
+  });
 });
 
 // API: Get all participants + their current status
 app.get("/api/dashboard/participants", (req, res) => {
   validateIp(req).then(isValid => {
     if (isValid) {
-      getSessionData(req.query.sessionKey).then(sessionData => res.send(generateParticipants(sessionData)));
-  } else {
-    res.send("The session key is not valid or you are not allowed to access the session");
-  }
-});
+      getSessionData(req.query.sessionKey).then(sessionData =>
+        res.send(generateParticipants(sessionData))
+      );
+    } else {
+      res.send(
+        "The session key is not valid or you are not allowed to access the session"
+      );
+    }
+  });
 });
 
 // API: Update status of existing participant
@@ -238,19 +271,32 @@ app.put("/api/participant", (req, res) => {
     objects: b.objects
   });
 
-  Session.findOneAndUpdate({sessionKey: b.sessionKey, "participants.participantId": b.userId, "participants.participantSecret": b.participantSecret},
-  {"$addToSet": {"participants.$.participantStatus": newStatus}}, {new: true}, function(err, foundParticipant) {
-    if (foundParticipant == null) {
-      console.log("Session for sessionKey " + b.sessionKey +" not found!");
-      res.json({status: 0, userId: b.userId});
-    } else if (foundParticipant.n == 0) {
-      console.log("Participant with ID" + b.userId + "not found in session with sessionKey" + b.sessionKey + "!");
-      res.json({status: 0, userId: b.userId});
-    } else {
-      res.json({status: 1, userId: b.userId});
+  Session.findOneAndUpdate(
+    {
+      sessionKey: b.sessionKey,
+      "participants.participantId": b.userId,
+      "participants.participantSecret": b.participantSecret
+    },
+    {$addToSet: {"participants.$.participantStatus": newStatus}},
+    {new: true},
+    function(err, foundParticipant) {
+      if (foundParticipant == null) {
+        console.log("Session for sessionKey " + b.sessionKey + " not found!");
+        res.json({status: 0, userId: b.userId});
+      } else if (foundParticipant.n == 0) {
+        console.log(
+          "Participant with ID" +
+            b.userId +
+            "not found in session with sessionKey" +
+            b.sessionKey +
+            "!"
+        );
+        res.json({status: 0, userId: b.userId});
+      } else {
+        res.json({status: 1, userId: b.userId});
+      }
     }
-  }
-);
+  );
 });
 
 // Cleaning Routine is executed every 10 minutes, deletes every session that had no access in last 10 minutes before running.
@@ -261,30 +307,35 @@ setInterval(cleaningRoutine, 600000);
 
 // Running server as actual server, with security etc
 
-if (!(localEnv)) {
-
+if (!localEnv) {
   // https server for running the actual communication, serving the website etc.
-  https.createServer({
-    key: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/privkey.pem"),
-    cert: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/cert.pem"),
-    ca: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/chain.pem")
-  }, app).listen(portNr, function() {
-    console.log("Server started on Port: " + portNr);
-  });
+  https
+    .createServer(
+      {
+        key: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/privkey.pem"),
+        cert: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/cert.pem"),
+        ca: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/chain.pem")
+      },
+      app
+    )
+    .listen(portNr, function() {
+      console.log("Server started on Port: " + portNr);
+    });
 
   // This Server is used to forward incoming http requests to https to enable encrypted data transfer
-  http.createServer(function(req, res) {
-    res.writeHead(301, {
-      "Location": "https://" + req.headers["host"] + req.url
-    });
-    res.end();
-  }).listen(80);
+  http
+    .createServer(function(req, res) {
+      res.writeHead(301, {
+        Location: "https://" + req.headers["host"] + req.url
+      });
+      res.end();
+    })
+    .listen(80);
 }
 
 // Running the server locally for development or testing, no security etc.
 
 if (localEnv) {
-
   app.listen(3000, function() {
     console.log("Server started on Port: " + 3000);
   });
@@ -295,19 +346,29 @@ if (localEnv) {
 // Helper functions
 
 // generates counters (used for API requests)
-function generateCounterElements(sessionData){
+function generateCounterElements(sessionData) {
   var counterElements = {
     activeParticipantCounter: 0,
-    emotionCounters: {"happy": 0, "sad": 0, "neutral": 0, "disgusted": 0, "fearful": 0, "surprised": 0, "angry": 0},
+    emotionCounters: {
+      happy: 0,
+      sad: 0,
+      neutral: 0,
+      disgusted: 0,
+      fearful: 0,
+      surprised: 0,
+      angry: 0
+    },
     lookingAtCamera: 0
-  }
-  sessionData.participants.forEach(function(participant){
+  };
+  sessionData.participants.forEach(function(participant) {
     const currentStatus = participant.participantStatus.pop();
     const currentEmotion = currentStatus.emotion;
-    if (!isInactive(currentStatus.time)){
+    if (!isInactive(currentStatus.time)) {
       counterElements.emotionCounters[currentEmotion] += 1;
       counterElements.activeParticipantCounter += 1;
-      if (currentStatus.looks){counterElements.lookingAtCamera += 1;}
+      if (currentStatus.looks) {
+        counterElements.lookingAtCamera += 1;
+      }
     }
   });
   return counterElements;
@@ -320,10 +381,14 @@ function isInactive(time) {
 }
 
 // Checks if request ip matches session host ip
-async function validateIp(req){
-  const requestIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-  return await Session.exists({sessionKey: req.query.sessionKey, hostIp: requestIp});
-};
+async function validateIp(req) {
+  const requestIp =
+    req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  return await Session.exists({
+    sessionKey: req.query.sessionKey,
+    hostIp: requestIp
+  });
+}
 
 // Deletes all sessions from database that have not been accessed in the last 10 minutes
 function cleaningRoutine() {
@@ -335,26 +400,37 @@ function cleaningRoutine() {
       foundSessions.forEach(function(foundSession) {
         lastDashboardAccess = foundSession.lastDashboardAccess;
         // Check if last session access more than 10 minutes ago
-        const willBeDeleted = new Date().getTime() - new Date(lastDashboardAccess).getTime() > 600000 ? true : false;
+        const willBeDeleted =
+          new Date().getTime() - new Date(lastDashboardAccess).getTime() >
+          600000
+            ? true
+            : false;
         if (willBeDeleted) {
-          Session.deleteOne({
-            sessionKey: foundSession.sessionKey
-          }, function(err) {
-            if (err) {
-              console.log(err);
-            } else {
-              console.log("Session " + foundSession.sessionKey + " has been deleted due to inactivity.");
+          Session.deleteOne(
+            {
+              sessionKey: foundSession.sessionKey
+            },
+            function(err) {
+              if (err) {
+                console.log(err);
+              } else {
+                console.log(
+                  "Session " +
+                    foundSession.sessionKey +
+                    " has been deleted due to inactivity."
+                );
+              }
             }
-          })
+          );
         }
-      })
+      });
     }
-  })
+  });
 }
 
 // Generates a 14 digit session key
 function generateSessionKey() {
-  const characters = "ABCDEFGHJKLMNOPQRSTUVWXYZ"
+  const characters = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
   var newKey = "";
   for (var i = 0; i < 3; i++) {
     for (var j = 0; j < 4; j++) {
@@ -367,22 +443,36 @@ function generateSessionKey() {
 }
 
 // returns session data and updates last dashboard access parameter for this session
-async function getSessionData(sessionKey){
-  return await Session.findOneAndUpdate({
-    sessionKey: sessionKey
-  }, {"$set": {
-    lastDashboardAccess: new Date()
-  }});
-};
+async function getSessionData(sessionKey) {
+  return await Session.findOneAndUpdate(
+    {
+      sessionKey: sessionKey
+    },
+    {
+      $set: {
+        lastDashboardAccess: new Date()
+      }
+    }
+  );
+}
 
 // generates a list of active participants
-function generateParticipants(sessionData){
+function generateParticipants(sessionData) {
   participants = [];
-  sessionData.participants.forEach(function(participant){
-    const time = participant.participantStatus[participant.participantStatus.length - 1].time;
+  sessionData.participants.forEach(function(participant) {
+    const time =
+      participant.participantStatus[participant.participantStatus.length - 1]
+        .time;
     if (!isInactive(time)) {
-      participants.push({id: participant.participantId, name: participant.participantName, status: participant.participantStatus[participant.participantStatus.length - 1]});
+      participants.push({
+        id: participant.participantId,
+        name: participant.participantName,
+        status:
+          participant.participantStatus[
+            participant.participantStatus.length - 1
+          ]
+      });
     }
   });
   return participants;
-};
+}

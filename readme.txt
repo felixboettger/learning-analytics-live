@@ -6,7 +6,7 @@ To run this tool, first clone the repository. A mongoDB Database is required. If
 
 The mongoDB needs to be running before starting the server.
 
-To install required components, navigate to the main folder and run "npm i".
+To install required components, navigate to the main folder and run "npm ci".
 
 The server can be run using Node.js via the following command: "node server.js"
 
