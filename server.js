@@ -1,6 +1,7 @@
 //jshint esversion:6
 
 // ----------------------------------CONFIGS-------------------------------------
+const updateInterval = 1000;
 
 const portNr = 443;
 
@@ -27,6 +28,7 @@ const mongoose = require("mongoose");
 const https = require("https");
 const http = require("http");
 const crypto = require("crypto");
+const WebSocketServer = require("websocket").server;
 
 // ------------------------------------------------------------------------------
 
@@ -76,14 +78,14 @@ const statusSchema = {
 const participantSchema = {
   participantId: Number,
   participantName: String,
-  participantSecret: String,
+  secret: String,
+  inactive: Boolean,
   participantStatus: [statusSchema]
 };
 
 const sessionSchema = {
   sessionKey: String,
-  lastDashboardAccess: Date,
-  hostIp: String,
+  secret: String,
   participants: [participantSchema]
 };
 
@@ -115,15 +117,12 @@ app.get("/legal", function(req, res) {
   res.render("legal-notice");
 });
 
-// This doubles as API request and delivery of host site. Possibly separate
 app.get("/host", function(req, res) {
   const newKey = generateSessionKey();
-  const allowedIp =
-    req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  const secret = crypto.randomBytes(4).toString("hex");
   const newSession = new Session({
-    lastDashboardAccess: new Date(),
     sessionKey: newKey,
-    hostIp: allowedIp,
+    secret: secret,
     participants: []
   });
   Session.insertMany([newSession], function(err) {
@@ -134,15 +133,17 @@ app.get("/host", function(req, res) {
     }
   });
   const url = req.protocol + "://" + req.get("host");
-  res.render("host", {
+  res.render("dashboard", {
     sessionKey: newKey,
-    url: url
+    url: url,
+    secret: secret
   });
 });
 
-app.get("/dashboard/:sessionKey", function(req, res) {
+/* app.get("/dashboard/:sessionKey", function(req, res) {
   const requestIp =
-    req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  //  req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  req.origin;
   Session.find(
     {
       sessionKey: req.params.sessionKey
@@ -170,7 +171,7 @@ app.get("/dashboard/:sessionKey", function(req, res) {
       }
     }
   );
-});
+}); */
 
 // ----------------------------------API---------------------------------------
 
@@ -189,11 +190,12 @@ app.post("/participant", function(req, res) {
         time: new Date()
       });
       const participantId = foundSession.participants.length;
-      const participantSecret = crypto.randomBytes(4).toString("hex");
+      const secret = crypto.randomBytes(4).toString("hex");
       const newParticipant = new Participant({
         participantId: participantId,
         participantName: b.participantName,
-        participantSecret: participantSecret,
+        secret: secret,
+        inactive: false,
         participantStatus: [newStatus]
       });
       Session.findOneAndUpdate(
@@ -208,7 +210,7 @@ app.post("/participant", function(req, res) {
         sessionKey: b.sessionKey,
         participantName: b.participantName,
         participantId: participantId,
-        participantSecret: participantSecret
+        secret: secret
       });
     }
   });
@@ -216,7 +218,7 @@ app.post("/participant", function(req, res) {
 
 // API: Allow data download at end of session
 app.get("/api/dashboard/download", (req, res) => {
-  validateIp(req).then(isValid => {
+  validateSecret(req).then(isValid => {
     if (isValid) {
       getSessionData(req.query.sessionKey).then(exportData =>
         res.send(exportData)
@@ -231,8 +233,9 @@ app.get("/api/dashboard/download", (req, res) => {
 
 // API: Get current counters for session
 app.get("/api/dashboard/counters", (req, res) => {
-  validateIp(req).then(isValid => {
+  validateSecret(req).then(isValid => {
     if (isValid) {
+      console.log("Request valid: ", isValid);
       getSessionData(req.query.sessionKey).then(sessionData =>
         res.send(generateCounterElements(sessionData))
       );
@@ -246,7 +249,8 @@ app.get("/api/dashboard/counters", (req, res) => {
 
 // API: Get all participants + their current status
 app.get("/api/dashboard/participants", (req, res) => {
-  validateIp(req).then(isValid => {
+  validateSecret(req).then(isValid => {
+    console.log("Request valid: ", isValid);
     if (isValid) {
       getSessionData(req.query.sessionKey).then(sessionData =>
         res.send(generateParticipants(sessionData))
@@ -270,12 +274,11 @@ app.put("/api/participant", (req, res) => {
     looks: b.looks,
     objects: b.objects
   });
-
   Session.findOneAndUpdate(
     {
       sessionKey: b.sessionKey,
       "participants.participantId": b.userId,
-      "participants.participantSecret": b.participantSecret
+      "participants.secret": b.secret
     },
     {$addToSet: {"participants.$.participantStatus": newStatus}},
     {new: true},
@@ -299,9 +302,11 @@ app.put("/api/participant", (req, res) => {
   );
 });
 
-// Cleaning Routine is executed every 10 minutes, deletes every session that had no access in last 10 minutes before running.
+/* // Cleaning Routine is executed every 10 minutes, deletes every session that had no access in last 10 minutes before running.
 // Therefore inactive sessions will be deleted after at max. 20 Minutes
 setInterval(cleaningRoutine, 600000);
+
+*/
 
 // ------------------------------------------------------------------------------
 
@@ -332,6 +337,19 @@ if (!localEnv) {
     })
     .listen(80);
 }
+
+// This Server is used for WebSockets (Dashboard)
+wsServerDashboard = http
+  .createServer(function(req, res) {
+    console.log("Web Socket Server Started on ")
+  }).listen(8080);
+
+// This Server is used for WebSockets (Dashboard)
+wsServerParticipant = http
+  .createServer(function(req, res) {
+    console.log("Web Socket Server Started on ")
+  }).listen(8081);
+
 
 // Running the server locally for development or testing, no security etc.
 
@@ -383,50 +401,63 @@ function isInactive(time) {
 // Checks if request ip matches session host ip
 async function validateIp(req) {
   const requestIp =
-    req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  //  req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  req.origin;
   return await Session.exists({
     sessionKey: req.query.sessionKey,
     hostIp: requestIp
   });
 }
 
-// Deletes all sessions from database that have not been accessed in the last 10 minutes
-function cleaningRoutine() {
-  console.log("Cleaning routine initiated!");
-  Session.find({}, function(err, foundSessions) {
-    if (err) {
-      console.log(err);
-    } else {
-      foundSessions.forEach(function(foundSession) {
-        lastDashboardAccess = foundSession.lastDashboardAccess;
-        // Check if last session access more than 10 minutes ago
-        const willBeDeleted =
-          new Date().getTime() - new Date(lastDashboardAccess).getTime() >
-          600000
-            ? true
-            : false;
-        if (willBeDeleted) {
-          Session.deleteOne(
-            {
-              sessionKey: foundSession.sessionKey
-            },
-            function(err) {
-              if (err) {
-                console.log(err);
-              } else {
-                console.log(
-                  "Session " +
-                    foundSession.sessionKey +
-                    " has been deleted due to inactivity."
-                );
-              }
-            }
-          );
-        }
-      });
-    }
+async function validateSecret(req){
+  const secret = req.query.secret;
+  const sessionKey = req.query.sessionKey;
+  return await Session.exists({
+    sessionKey: sessionKey,
+    secret: secret
   });
 }
+
+function deleteSession(sessionKey){
+  Session.deleteOne(
+    {
+      sessionKey: sessionKey
+    },
+    function(err) {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log(
+          "Session " +
+            sessionKey +
+            " has been deleted as it is not active anymore."
+        );
+      }
+    });
+};
+
+function updateParticipantStatus(sessionKey, userId, statusVector, time){
+  const newStatus = new Status({
+    emotion: statusVector.emotion,
+    emotionScore: statusVector.emotionScore,
+    time: time,
+    looks: statusVector.looks,
+    objects: statusVector.objects
+  });
+  Session.findOneAndUpdate(
+    {
+      sessionKey: sessionKey,
+      "participants.participantId": userId
+    },
+    {$addToSet: {"participants.$.participantStatus": newStatus}},
+    {new: true},
+    function(err){
+      if (err) {
+        console.log(err);
+      }
+    }
+  );
+};
 
 // Generates a 14 digit session key
 function generateSessionKey() {
@@ -448,31 +479,157 @@ async function getSessionData(sessionKey) {
     {
       sessionKey: sessionKey
     },
-    {
-      $set: {
-        lastDashboardAccess: new Date()
-      }
-    }
   );
 }
 
-// generates a list of active participants
+// generates a list of participants
 function generateParticipants(sessionData) {
   participants = [];
   sessionData.participants.forEach(function(participant) {
-    const time =
-      participant.participantStatus[participant.participantStatus.length - 1]
-        .time;
-    if (!isInactive(time)) {
-      participants.push({
-        id: participant.participantId,
-        name: participant.participantName,
-        status:
-          participant.participantStatus[
-            participant.participantStatus.length - 1
+    console.log(participant);
+    participants.push({
+      id: participant.participantId,
+      name: participant.participantName,
+      inactive: participant.inactive,
+      status:
+        participant.participantStatus[
+          participant.participantStatus.length - 1
           ]
       });
+    })
+
+  return participants;
+};
+
+
+async function checkSocketConnectDashboard(req){
+  return await Session.exists({
+    sessionKey: req.resourceURL.query.sessionKey,
+    secret: req.resourceURL.query.secret
+  });
+}
+
+async function checkSocketConnectParticipant(req){
+  return await Session.exists({
+    sessionKey: req.resourceURL.query.sessionKey,
+    "participants.participantId": req.resourceURL.query.userId,
+    "participants.secret": req.resourceURL.query.secret
+  });
+}
+
+async function markParticipantAsInactive(sessionKey, userId){
+  Session.findOneAndUpdate(
+    {
+      sessionKey: sessionKey,
+      "participants.participantId": userId
+    },
+    {$set: {"participants.$.inactive": true}},
+    {new: true},
+    function(err){
+      if (err) {
+        console.log(err);
+      }
+    });
+    Session.findOne({
+      sessionKey: sessionKey,
+      "participants.participantId": userId
+    }, function(foundSession){
+      console.log(foundSession);
+    })
+};
+
+
+// -----------------------------Web Socket Server-----------------------------------
+
+/* app.listen(8080, function() {
+    console.log((new Date()) + ' Server is listening on port 8080');
+}); */
+
+webSocketServerDashboard = new WebSocketServer({
+  httpServer: wsServerDashboard,
+  autoAcceptConnections: false
+});
+
+webSocketServerParticipant = new WebSocketServer({
+  httpServer: wsServerParticipant,
+  autoAcceptConnections: false
+});
+
+
+// Error Handling for Websockets to be implemented!
+/* webSocketServer.onError = function(evt){
+  console.log(evt);
+}; */
+
+webSocketServerParticipant.on("request", function(req, err){
+  if (err) {
+    console.log(err);
+  } else {
+    console.log(req);
+  checkSocketConnectParticipant(req).then(isValid => {
+    if (!(isValid)) {
+      console.log("Connection from " + req.origin + " rejected");
+      req.reject();
+      return;
+    } else {
+      console.log("Connection from " + req.origin + " accepted");
+      const connection = req.accept('echo-protocol', req.origin);
+      const sessionKey = req.resourceURL.query.sessionKey;
+      const userId = req.resourceURL.query.userId;
+      const refreshIntervalId = setInterval(function(){
+        connection.send("request");
+      }, updateInterval);
+      connection.on("message", function(message){
+        const statusVector = JSON.parse(message.utf8Data);
+        const time = new Date().getTime();
+        updateParticipantStatus(sessionKey, userId, statusVector, time);
+      })
+      connection.on("close", function(){
+        markParticipantAsInactive(sessionKey, userId);
+      });
+      }
+    });
+}
+});
+
+
+webSocketServerDashboard.on("request", function(req, err){
+  if (err) {
+    console.log(err);
+  } else {
+  checkSocketConnectDashboard(req).then(isValid => {
+    if (!(isValid)) {
+      console.log("Connection from " + req.origin + " rejected");
+      req.reject();
+      return;
+    } else {
+      console.log("Connection from " + req.origin + " accepted");
+      const connection = req.accept('echo-protocol', req.origin);
+      const sessionKey = req.resourceURL.query.sessionKey;
+      const refreshIntervalId = setInterval(function(){
+        getSessionData(sessionKey).then(sessionData => {
+          connection.send(JSON.stringify({datatype: "counters", data: generateCounterElements(sessionData)}));
+        });
+        getSessionData(sessionKey).then(sessionData => {
+          connection.send(JSON.stringify({datatype: "participants", data: generateParticipants(sessionData)}));
+        });
+      }, updateInterval)
+
+    connection.on("message", function(message){
+      if (message.type === 'utf8') {
+          const request = message.utf8Data;
+          if (request === "download"){
+            getSessionData(sessionKey).then(sessionData => {
+              connection.send(JSON.stringify({datatype: "download", data: sessionData}));
+              connection.close();
+          });
+      }
     }
   });
-  return participants;
-}
+
+    connection.on("close", function(){
+      clearInterval(refreshIntervalId);
+      deleteSession(sessionKey);
+      console.log("Connection closed!");
+    });
+  }})}});

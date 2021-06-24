@@ -1,13 +1,17 @@
 //jshint esversion:6
 
-const interval = 1000; // interval in milliseconds
-const secret = document.getElementById("participantSecret").textContent;
+const secret = document.getElementById("secret").textContent;
 const userId = parseInt(document.getElementById("participantId").textContent);
 const userName = document.getElementById("participantName").textContent;
 const sessionKey = document.getElementById("sessionKey").textContent;
 const recentEmotionsArray = [];
-const webcamElement = document.getElementById("webcam");
+
+// Webcam
+
 const canvasElement = document.getElementById("canvas");
+const webcamElement = document.getElementById("webcam");
+const webcam = new Webcam(webcamElement, 'user', canvasElement);
+webcam.start();
 
 var blazefaceModel;
 var cocoSsdModel;
@@ -19,12 +23,20 @@ var cocoSsdModel;
   await faceapi.nets.faceExpressionNet.loadFromUri("/models");
   await faceapi.nets.ageGenderNet.loadFromUri("/models");
 })().then(function() {
-  const webcam = new Webcam(webcamElement, "user", canvasElement);
-  webcam.start();
-  setInterval(function() {
-    const snap = webcam.snap();
-    updateStatus();
-  }, interval);
+  const webSocket = new WebSocket("ws://localhost:8081/?sessionKey=" + sessionKey + "&userId=" + userId + "&secret=" + secret, "echo-protocol");
+  webSocket.addEventListener("message", function(event){
+    console.log(event.data);
+    if (event.data === "request") {
+      const picture = webcam.snap();
+      updateStatus().then(statusVector => {
+        // check nach undefined -> sendet nur falls gesicht erkannt. Sollte am besten immer senden?!
+        if (!(statusVector === undefined)){
+          webSocket.send(JSON.stringify(statusVector));
+        }
+      });
+
+    }
+  });
 });
 
 async function updateStatus() {
@@ -105,16 +117,12 @@ async function updateStatus() {
     recentEmotionsArray.push(emotion);
 
     const statusVector = {
-      participantSecret: secret,
-      userId: userId,
-      userName: userName,
-      sessionKey: sessionKey,
       emotion: emotion,
       looks: lookingAtCamera,
       objects: detectedObjectsArray,
       emotionScore: getEmotionScore()
     };
-    sendStatusVector(statusVector);
+    return statusVector;
   }
 }
 
@@ -148,41 +156,6 @@ function getEmotionScore() {
 
   // e.g.  emotionScore = (emotionScore + screenLookScore) /2
   return emotionScore;
-}
-
-// Function that sends a status vector to the server
-function sendStatusVector(statusVector) {
-  const fetchOptions = {
-    headers: {
-      "Content-Type": "application/json"
-    },
-    method: "PUT",
-    body: JSON.stringify(statusVector)
-  };
-  fetch("/api/participant", fetchOptions)
-    .then(res => {
-      res.json().then(function(data) {
-        if (data.status === 1) {
-          // console.log("Response OK");
-        } else {
-          if (
-            confirm(
-              "Error: Please join the session through the Participant page"
-            )
-          ) {
-            location = "/participant";
-          }
-          throw new Error("Repsonse NOT OK. Terminating Client");
-        }
-      });
-    })
-    .catch(error => {
-      if (
-        confirm("Error: The server is not responding. Please try again later")
-      ) {
-      }
-      throw new Error("Repsonse NOT OK. Terminating Client");
-    });
 }
 
 function checkIfLookingAtCamera(blazefacePredictions) {

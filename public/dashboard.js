@@ -1,17 +1,29 @@
 //jshint esversion:6
 
-const interval = 1000;
 const sessionKey = document.getElementById("sessionKey").textContent;
-const apiRequest = {sessionKey: sessionKey};
+const secret = document.getElementById("secret").textContent;
 const fetchOptions = {headers: {'Content-Type': 'application/json'},method: "GET"};
 
-function refreshDashboard(){
-  refreshCounterElements();
-  refreshParticipantList();
-}
+const inactiveList = []
 
-async function refreshCounterElements(){
-  const counters = await fetch("/api/dashboard/counters?sessionKey=" + sessionKey, fetchOptions).then(fetchResult => fetchResult.json());
+// --- EXPERIMENTAL
+
+const webSocket = new WebSocket("ws://localhost:8080/?sessionKey=" + sessionKey + "&secret=" + secret, "echo-protocol");
+
+webSocket.addEventListener("message", function(event){
+  const messageJSON = JSON.parse(event.data);
+  const datatype = messageJSON.datatype;
+  if (datatype === "counters") {
+    refreshCounterElements(messageJSON.data);
+  } else if (datatype === "participants") {
+    refreshParticipantList(messageJSON.data)
+  }
+  }
+);
+
+// ---
+
+async function refreshCounterElements(counters){
   const {activeParticipantCounter, emotionCounters, lookingAtCamera} = counters;
   $("#emotion-happy-participants").html(emotionCounters["happy"]);
   $("#emotion-neutral-participants").html(emotionCounters["neutral"]);
@@ -21,8 +33,7 @@ async function refreshCounterElements(){
   $("#nr-looking-at-camera").html(lookingAtCamera);
 }
 
-async function refreshParticipantList(){
-  const participants = await fetch("/api/dashboard/participants?sessionKey=" + sessionKey, fetchOptions).then(fetchResult => fetchResult.json());
+async function refreshParticipantList(participants){
   participants.forEach(function(participant){
     addOrCreateParticipant(participant);
   });
@@ -30,8 +41,8 @@ async function refreshParticipantList(){
 
 function addOrCreateParticipant(participant){
   $(document).ready(function() {
-    const [participantElement, time] = generateParticipantElements(participant);
-    if (new Date().getTime() - new Date(time).getTime() < 30000 ? false : true) {
+    const [participantElement, inactive] = generateParticipantElements(participant);
+    if (inactive) {
       ($("#" + participant.id)).remove();
     } else if ($("#" + participant.id).length) {
       $("#" + participant.id).html(participantElement); // does not change acc to score yet
@@ -42,12 +53,12 @@ function addOrCreateParticipant(participant){
 }
 
 function generateParticipantElements(participant) {
-  const {id, name, status} = participant;
-  const {emotionScore, emotion, time, looks, objects} = status; // this accesses the last status
+  const {id, name, inactive, status} = participant;
+  const {emotionScore, emotion, looks, objects} = status; // this accesses the last status
   const htmlParticipantElement = `
     <td>` + emotion + `</td>
     <td>` + name + `</td>
-    <td>` + age + `</td>
+    <td>` + "age" + `</td>
     <td>` + objects + `</td>
     <td>` + looks + `</td>
     <td>
@@ -56,11 +67,10 @@ function generateParticipantElements(participant) {
       </div>
     </td>
   `;
-  return [htmlParticipantElement, time];
+  return [htmlParticipantElement, inactive];
 }
 
-
-
-setInterval(function() {
-  refreshDashboard();
-}, interval);
+const beforeUnloadListener = (event) => {
+    event.preventDefault();
+    return event.returnValue = "Attention! You won't have access to this session if you reload or close the page!";
+    };
