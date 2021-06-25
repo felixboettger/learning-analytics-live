@@ -3,6 +3,9 @@
 const sessionKey = document.getElementById("sessionKey").textContent;
 const secret = document.getElementById("secret").textContent;
 const fetchOptions = {headers: {'Content-Type': 'application/json'},method: "GET"};
+const url = window.location;
+
+console.log(url);
 
 const inactiveList = []
 
@@ -17,9 +20,25 @@ webSocket.addEventListener("message", function(event){
     refreshCounterElements(messageJSON.data);
   } else if (datatype === "participants") {
     refreshParticipantList(messageJSON.data)
+  } else if (datatype === "download"){
+    const downloadElement = document.createElement("a");
+    const date = new Date();
+    downloadElement.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(messageJSON.data)));
+    downloadElement.setAttribute("download", "Session " + sessionKey + "on " + date);
+    downloadElement.click();
   }
   }
 );
+
+document.getElementById("downloadBtn").addEventListener("click", function() {
+ webSocket.send("download");
+});
+
+document.getElementById("endBtn").addEventListener("click", function() {
+ confirm("Click ok to end this session. All session data will be deleted from the server.");
+ webSocket.close();
+ window.location.replace(url.protocol + "//" + url.host + "/");
+});
 
 // ---
 
@@ -51,6 +70,8 @@ function addOrCreateParticipant(participant){
     }
   });
 }
+
+
 
 function generateParticipantElements(participant) {
   const {id, name, inactive, status} = participant;

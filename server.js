@@ -231,6 +231,8 @@ app.get("/api/dashboard/download", (req, res) => {
   });
 });
 
+/*
+
 // API: Get current counters for session
 app.get("/api/dashboard/counters", (req, res) => {
   validateSecret(req).then(isValid => {
@@ -247,6 +249,10 @@ app.get("/api/dashboard/counters", (req, res) => {
   });
 });
 
+*/
+
+/*
+
 // API: Get all participants + their current status
 app.get("/api/dashboard/participants", (req, res) => {
   validateSecret(req).then(isValid => {
@@ -262,6 +268,10 @@ app.get("/api/dashboard/participants", (req, res) => {
     }
   });
 });
+
+*/
+
+/*
 
 // API: Update status of existing participant
 app.put("/api/participant", (req, res) => {
@@ -301,6 +311,8 @@ app.put("/api/participant", (req, res) => {
     }
   );
 });
+
+*/
 
 /* // Cleaning Routine is executed every 10 minutes, deletes every session that had no access in last 10 minutes before running.
 // Therefore inactive sessions will be deleted after at max. 20 Minutes
@@ -475,10 +487,11 @@ function generateSessionKey() {
 
 // returns session data and updates last dashboard access parameter for this session
 async function getSessionData(sessionKey) {
-  return await Session.findOneAndUpdate(
+  return await Session.findOne(
     {
       sessionKey: sessionKey
     },
+    {'_id': false, 'secret': false, '__v': false, 'participants._id': false, 'participants.secret': false, 'participants.participantStatus._id': false}
   );
 }
 
@@ -486,7 +499,6 @@ async function getSessionData(sessionKey) {
 function generateParticipants(sessionData) {
   participants = [];
   sessionData.participants.forEach(function(participant) {
-    console.log(participant);
     participants.push({
       id: participant.participantId,
       name: participant.participantName,
@@ -533,8 +545,10 @@ async function markParticipantAsInactive(sessionKey, userId){
     Session.findOne({
       sessionKey: sessionKey,
       "participants.participantId": userId
-    }, function(foundSession){
-      console.log(foundSession);
+    }, function(err){
+      if (err) {
+        console.log(err);
+      }
     })
 };
 
@@ -619,13 +633,13 @@ webSocketServerDashboard.on("request", function(req, err){
       if (message.type === 'utf8') {
           const request = message.utf8Data;
           if (request === "download"){
-            getSessionData(sessionKey).then(sessionData => {
-              connection.send(JSON.stringify({datatype: "download", data: sessionData}));
-              connection.close();
-          });
+            getSessionData(sessionKey
+            ).then(exportData => {
+              connection.send(JSON.stringify({datatype: "download", data: exportData}));
+            });
+          }
       }
-    }
-  });
+    });
 
     connection.on("close", function(){
       clearInterval(refreshIntervalId);
