@@ -86,6 +86,7 @@ const participantSchema = {
 const sessionSchema = {
   sessionKey: String,
   secret: String,
+  remarks: [String],
   participants: [participantSchema]
 };
 
@@ -105,6 +106,7 @@ app.get("/participant", function(req, res) {
   res.render("participant", {sessionKey: ""});
 });
 
+// Join with direct link
 app.get("/join/:sessionKey", function(req, res) {
   res.render("participant", {sessionKey: req.params.sessionKey});
 });
@@ -118,62 +120,19 @@ app.get("/legal", function(req, res) {
 });
 
 app.get("/host", function(req, res) {
-  const newKey = generateSessionKey();
-  const secret = crypto.randomBytes(4).toString("hex");
-  const newSession = new Session({
-    sessionKey: newKey,
-    secret: secret,
-    participants: []
-  });
-  Session.insertMany([newSession], function(err) {
-    if (err) {
-      console.log(err);
-    } else {
-      console.log("New Session " + newKey + " was successfully created.");
-    }
-  });
-  const url = req.protocol + "://" + req.get("host");
+  const newSession = createSession();
+  const url = req.protocol + "://" + req.get("host") + "/join/" + newSession.sessionKey;
   res.render("dashboard", {
-    sessionKey: newKey,
-    url: url,
-    secret: secret
+    sessionKey: newSession.sessionKey,
+    secret: newSession.secret,
+    url: url
   });
 });
 
-/* app.get("/dashboard/:sessionKey", function(req, res) {
-  const requestIp =
-  //  req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-  req.origin;
-  Session.find(
-    {
-      sessionKey: req.params.sessionKey
-    },
-    function(err, foundSession) {
-      if (err) {
-        console.log(err);
-        res.render("host-session-not-found", {
-          sessionKey: req.params.sessionKey
-        });
-      } else if (foundSession.length === 0) {
-        res.render("host-session-not-found", {
-          sessionKey: req.params.sessionKey
-        });
-      } else {
-        if (foundSession[0].hostIp === requestIp) {
-          res.render("dashboard", {
-            sessionKey: req.params.sessionKey
-          });
-        } else {
-          res.render("not-allowed", {
-            sessionKey: req.params.sessionKey
-          });
-        }
-      }
-    }
-  );
-}); */
 
 // ----------------------------------API---------------------------------------
+
+
 
 // API: Creation of new participant
 app.post("/participant", function(req, res) {
@@ -216,6 +175,7 @@ app.post("/participant", function(req, res) {
   });
 });
 
+
 // API: Allow data download at end of session
 app.get("/api/dashboard/download", (req, res) => {
   validateSecret(req).then(isValid => {
@@ -230,95 +190,6 @@ app.get("/api/dashboard/download", (req, res) => {
     }
   });
 });
-
-/*
-
-// API: Get current counters for session
-app.get("/api/dashboard/counters", (req, res) => {
-  validateSecret(req).then(isValid => {
-    if (isValid) {
-      console.log("Request valid: ", isValid);
-      getSessionData(req.query.sessionKey).then(sessionData =>
-        res.send(generateCounterElements(sessionData))
-      );
-    } else {
-      res.send(
-        "The session key is not valid or you are not allowed to access the session"
-      );
-    }
-  });
-});
-
-*/
-
-/*
-
-// API: Get all participants + their current status
-app.get("/api/dashboard/participants", (req, res) => {
-  validateSecret(req).then(isValid => {
-    console.log("Request valid: ", isValid);
-    if (isValid) {
-      getSessionData(req.query.sessionKey).then(sessionData =>
-        res.send(generateParticipants(sessionData))
-      );
-    } else {
-      res.send(
-        "The session key is not valid or you are not allowed to access the session"
-      );
-    }
-  });
-});
-
-*/
-
-/*
-
-// API: Update status of existing participant
-app.put("/api/participant", (req, res) => {
-  b = req.body;
-
-  const newStatus = new Status({
-    emotion: b.emotion,
-    emotionScore: b.emotionScore,
-    time: new Date(),
-    looks: b.looks,
-    objects: b.objects
-  });
-  Session.findOneAndUpdate(
-    {
-      sessionKey: b.sessionKey,
-      "participants.participantId": b.userId,
-      "participants.secret": b.secret
-    },
-    {$addToSet: {"participants.$.participantStatus": newStatus}},
-    {new: true},
-    function(err, foundParticipant) {
-      if (foundParticipant == null) {
-        console.log("Session for sessionKey " + b.sessionKey + " not found!");
-        res.json({status: 0, userId: b.userId});
-      } else if (foundParticipant.n == 0) {
-        console.log(
-          "Participant with ID" +
-            b.userId +
-            "not found in session with sessionKey" +
-            b.sessionKey +
-            "!"
-        );
-        res.json({status: 0, userId: b.userId});
-      } else {
-        res.json({status: 1, userId: b.userId});
-      }
-    }
-  );
-});
-
-*/
-
-/* // Cleaning Routine is executed every 10 minutes, deletes every session that had no access in last 10 minutes before running.
-// Therefore inactive sessions will be deleted after at max. 20 Minutes
-setInterval(cleaningRoutine, 600000);
-
-*/
 
 // ------------------------------------------------------------------------------
 
@@ -552,6 +423,38 @@ async function markParticipantAsInactive(sessionKey, userId){
     })
 };
 
+async function updateRemarks(remark, time, sessionKey){
+  Session.findOneAndUpdate(
+    {
+      sessionKey: sessionKey
+    },
+    {$addToSet: {remarks: time + " " + remark}},
+    {new: true},
+    function(err){
+      if (err) {
+        console.log(err);
+      }
+    });
+};
+
+function createSession(){
+  const newKey = generateSessionKey();
+  const secret = crypto.randomBytes(4).toString("hex");
+  const newSession = new Session({
+    sessionKey: newKey,
+    secret: secret,
+    remarks: [],
+    participants: []
+  });
+  Session.insertMany([newSession], function(err) {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log("New Session " + newSession.sessionKey + " was successfully created.");
+    }
+  });
+  return newSession;
+}
 
 // -----------------------------Web Socket Server-----------------------------------
 
@@ -579,7 +482,6 @@ webSocketServerParticipant.on("request", function(req, err){
   if (err) {
     console.log(err);
   } else {
-    console.log(req);
   checkSocketConnectParticipant(req).then(isValid => {
     if (!(isValid)) {
       console.log("Connection from " + req.origin + " rejected");
@@ -594,9 +496,17 @@ webSocketServerParticipant.on("request", function(req, err){
         connection.send("request");
       }, updateInterval);
       connection.on("message", function(message){
-        const statusVector = JSON.parse(message.utf8Data);
+        const messageJSON = JSON.parse(message.utf8Data);
+        const datatype = messageJSON.datatype;
         const time = new Date().getTime();
-        updateParticipantStatus(sessionKey, userId, statusVector, time);
+        if (datatype === "status"){
+          const statusVector = messageJSON.data;
+          updateParticipantStatus(sessionKey, userId, statusVector, time);
+        } else if (datatype === "remark") {
+          const remark = messageJSON.data;
+          socketDict[sessionKey].send(JSON.stringify({datatype: "remark", data: remark}));
+          updateRemarks(remark, time, sessionKey);
+        }
       })
       connection.on("close", function(){
         markParticipantAsInactive(sessionKey, userId);
@@ -605,6 +515,8 @@ webSocketServerParticipant.on("request", function(req, err){
     });
 }
 });
+
+const socketDict = {};
 
 
 webSocketServerDashboard.on("request", function(req, err){
@@ -618,8 +530,9 @@ webSocketServerDashboard.on("request", function(req, err){
       return;
     } else {
       console.log("Connection from " + req.origin + " accepted");
-      const connection = req.accept('echo-protocol', req.origin);
       const sessionKey = req.resourceURL.query.sessionKey;
+      const connection = req.accept('echo-protocol', req.origin);
+      socketDict[sessionKey] = connection;
       const refreshIntervalId = setInterval(function(){
         getSessionData(sessionKey).then(sessionData => {
           connection.send(JSON.stringify({datatype: "counters", data: generateCounterElements(sessionData)}));

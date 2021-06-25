@@ -10,8 +10,11 @@
   <div class="video-container">
     <video id="webcam" autoplay playsinline width="640" height="480"></video>
     <p class="video-text">Session Key: <%=sessionKey%></p>
+
     <canvas id="canvas" class="d-none hidden"></canvas>
   </div>
+  <input type="text" id="input-remark" class="" placeholder="Write your remark here" name="remark"> <!-- required for now, anonym should be possible in the future -->
+  <button id="sendRemarkBtn" class="btn btn-lg btn-primary btn-block">Send remark</button>
 </div>
 
 <script type="text/javascript" src="https://unpkg.com/webcam-easy/dist/webcam-easy.min.js"></script>

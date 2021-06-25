@@ -26,8 +26,13 @@ webSocket.addEventListener("message", function(event){
     downloadElement.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(messageJSON.data)));
     downloadElement.setAttribute("download", "Session " + sessionKey + "on " + date);
     downloadElement.click();
+  } else if (datatype === "remark"){
+    const newRemark = messageJSON.data;
+    const remarkListElement = document.createElement("li");
+    remarkListElement.appendChild(document.createTextNode(newRemark));
+    document.getElementById("remark-list").appendChild(remarkListElement)
   }
-  }
+}
 );
 
 document.getElementById("downloadBtn").addEventListener("click", function() {
@@ -38,6 +43,21 @@ document.getElementById("endBtn").addEventListener("click", function() {
  confirm("Click ok to end this session. All session data will be deleted from the server.");
  webSocket.close();
  window.location.replace(url.protocol + "//" + url.host + "/");
+});
+
+document.getElementById("linkBtn").addEventListener("click", function() {
+  const directLink = document.getElementById("direct-link").textContent;
+  navigator.clipboard.writeText(directLink).then(function() {
+ }, function(err) {
+   console.error('Async: Could not copy text: ', err);
+ });
+});
+
+document.getElementById("keyBtn").addEventListener("click", function() {
+  navigator.clipboard.writeText(sessionKey).then(function() {
+ }, function(err) {
+   console.error('Async: Could not copy text: ', err);
+ });
 });
 
 // ---

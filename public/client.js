@@ -24,6 +24,12 @@ var cocoSsdModel;
   await faceapi.nets.ageGenderNet.loadFromUri("/models");
 })().then(function() {
   const webSocket = new WebSocket("ws://localhost:8081/?sessionKey=" + sessionKey + "&userId=" + userId + "&secret=" + secret, "echo-protocol");
+
+  document.getElementById("sendRemarkBtn").addEventListener("click", function() {
+   const remark = document.getElementById("input-remark").value;
+   webSocket.send(JSON.stringify({datatype:"remark", data: remark}));
+  });
+
   webSocket.addEventListener("message", function(event){
     console.log(event.data);
     if (event.data === "request") {
@@ -31,13 +37,16 @@ var cocoSsdModel;
       updateStatus().then(statusVector => {
         // check nach undefined -> sendet nur falls gesicht erkannt. Sollte am besten immer senden?!
         if (!(statusVector === undefined)){
-          webSocket.send(JSON.stringify(statusVector));
+          webSocket.send(JSON.stringify({datatype: "status", data: statusVector}));
+
         }
       });
 
     }
   });
 });
+
+
 
 async function updateStatus() {
   const image = await document.querySelector("canvas");
@@ -68,7 +77,7 @@ async function updateStatus() {
   objectDetections.forEach(detection => {
     var currentItem = detection.class;
     if (detection.class in detectedObjects) {
-      detectedObjects[prediction.detection] = 1;
+      detectedObjects[detection] = 1;
     }
   });
 
