@@ -3,9 +3,6 @@
 const sessionKey = document.getElementById("sessionKey").textContent;
 const secret = document.getElementById("secret").textContent;
 const fetchOptions = {headers: {'Content-Type': 'application/json'},method: "GET"};
-const url = window.location;
-
-console.log(url);
 
 const inactiveList = []
 
@@ -40,10 +37,13 @@ document.getElementById("download-btn").addEventListener("click", function() {
 });
 
 document.getElementById("end-btn").addEventListener("click", function() {
- confirm("Click ok to end this session. All session data will be deleted from the server.");
- webSocket.close();
- window.location.replace(url.protocol + "//" + url.host + "/");
+ if (confirm("Click ok to end this session. All session data will be deleted from the server.")){
+   webSocket.close();
+   const url = window.location;
+   url.replace(url.protocol + "//" + url.host + "/");
+ }
 });
+
 
 document.getElementById("link-btn").addEventListener("click", function() {
   const directLink = document.getElementById("direct-link").textContent;

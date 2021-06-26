@@ -15,7 +15,8 @@ async function main() {
   const canvasElement = document.getElementById("canvas");
   const webcamElement = document.getElementById("webcam");
   const webcam = new Webcam(webcamElement, 'user', canvasElement);
-  webcam.start();
+  webcam.stream();
+
 
   // Load ML models
   blazefaceModel = await blazeface.load();
@@ -46,6 +47,12 @@ async function main() {
       });
     }
   });
+
+  webSocket.onclose = function(){
+    alert("Session has ended. Click ok to go back to the homepage.");
+    const url = window.location;
+    url.replace(url.protocol + "//" + url.host + "/");
+  }
 }
 
 
@@ -56,7 +63,6 @@ async function getStatus(){
   const emotion = (faceDetection === undefined) ? "none" : await getMostProminentEmotion(faceDetection);
   recentEmotionsArray.push(emotion);
   const detectedObjectsArray = objectDetections.map(object => object.class);
-  console.log(detectedObjectsArray);
   const statusVector = {
     emotion: emotion,
     looks: lookingAtCamera,

@@ -8,6 +8,9 @@ const portNr = 443;
 // set below to false for server deploy, set to true to enable local testing
 const localEnv = true;
 
+// Running sockets are stored in this object
+const socketDict = {};
+
 // MongoDB URL. A MongoDB is required for running the server.
 
 var mongodbURL;
@@ -457,6 +460,11 @@ function createSession(){
   return newSession;
 }
 
+function closeClientSockets(sessionKey){
+  const clientSockets = socketDict[sessionKey].clients;
+  clientSockets.forEach(clientSocket => clientSocket.close());
+}
+
 // -----------------------------Web Socket Server-----------------------------------
 
 /* app.listen(8080, function() {
@@ -493,6 +501,7 @@ webSocketServerParticipant.on("request", function(req, err){
       const connection = req.accept('echo-protocol', req.origin);
       const sessionKey = req.resourceURL.query.sessionKey;
       const userId = req.resourceURL.query.userId;
+      socketDict[sessionKey].clients.push(connection);
       const refreshIntervalId = setInterval(function(){
         connection.send("request");
       }, updateInterval);
@@ -517,8 +526,6 @@ webSocketServerParticipant.on("request", function(req, err){
 }
 });
 
-const socketDict = {};
-
 
 webSocketServerDashboard.on("request", function(req, err){
   if (err) {
@@ -533,7 +540,7 @@ webSocketServerDashboard.on("request", function(req, err){
       console.log("Connection from " + req.origin + " accepted");
       const sessionKey = req.resourceURL.query.sessionKey;
       const connection = req.accept('echo-protocol', req.origin);
-      socketDict[sessionKey] = connection;
+      socketDict[sessionKey] = {host: connection, clients: []};
       const refreshIntervalId = setInterval(function(){
         getSessionData(sessionKey).then(sessionData => {
           connection.send(JSON.stringify({datatype: "counters", data: generateCounterElements(sessionData)}));
@@ -557,6 +564,7 @@ webSocketServerDashboard.on("request", function(req, err){
 
     connection.on("close", function(){
       clearInterval(refreshIntervalId);
+      closeClientSockets(sessionKey);
       deleteSession(sessionKey);
       console.log("Connection closed!");
     });
