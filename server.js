@@ -317,6 +317,7 @@ function deleteSession(sessionKey){
         );
       }
     });
+    delete socketDict[sessionKey];
 };
 
 function updateParticipantStatus(sessionKey, userId, statusVector, time){

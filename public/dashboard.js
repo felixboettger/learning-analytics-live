@@ -35,17 +35,17 @@ webSocket.addEventListener("message", function(event){
 }
 );
 
-document.getElementById("downloadBtn").addEventListener("click", function() {
+document.getElementById("download-btn").addEventListener("click", function() {
  webSocket.send("download");
 });
 
-document.getElementById("endBtn").addEventListener("click", function() {
+document.getElementById("end-btn").addEventListener("click", function() {
  confirm("Click ok to end this session. All session data will be deleted from the server.");
  webSocket.close();
  window.location.replace(url.protocol + "//" + url.host + "/");
 });
 
-document.getElementById("linkBtn").addEventListener("click", function() {
+document.getElementById("link-btn").addEventListener("click", function() {
   const directLink = document.getElementById("direct-link").textContent;
   navigator.clipboard.writeText(directLink).then(function() {
  }, function(err) {
@@ -53,7 +53,7 @@ document.getElementById("linkBtn").addEventListener("click", function() {
  });
 });
 
-document.getElementById("keyBtn").addEventListener("click", function() {
+document.getElementById("key-btn").addEventListener("click", function() {
   navigator.clipboard.writeText(sessionKey).then(function() {
  }, function(err) {
    console.error('Async: Could not copy text: ', err);
