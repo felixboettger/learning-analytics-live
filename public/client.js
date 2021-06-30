@@ -7,6 +7,7 @@ const sessionKey = document.getElementById("sessionKey").textContent;
 
 var cocoSsdModel;
 var blazefaceModel;
+var lastEmotion;
 
 main();
 
@@ -16,7 +17,6 @@ async function main() {
   const webcamElement = document.getElementById("webcam");
   const webcam = new Webcam(webcamElement, 'user', canvasElement);
   webcam.stream();
-
 
   // Load ML models
   blazefaceModel = await blazeface.load();
@@ -31,19 +31,31 @@ async function main() {
   // Button event listeners
   document.getElementById("send-remark-btn").addEventListener("click", function() {
     const remark = document.getElementById("input-remark").value;
+    const timeStampId = parseInt(document.getElementById("timestamp-id").innerHTML);
     document.getElementById("input-remark").value = "";
-    webSocket.send(JSON.stringify({datatype:"remark", data: remark}));
+    webSocket.send(JSON.stringify({datatype:"remark", data: {text: remark, timeStampId: timeStampId}}));
   });
 
   // Websocket event listener
   webSocket.addEventListener("message", function(event){
-    if (event.data === "request") {
+    const messageJSON = JSON.parse(event.data);
+    const datatype = messageJSON.datatype;
+    if (datatype === "request") {
+      const timeStampId = messageJSON.id;
+      document.getElementById("timestamp-id").innerHTML = timeStampId;
+      document.getElementById("working-idle").style.backgroundColor = "red";
+      const t0 = performance.now();
       const picture = webcam.snap();
-      getStatus().then(statusVector => {
+      getStatus(timeStampId).then(statusVector => {
         // check nach undefined -> sendet nur falls gesicht erkannt. Sollte am besten immer senden?!
         if (!(statusVector === undefined)){
           webSocket.send(JSON.stringify({datatype: "status", data: statusVector}));
         }
+        const t1 = performance.now();
+        const timeToComplete = Math.round(t1 - t0);
+        console.log(timeToComplete)
+        document.getElementById("request-completion-time").innerHTML = timeToComplete + "ms";
+        document.getElementById("working-idle").style.backgroundColor = "green";
       });
     }
   });
@@ -57,17 +69,19 @@ async function main() {
 
 
 
-async function getStatus(){
+async function getStatus(timeStampId){
   const [faceDetection, objectDetections, blazefacePredictions] = await performML();
   const lookingAtCamera = await checkLookingAtCamera(blazefacePredictions);
   const emotion = (faceDetection === undefined) ? "none" : await getMostProminentEmotion(faceDetection);
   recentEmotionsArray.push(emotion);
+
   const detectedObjectsArray = objectDetections.map(object => object.class);
   const statusVector = {
-    emotion: emotion,
-    looks: lookingAtCamera,
-    objects: detectedObjectsArray,
-    emotionScore: getEmotionScore()
+    e: emotion, // emotion
+    id: timeStampId, // id
+    l: lookingAtCamera, // looking bool
+    o: detectedObjectsArray, // objects
+    hs: getHappinessScore() // happiness score
   };
   return statusVector;
 }
@@ -102,6 +116,26 @@ async function checkLookingAtCamera(blazefacePredictions){
   }
 }
 
+async function counterDiffCalc(emotion){
+  if (lastEmotion === undefined){
+    console.log("first:", emotion);
+    const diffObj = {};
+    diffObj[emotion] = 1;
+    lastEmotion = emotion;
+    return diffObj;
+  }
+  if (lastEmotion === emotion) {
+    return {};
+  } else {
+    const diffObj = {};
+    diffObj[lastEmotion] = -1;
+    diffObj[emotion] = 1;
+    lastEmotion = emotion;
+    console.log(diffObj);
+    return diffObj;
+  }
+}
+
 // REWORK:
 
 const recentEmotionsArray = [];
@@ -117,34 +151,28 @@ async function getMostProminentEmotion(faceDetection){
   return getMaxKey(e);
 }
 
-function getEmotionScore() {
+function getHappinessScore() {
   const elementsInArray = recentEmotionsArray.length;
   if (elementsInArray > 20) {
     recentEmotionsArray.shift();
   }
-
-  var emotionScore = 0;
+  var happinessScore = 0;
 
   recentEmotionsArray.forEach(emotion => {
     if (emotion == "happy") {
-      emotionScore += 100;
+      happinessScore += 100;
     } else if (
       emotion === "sad" ||
       emotion === "fearful" ||
       emotion === "disgusted"
     ) {
-      emotionScore += 0;
+      happinessScore += 0;
     } else {
-      emotionScore += 50;
+      happinessScore += 50;
     }
   });
-
   if (elementsInArray > 0) {
-    emotionScore = Math.floor(emotionScore / elementsInArray);
-  } else {
-    emotionScore = 50;
+    happinessScore = Math.floor(happinessScore / elementsInArray);
   }
-
-  // e.g.  emotionScore = (emotionScore + screenLookScore) /2
-  return emotionScore;
+  return happinessScore;
 }

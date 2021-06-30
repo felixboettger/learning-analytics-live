@@ -6,16 +6,29 @@
 <p id="sessionKey" class="hidden"><%=sessionKey%></p>
 <p class="hidden" id="emotion-status">Emotion: </p>
 
-<div class="container">
-  <div class="video-container">
+<div class="">
+  <span style="background-color: white ;" id="timestamp-id"></span>
+  <span style="background-color: white ;" id="working-idle">□</span>
+  <span style="background-color: white ;" id="request-completion-time">--ms</span>
+
+</div>
+
+
+
+<div class="row">
+  <div class="col-lg-12 center">
     <video id="webcam" autoplay playsinline width="640" height="480"></video>
     <p class="video-text">Session Key: <%=sessionKey%></p>
-
     <canvas id="canvas" class="d-none hidden"></canvas>
+    <div class="input-group mb-3">
+      <input type="text" id="input-remark" class="form-control" placeholder="Write your remark here" aria-label="Write your remark here">
+      <div class="input-group-append">
+        <button id="send-remark-btn" class="btn btn-outline-secondary" type="button">Send</button>
+      </div>
+    </div>
   </div>
-  <input type="text" id="input-remark" class="" placeholder="Write your remark here" name="remark"> <!-- required for now, anonym should be possible in the future -->
-  <button id="send-remark-btn" class="btn btn-lg btn-primary btn-block">Send remark</button>
 </div>
+
 
 <script type="text/javascript" src="https://unpkg.com/webcam-easy/dist/webcam-easy.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.7.0/dist/tf.min.js"></script>

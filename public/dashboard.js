@@ -24,10 +24,12 @@ webSocket.addEventListener("message", function(event){
     downloadElement.setAttribute("download", "Session " + sessionKey + "on " + date);
     downloadElement.click();
   } else if (datatype === "remark"){
-    const newRemark = messageJSON.data;
-    const remarkListElement = document.createElement("li");
-    remarkListElement.appendChild(document.createTextNode(newRemark));
-    document.getElementById("remark-list").appendChild(remarkListElement)
+    const newRemark = messageJSON.data.text;
+    const timeStampId = messageJSON.data.timeStampId;
+    const remarkElement = document.createElement("tr");
+    remarkElement.innerHTML = `<td>` + newRemark + `</td>
+    <td>` + timeStampId + `</td>` + `<td>` + "time" + `</td>`;
+    document.getElementById("remark-list").appendChild(remarkElement);
   }
 }
 );
@@ -64,12 +66,13 @@ document.getElementById("key-btn").addEventListener("click", function() {
 
 async function refreshCounterElements(counters){
   const {activeParticipantCounter, emotionCounters, lookingAtCamera} = counters;
-  $("#emotion-happy-participants").html(emotionCounters["happy"]);
-  $("#emotion-neutral-participants").html(emotionCounters["neutral"]);
-  $("#emotion-sad-participants").html(emotionCounters["sad"]);
-  $("#emotion-other-participants").html(emotionCounters["angry"] + emotionCounters["fearful"] + emotionCounters["disgusted"] + emotionCounters["surprised"]);
-  $("#nr-participants").html(activeParticipantCounter);
-  $("#nr-looking-at-camera").html(lookingAtCamera);
+
+  document.getElementById("emotion-happy-participants").innerHTML = emotionCounters["happy"];
+  document.getElementById("emotion-neutral-participants").innerHTML = emotionCounters["neutral"];
+  document.getElementById("emotion-sad-participants").innerHTML = emotionCounters["sad"];
+  document.getElementById("emotion-other-participants").innerHTML = emotionCounters["angry"] + emotionCounters["fearful"] + emotionCounters["disgusted"] + emotionCounters["surprised"];
+  document.getElementById("nr-participants").innerHTML = activeParticipantCounter;
+  document.getElementById("nr-looking-at-camera").innerHTML = lookingAtCamera;
 }
 
 async function refreshParticipantList(participants){
@@ -79,36 +82,41 @@ async function refreshParticipantList(participants){
 };
 
 function addOrCreateParticipant(participant){
-  $(document).ready(function() {
-    const [participantElement, inactive] = generateParticipantElements(participant);
-    if (inactive) {
-      ($("#" + participant.id)).remove();
-    } else if ($("#" + participant.id).length) {
-      $("#" + participant.id).html(participantElement); // does not change acc to score yet
-    } else {
-      $("tbody").append($('<tr id=' + participant.id + ' class="participant"></tr>').html(participantElement));
-    }
-  });
-}
+
+  const [participantElement, i] = generateParticipantElements(participant);
+  if (i) {
+    //($("#" + participant.id)).remove();
+    document.getElementById(participant.id).remove()
+  } else if ($("#" + participant.id).length) {
+    // $("#" + participant.id).html(participantElement); // does not change acc to score yet
+    document.getElementById(participant.id).innerHTML = participantElement;
+  } else {
+    const newParticipantElement = document.createElement("tr");
+    newParticipantElement.setAttribute('id', participant.id);
+    newParticipantElement.setAttribute('class', 'participant');
+    document.getElementById("participant-list").appendChild(newParticipantElement);
+    // $("tbody").append($('<tr id=' + participant.id + ' class="participant"></tr>').html(participantElement));
+  }
+};
 
 
 
 function generateParticipantElements(participant) {
-  const {id, name, inactive, status} = participant;
-  const {emotionScore, emotion, looks, objects} = status; // this accesses the last status
+  const {id, n, i, s} = participant;
+  const {happinessScore, emotion, looks, objects} = s; // this accesses the last status
   const htmlParticipantElement = `
     <td>` + emotion + `</td>
-    <td>` + name + `</td>
+    <td>` + n + `</td>
     <td>` + "age" + `</td>
     <td>` + objects + `</td>
     <td>` + looks + `</td>
     <td>
       <div class="progress">
-        <div class="progress-bar bg-green" role="progressbar" aria-valuenow="` + emotionScore + `" aria-valuemin="0" aria-valuemax="100" style="width: ` + emotionScore + `%"></div>
+        <div class="progress-bar bg-green" role="progressbar" aria-valuenow="` + happinessScore + `" aria-valuemin="0" aria-valuemax="100" style="width: ` + happinessScore + `%"></div>
       </div>
     </td>
   `;
-  return [htmlParticipantElement, inactive];
+  return [htmlParticipantElement, i];
 }
 
 const beforeUnloadListener = (event) => {
