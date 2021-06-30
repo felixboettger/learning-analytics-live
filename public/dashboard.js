@@ -1,14 +1,11 @@
 //jshint esversion:6
 
-const sessionKey = document.getElementById("sessionKey").textContent;
+const sessionKey = document.getElementById("session-key").textContent;
 const secret = document.getElementById("secret").textContent;
-const fetchOptions = {headers: {'Content-Type': 'application/json'},method: "GET"};
-
-const inactiveList = []
-
-// --- EXPERIMENTAL
 
 const webSocket = new WebSocket("ws://localhost:8080/?sessionKey=" + sessionKey + "&secret=" + secret, "echo-protocol");
+
+// Websocket listener
 
 webSocket.addEventListener("message", function(event){
   const messageJSON = JSON.parse(event.data);
@@ -18,21 +15,27 @@ webSocket.addEventListener("message", function(event){
   } else if (datatype === "participants") {
     refreshParticipantList(messageJSON.data)
   } else if (datatype === "download"){
-    const downloadElement = document.createElement("a");
-    const date = new Date();
-    downloadElement.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(messageJSON.data)));
-    downloadElement.setAttribute("download", "Session " + sessionKey + "on " + date);
-    downloadElement.click();
+    downloadJSONFile(messageJSON.data);
   } else if (datatype === "remark"){
-    const newRemark = messageJSON.data.text;
-    const timeStampId = messageJSON.data.timeStampId;
-    const remarkElement = document.createElement("tr");
-    remarkElement.innerHTML = `<td>` + newRemark + `</td>
-    <td>` + timeStampId + `</td>` + `<td>` + "time" + `</td>`;
-    document.getElementById("remark-list").appendChild(remarkElement);
+    addRemarkToList(messageJSON.data);
   }
+});
+
+webSocket.onclose = function(){
+  alert("Session has ended. Click ok to go back to the homepage.");
+  const url = window.location;
+  url.replace(url.protocol + "//" + url.host + "/");
 }
-);
+
+// Unload event listener (for warning)
+
+const beforeUnloadListener = (event) => {
+    event.preventDefault();
+    return event.returnValue = "Attention! You won't have access to this session if you reload or close the page!";
+};
+
+
+// Button event listeners
 
 document.getElementById("download-btn").addEventListener("click", function() {
  webSocket.send("download");
@@ -45,7 +48,6 @@ document.getElementById("end-btn").addEventListener("click", function() {
    url.replace(url.protocol + "//" + url.host + "/");
  }
 });
-
 
 document.getElementById("link-btn").addEventListener("click", function() {
   const directLink = document.getElementById("direct-link").textContent;
@@ -62,11 +64,29 @@ document.getElementById("key-btn").addEventListener("click", function() {
  });
 });
 
-// ---
+// Helper Functions
+
+function addRemarkToList(remarkObj){
+  const newRemark = remarkObj.text;
+  const timeStampId = remarkObj.timeStampId;
+  const dateObj = new Date(remarkObj.time);
+  const timeStr = dateObj.getHours() + ":" + dateObj.getMinutes() + ":" + dateObj.getSeconds()
+  const remarkElement = document.createElement("tr");
+  remarkElement.innerHTML = `<td>` + newRemark + `</td>
+  <td>` + timeStampId + `</td>` + `<td>` + timeStr + `</td>`;
+  document.getElementById("remark-list").appendChild(remarkElement);
+}
+
+function downloadJSONFile(object){
+  const downloadElement = document.createElement("a");
+  const date = new Date();
+  downloadElement.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(object)));
+  downloadElement.setAttribute("download", "Session " + sessionKey + "on " + date);
+  downloadElement.click();
+}
 
 async function refreshCounterElements(counters){
   const {activeParticipantCounter, emotionCounters, lookingAtCamera} = counters;
-
   document.getElementById("emotion-happy-participants").innerHTML = emotionCounters["happy"];
   document.getElementById("emotion-neutral-participants").innerHTML = emotionCounters["neutral"];
   document.getElementById("emotion-sad-participants").innerHTML = emotionCounters["sad"];
@@ -82,24 +102,18 @@ async function refreshParticipantList(participants){
 };
 
 function addOrCreateParticipant(participant){
-
   const [participantElement, i] = generateParticipantElements(participant);
-  if (i) {
-    //($("#" + participant.id)).remove();
+  if (i && document.getElementById(participant.id)) {
     document.getElementById(participant.id).remove()
-  } else if ($("#" + participant.id).length) {
-    // $("#" + participant.id).html(participantElement); // does not change acc to score yet
+  } else if (document.getElementById(participant.id)) {
     document.getElementById(participant.id).innerHTML = participantElement;
   } else {
     const newParticipantElement = document.createElement("tr");
     newParticipantElement.setAttribute('id', participant.id);
     newParticipantElement.setAttribute('class', 'participant');
     document.getElementById("participant-list").appendChild(newParticipantElement);
-    // $("tbody").append($('<tr id=' + participant.id + ' class="participant"></tr>').html(participantElement));
   }
 };
-
-
 
 function generateParticipantElements(participant) {
   const {id, n, i, s} = participant;
@@ -118,8 +132,3 @@ function generateParticipantElements(participant) {
   `;
   return [htmlParticipantElement, i];
 }
-
-const beforeUnloadListener = (event) => {
-    event.preventDefault();
-    return event.returnValue = "Attention! You won't have access to this session if you reload or close the page!";
-    };

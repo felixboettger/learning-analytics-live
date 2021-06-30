@@ -1,24 +1,30 @@
 //jshint esversion:6
 
 const secret = document.getElementById("secret").textContent;
-const userId = parseInt(document.getElementById("participantId").textContent);
-const userName = document.getElementById("participantName").textContent;
-const sessionKey = document.getElementById("sessionKey").textContent;
+const userId = parseInt(document.getElementById("participant-id").textContent);
+const userName = document.getElementById("participant-name").textContent;
+const sessionKey = document.getElementById("session-key").textContent;
 
 var cocoSsdModel;
 var blazefaceModel;
 var lastEmotion;
 
+// last 20 emotions stored here
+const recentEmotionsArray = [];
+
 main();
 
 async function main() {
+
   // Start webcam
+
   const canvasElement = document.getElementById("canvas");
   const webcamElement = document.getElementById("webcam");
   const webcam = new Webcam(webcamElement, 'user', canvasElement);
   webcam.stream();
 
   // Load ML models
+
   blazefaceModel = await blazeface.load();
   cocoSsdModel = await cocoSsd.load();
   await faceapi.nets.ssdMobilenetv1.loadFromUri("/models");
@@ -26,9 +32,11 @@ async function main() {
   await faceapi.nets.ageGenderNet.loadFromUri("/models");
 
   // Connect to socket
+
   const webSocket = new WebSocket("ws://localhost:8081/?sessionKey=" + sessionKey + "&userId=" + userId + "&secret=" + secret, "echo-protocol");
 
   // Button event listeners
+
   document.getElementById("send-remark-btn").addEventListener("click", function() {
     const remark = document.getElementById("input-remark").value;
     const timeStampId = parseInt(document.getElementById("timestamp-id").innerHTML);
@@ -37,13 +45,14 @@ async function main() {
   });
 
   // Websocket event listener
+
   webSocket.addEventListener("message", function(event){
     const messageJSON = JSON.parse(event.data);
     const datatype = messageJSON.datatype;
     if (datatype === "request") {
       const timeStampId = messageJSON.id;
       document.getElementById("timestamp-id").innerHTML = timeStampId;
-      document.getElementById("working-idle").style.backgroundColor = "red";
+      document.getElementById("working-idle").setAttribute('class', 'material-icons icon-red');
       const t0 = performance.now();
       const picture = webcam.snap();
       getStatus(timeStampId).then(statusVector => {
@@ -54,8 +63,8 @@ async function main() {
         const t1 = performance.now();
         const timeToComplete = Math.round(t1 - t0);
         console.log(timeToComplete)
-        document.getElementById("request-completion-time").innerHTML = timeToComplete + "ms";
-        document.getElementById("working-idle").style.backgroundColor = "green";
+        document.getElementById("request-completion-time").innerHTML = timeToComplete;
+        document.getElementById("working-idle").setAttribute('class', 'material-icons icon-green');
       });
     }
   });
@@ -67,13 +76,14 @@ async function main() {
   }
 }
 
-
+// Helper functions
 
 async function getStatus(timeStampId){
   const [faceDetection, objectDetections, blazefacePredictions] = await performML();
   const lookingAtCamera = await checkLookingAtCamera(blazefacePredictions);
   const emotion = (faceDetection === undefined) ? "none" : await getMostProminentEmotion(faceDetection);
   recentEmotionsArray.push(emotion);
+  document.getElementById("current-emotion").innerHTML = emotion;
 
   const detectedObjectsArray = objectDetections.map(object => object.class);
   const statusVector = {
@@ -116,9 +126,10 @@ async function checkLookingAtCamera(blazefacePredictions){
   }
 }
 
+/*
+
 async function counterDiffCalc(emotion){
   if (lastEmotion === undefined){
-    console.log("first:", emotion);
     const diffObj = {};
     diffObj[emotion] = 1;
     lastEmotion = emotion;
@@ -131,14 +142,12 @@ async function counterDiffCalc(emotion){
     diffObj[lastEmotion] = -1;
     diffObj[emotion] = 1;
     lastEmotion = emotion;
-    console.log(diffObj);
     return diffObj;
   }
 }
 
-// REWORK:
+*/
 
-const recentEmotionsArray = [];
 
 function getMaxKey(obj){
   const array = Object.keys(obj).map(i => obj[i])
@@ -152,12 +161,8 @@ async function getMostProminentEmotion(faceDetection){
 }
 
 function getHappinessScore() {
-  const elementsInArray = recentEmotionsArray.length;
-  if (elementsInArray > 20) {
-    recentEmotionsArray.shift();
-  }
+  (recentEmotionsArray.length > 20) ? recentEmotionsArray.shift() : "";
   var happinessScore = 0;
-
   recentEmotionsArray.forEach(emotion => {
     if (emotion == "happy") {
       happinessScore += 100;
@@ -171,8 +176,8 @@ function getHappinessScore() {
       happinessScore += 50;
     }
   });
-  if (elementsInArray > 0) {
-    happinessScore = Math.floor(happinessScore / elementsInArray);
+  if (recentEmotionsArray.length > 0) {
+    happinessScore = Math.floor(happinessScore / recentEmotionsArray.length);
   }
   return happinessScore;
 }

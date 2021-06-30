@@ -103,6 +103,13 @@ const Remark = mongoose.model("Remark", remarkSchema);
 
 // -----------------------------------GETS---------------------------------------
 
+app.get("/testing", function(req, res){
+  res.render("client-new", {sessionKey: "ABC",
+  participantName: "Name",
+  participantId: "1",
+  secret: "secret"});
+});
+
 app.get("/", function(req, res) {
   res.render("home");
 });
@@ -216,7 +223,6 @@ function generateCounterElements(sessionData) {
   sessionData.participants.forEach(function(participant) {
     const currentStatus = participant.participantStatus.pop();
     const currentEmotion = currentStatus.emotion;
-    console.log(currentEmotion);
     if (!participant.inactive) {
       counterElements.emotionCounters[currentEmotion] += 1;
       counterElements.activeParticipantCounter += 1;
@@ -225,7 +231,6 @@ function generateCounterElements(sessionData) {
       }
     }
   });
-  console.log(counterElements);
   return counterElements;
 }
 
@@ -387,11 +392,11 @@ async function updateRemarks(remark, time, timeId, sessionKey){
     {
       sessionKey: sessionKey
     },
-    {$addToSet: new Remark({
+    {$addToSet: {remarks: new Remark({
       remarkText: remark,
       remarkTime: time,
       timeId: timeId
-    })},
+    })}},
     {new: true},
     function(err){
       if (err) {
@@ -513,7 +518,7 @@ webSocketServerParticipant.on("request", function(req, err){
           const remark = messageJSON.data.text;
           const timeStampId = messageJSON.data.timeStampId;
           const time = new Date().getTime();
-          socketDict[sessionKey].host.send(JSON.stringify({datatype: "remark", data: {text: remark, timeStampId: timeStampId}}));
+          socketDict[sessionKey].host.send(JSON.stringify({datatype: "remark", data: {text: remark, timeStampId: timeStampId, time: time}}));
           updateRemarks(remark, time, timeStampId, sessionKey);
         }
       })
