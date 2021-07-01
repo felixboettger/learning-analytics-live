@@ -1,64 +1,38 @@
-/* Styles were taken from a project from "The Complete 2021 Web Development Bootcamp by Dr. Angela Yu" */
+/* Navbar & Logo */
 
-html {
-  min-height: 100%;
-  position: relative;
-}
-
-.container-fluid {
-    padding-top: 70px;
-    padding-bottom: 70px;
-}
 .navbar {
-    background-color: #DCD6F7; /* selbst gemacht */
-    padding-top: 5px; /* selbst gemacht */
-    padding-bottom: 5px; /* selbst gemacht */
-    border: 0;
-    border-radius: 0;
-    margin-bottom: 30;
-    font-size: 13px;
-    letter-spacing: 3px;
-}
-.navbar-nav  li a:hover {
-    color: #A6B1E1 !important; /* selbst gemacht */
+  background-color: #4c5270;
+  font-size: 18px;
+  letter-spacing: 3px;
+  padding-bottom: 0px;
 }
 
-.footer-padding {
-	padding-bottom: 60px;
-}
-
-.footer {
-	position: absolute;
-	text-align: center;
-	bottom: 0;
-	width: 100%;
-	height: 70px; /* selbst gemacht */
-	background-color: #424874; /* selbst gemacht */
-}
-
-.footer p {
-	margin-top: 30px;
-	font-size: 12px;
+.navbar-brand {
   color: #fff;
+  font-size: 25px;
 }
 
-/* Styles were taken from a project from Bootstrap Examples https://getbootstrap.com/docs/4.0/examples/product/product.css */
-
-.text-center {
-    text-align: center;
-    margin-left: auto; /* own */
-    margin-right: auto;/* own */
+.navbar-brand:hover {
+  color: gold;
 }
 
-.container {
-  max-width: 960px;
+nav .navbar-nav li a{
+  color: #fff !important;
+  }
+
+nav .navbar-nav li a:hover{
+    color: black !important;
+}
+
+/* Main Content */
+
+.body {
+  height: 100vh;
 }
 
 .btn {
-  margin-bottom: 20px;
+  margin-top: 10px;
 }
-
-.overflow-hidden { overflow: hidden; }
 
 .btn-outline-secondary{
     color: #fff;
@@ -71,42 +45,32 @@ html {
     border-color: #6c757d;
 }
 
-/* Custom Styles */
-
-
-
-.form-top{
-  margin-bottom: -1px;
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 0;
-}
-
-.form-bottom{
-  margin-bottom: 10px;
-  border-top-right-radius: 0;
-  border-top-left-radius: 0;
+.container {
+  height: auto !important;
+  height: 100%;
+  max-width: 960px;
+  margin: 0 auto -70px;
+  min-height: 100%;
 }
 
 .form-signin{
   max-width: 300px;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 100px;
+  margin: 30px auto;
 }
 
-video {
-  background-color: grey;
-  width: 100%;
-  height: auto;
-  margin-left: 0
+/* Footer */
+
+.footer {
+  background-color: #4c5270;
+  bottom: 0;
+  height: 70px;
+  position: absolute;
+	text-align: center;
+	width: 100%;
 }
 
-.video-text {
-font-size: 3em;
-color: white;
-text-align: center;
-  background-color: grey;
-  width: 100%;
-  height: auto;
-  margin-left: 0
+.footer p {
+	padding-top: 25px;
+	font-size: 12px;
+  color: #fff;
 }
