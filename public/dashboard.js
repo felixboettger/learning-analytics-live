@@ -87,10 +87,15 @@ function downloadJSONFile(object){
 
 async function refreshCounterElements(counters){
   const {activeParticipantCounter, emotionCounters, lookingAtCamera} = counters;
-  document.getElementById("emotion-happy-participants").innerHTML = emotionCounters["happy"];
-  document.getElementById("emotion-neutral-participants").innerHTML = emotionCounters["neutral"];
-  document.getElementById("emotion-sad-participants").innerHTML = emotionCounters["sad"];
-  document.getElementById("emotion-other-participants").innerHTML = emotionCounters["angry"] + emotionCounters["fearful"] + emotionCounters["disgusted"] + emotionCounters["surprised"];
+  const otherEmotionCounter = emotionCounters["angry"] + emotionCounters["fearful"] + emotionCounters["disgusted"] + emotionCounters["surprised"];
+  const happyPercentage = (activeParticipantCounter > 0) ? 100 * Math.round(emotionCounters["happy"] / activeParticipantCounter) : 0;
+  const neutralPercentage = (activeParticipantCounter > 0) ? 100 * Math.round(emotionCounters["neutral"] / activeParticipantCounter) : 0;
+  const sadPercentage = (activeParticipantCounter > 0) ? 100 * Math.round(emotionCounters["sad"] / activeParticipantCounter) : 0;
+  const otherPercentage = (activeParticipantCounter > 0) ? 100 * Math.round(otherEmotionCounter / activeParticipantCounter) : 0;
+  document.getElementById("emotion-happy-participants").innerHTML =  happyPercentage + "% (" + emotionCounters["happy"] + ")";
+  document.getElementById("emotion-neutral-participants").innerHTML = neutralPercentage + "% (" + emotionCounters["neutral"] + ")";
+  document.getElementById("emotion-sad-participants").innerHTML = sadPercentage + "% (" + emotionCounters["sad"] + ")";
+  document.getElementById("emotion-other-participants").innerHTML = otherPercentage + "% (" + otherEmotionCounter + ")";
   document.getElementById("nr-participants").innerHTML = activeParticipantCounter;
   document.getElementById("nr-looking-at-camera").innerHTML = lookingAtCamera;
 }
@@ -119,8 +124,8 @@ function generateParticipantElements(participant) {
   const {id, n, i, s} = participant;
   const {happinessScore, emotion, looks, objects} = s; // this accesses the last status
   const htmlParticipantElement = `
-    <td>` + emotion + `</td>
     <td>` + n + `</td>
+    <td>` + emotion + `</td>
     <td>` + "age" + `</td>
     <td>` + objects + `</td>
     <td>` + looks + `</td>
