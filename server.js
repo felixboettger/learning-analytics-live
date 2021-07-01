@@ -1,9 +1,9 @@
 //jshint esversion:6
 
-// ----------------------------------CONFIGS-------------------------------------
+// --- Configs ---
+
 const updateInterval = 1000;
 const portNr = 443;
-const socketDict = {}; // Running sockets are stored in this object
 
 // set below to false for server deploy, set to true to enable local testing
 const localEnv = true;
@@ -11,27 +11,27 @@ const localEnv = true;
 // MongoDB URL. A MongoDB is required for running the server.
 const mongodbURL = localEnv ? "mongodb+srv://server-admin:PmNpZDqNTxNzm82@mmla.p8d9g.mongodb.net/mmlaDB?retryWrites=true&w=majority" : "mongodb://localhost:27017/mmlaDB";
 
-// ----------------------------------REQUIRES------------------------------------
+// --- Objects ---
+
+const socketDict = {}; // Running sockets are stored in this object
+
+// --- Imports---
 
 const fs = require("fs");
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const https = require("https");
 const http = require("http");
+const https = require("https");
 const crypto = require("crypto");
 const WebSocketServer = require("websocket").server;
 
-// ------------------------------------------------------------------------------
+// --- Express Setup ---
 
 const app = express();
 
-// ------------------------------------------------------------------------------
 
 app.set("view engine", "ejs");
-
-// ------------------------------------------------------------------------------
-
 app.use(
   bodyParser.urlencoded({
     extended: true
@@ -44,7 +44,7 @@ app.use(
   })
 );
 
-// ------------------------------------------------------------------------------
+// --- Mongoose & Database Setup
 
 // Establising connection with the MongoDB
 mongoose
@@ -58,7 +58,6 @@ mongoose
   });
 
 // Schemas for database entries are being defined
-
 const statusSchema = {
   emotion: String,
   objects: [String],
@@ -85,33 +84,29 @@ const sessionSchema = {
   sessionKey: String,
   secret: String,
   remarks: [remarkSchema],
-  // statistics: [statisticSchema],
   participants: [participantSchema]
 };
 
-
-
-// end of unused
-
-
-// Monogoose models are being created using above schemas
-
+// Monogoose models creation using above schemas
 const Participant = mongoose.model("Participant", participantSchema);
 const Session = mongoose.model("Session", sessionSchema);
 const Status = mongoose.model("Status", statusSchema);
 const Remark = mongoose.model("Remark", remarkSchema);
 
-// -----------------------------------GETS---------------------------------------
-
-app.get("/testing", function(req, res){
-  res.render("client-new", {sessionKey: "ABC",
-  participantName: "Name",
-  participantId: "1",
-  secret: "secret"});
-});
+// --- HTTP Get Request Handlers
 
 app.get("/", function(req, res) {
   res.render("home");
+});
+
+app.get("/host", function(req, res) {
+  const newSession = createSession();
+  const url = req.protocol + "://" + req.get("host") + "/join/" + newSession.sessionKey;
+  res.render("dashboard", {
+    sessionKey: newSession.sessionKey,
+    secret: newSession.secret,
+    url: url
+  });
 });
 
 app.get("/participant", function(req, res) {
@@ -131,20 +126,9 @@ app.get("/legal", function(req, res) {
   res.render("legal-notice");
 });
 
-app.get("/host", function(req, res) {
-  const newSession = createSession();
-  const url = req.protocol + "://" + req.get("host") + "/join/" + newSession.sessionKey;
-  res.render("dashboard", {
-    sessionKey: newSession.sessionKey,
-    secret: newSession.secret,
-    url: url
-  });
-});
+// // --- HTTP Post Request Handlers
 
-
-// ----------------------------------API---------------------------------------
-
-// API: Creation of new participant
+// Creation of new participant
 app.post("/participant", function(req, res) {
   const b = req.body;
 
@@ -185,25 +169,7 @@ app.post("/participant", function(req, res) {
   });
 });
 
-
-// API: Allow data download at end of session
-app.get("/api/dashboard/download", (req, res) => {
-  validateSecret(req).then(isValid => {
-    if (isValid) {
-      getSessionData(req.query.sessionKey).then(exportData =>
-        res.send(exportData)
-      );
-    } else {
-      res.send(
-        "The session key is not valid or you are not allowed to access the session"
-      );
-    }
-  });
-});
-
-// ------------------------------------------------------------------------------
-
-// Helper functions
+// --- Helper functions ---
 
 // generates counters (used for API requests)
 function generateCounterElements(sessionData) {
@@ -233,16 +199,6 @@ function generateCounterElements(sessionData) {
   });
   return counterElements;
 }
-
-/*
-
-// Check if timestamp is more than 30 seconds ago
-function isInactive(time) {
-  return new Date().getTime() - new Date(time).getTime() < 30000 ? false : true;
-  // 3000 is 1000 (ms in a s) * 30 (30 second timeout)
-}
-
-*/
 
 // Checks if request ip matches session host ip
 async function validateIp(req) {
@@ -429,11 +385,9 @@ function closeClientSockets(sessionKey){
   clientSockets.forEach(clientSocket => clientSocket.close());
 }
 
-
-// ------------------------------------------------------------------------------
+// --- Server setup and start
 
 // Running server as actual server, with security etc
-
 if (!localEnv) {
   // https server for running the actual communication, serving the website etc.
   https
@@ -460,6 +414,13 @@ if (!localEnv) {
     .listen(80);
 }
 
+// Running the server locally for development or testing, no security etc.
+if (localEnv) {
+  app.listen(3000, function() {
+    console.log("Server started on Port: " + 3000);
+  });
+}
+
 // This Server is used for WebSockets (Dashboard)
 wsServerDashboard = http
   .createServer(function(req, res) {
@@ -472,17 +433,6 @@ wsServerParticipant = http
     console.log("Web Socket Server Started on ")
   }).listen(8081);
 
-
-// Running the server locally for development or testing, no security etc.
-
-if (localEnv) {
-  app.listen(3000, function() {
-    console.log("Server started on Port: " + 3000);
-  });
-}
-
-// -----------------------------Web Socket Server-----------------------------------
-
 webSocketServerDashboard = new WebSocketServer({
   httpServer: wsServerDashboard,
   autoAcceptConnections: false
@@ -492,6 +442,9 @@ webSocketServerParticipant = new WebSocketServer({
   httpServer: wsServerParticipant,
   autoAcceptConnections: false
 });
+
+
+// --- Web Socket Request Handling ---
 
 webSocketServerParticipant.on("request", function(req, err){
   if (err) {
@@ -533,7 +486,6 @@ webSocketServerParticipant.on("request", function(req, err){
 }
 });
 
-
 webSocketServerDashboard.on("request", function(req, err){
   if (err) {
     console.log(err);
@@ -562,7 +514,6 @@ webSocketServerDashboard.on("request", function(req, err){
           clientSocket.send(JSON.stringify({datatype: "request", id: timeStampId}));
         })
       }, updateInterval)
-
     connection.on("message", function(message){
       if (message.type === 'utf8') {
           const request = message.utf8Data;
@@ -574,7 +525,6 @@ webSocketServerDashboard.on("request", function(req, err){
           }
       }
     });
-
     connection.on("close", function(){
       clearInterval(refreshIntervalId);
       closeClientSockets(sessionKey);
