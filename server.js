@@ -74,16 +74,16 @@ const participantSchema = {
   participantStatus: [statusSchema]
 };
 
-const remarkSchema = {
-  remarkText: String,
-  remarkTime: Date,
+const commentSchema = {
+  commentText: String,
+  commentTime: Date,
   timeId: Number
 }
 
 const sessionSchema = {
   sessionKey: String,
   secret: String,
-  remarks: [remarkSchema],
+  comments: [commentSchema],
   participants: [participantSchema]
 };
 
@@ -91,7 +91,7 @@ const sessionSchema = {
 const Participant = mongoose.model("Participant", participantSchema);
 const Session = mongoose.model("Session", sessionSchema);
 const Status = mongoose.model("Status", statusSchema);
-const Remark = mongoose.model("Remark", remarkSchema);
+const Comment = mongoose.model("Comment", commentSchema);
 
 // --- HTTP Get Request Handlers
 
@@ -100,6 +100,10 @@ app.get("/", function(req, res) {
 });
 
 app.get("/host", function(req, res) {
+  res.render("host");
+});
+
+app.get("/dashboard", function(req, res) {
   const newSession = createSession();
   const url = req.protocol + "://" + req.get("host") + "/join/" + newSession.sessionKey;
   res.render("dashboard", {
@@ -306,18 +310,22 @@ function generateParticipants(sessionData) {
 
 
 async function checkSocketConnectDashboard(req){
-  return await Session.exists({
+  const allowed = await Session.exists({
     sessionKey: req.resourceURL.query.sessionKey,
     secret: req.resourceURL.query.secret
   });
+  allowed ? console.log("Connection from Dashboard " + req.origin + " allowed") : console.log("Connection from Dashboard " + req.origin + " rejected");
+  return allowed;
 }
 
 async function checkSocketConnectParticipant(req){
-  return await Session.exists({
+  const allowed = await Session.exists({
     sessionKey: req.resourceURL.query.sessionKey,
     "participants.participantId": req.resourceURL.query.userId,
     "participants.secret": req.resourceURL.query.secret
   });
+  allowed ? console.log("Connection from Client " + req.origin + " allowed") : console.log("Connection from Client " + req.origin + " rejected");
+  return allowed;
 }
 
 async function markParticipantAsInactive(sessionKey, userId){
@@ -343,14 +351,14 @@ async function markParticipantAsInactive(sessionKey, userId){
     })
 };
 
-async function updateRemarks(remark, time, timeId, sessionKey){
+async function updateComments(comment, time, timeId, sessionKey){
   Session.findOneAndUpdate(
     {
       sessionKey: sessionKey
     },
-    {$addToSet: {remarks: new Remark({
-      remarkText: remark,
-      remarkTime: time,
+    {$addToSet: {comments: new Comment({
+      commentText: comment,
+      commentTime: time,
       timeId: timeId
     })}},
     {new: true},
@@ -367,7 +375,7 @@ function createSession(){
   const newSession = new Session({
     sessionKey: newKey,
     secret: secret,
-    remarks: [],
+    comments: [],
     participants: []
   });
   Session.insertMany([newSession], function(err) {
@@ -390,7 +398,7 @@ function closeClientSockets(sessionKey){
 // Running server as actual server, with security etc
 if (!localEnv) {
   // https server for running the actual communication, serving the website etc.
-  https
+  server = https
     .createServer(
       {
         key: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/privkey.pem"),
@@ -416,87 +424,34 @@ if (!localEnv) {
 
 // Running the server locally for development or testing, no security etc.
 if (localEnv) {
-  app.listen(3000, function() {
-    console.log("Server started on Port: " + 3000);
+  server = app.listen(portNr, function() {
+    console.log("Server started on Port: " + 443);
   });
 }
 
-// This Server is used for WebSockets (Dashboard)
-wsServerDashboard = http
-  .createServer(function(req, res) {
-    console.log("Web Socket Server Started on ")
-  }).listen(8080);
-
-// This Server is used for WebSockets (Participant)
-wsServerParticipant = http
-  .createServer(function(req, res) {
-    console.log("Web Socket Server Started on ")
-  }).listen(8081);
-
-webSocketServerDashboard = new WebSocketServer({
-  httpServer: wsServerDashboard,
+webSocketServer = new WebSocketServer({
+  httpServer: server,
   autoAcceptConnections: false
 });
 
-webSocketServerParticipant = new WebSocketServer({
-  httpServer: wsServerParticipant,
-  autoAcceptConnections: false
-});
 
+webSocketServer.on("request", function(req){
+  const type = req.resourceURL.query.type;
+  if (type === "dashboard") {
+    handleDashboardSocket(req);
+  } else if (type === "client") {
+    handleClientSocket(req);
+  }
+});
 
 // --- Web Socket Request Handling ---
 
-webSocketServerParticipant.on("request", function(req, err){
-  if (err) {
-    console.log(err);
-  } else {
-  checkSocketConnectParticipant(req).then(isValid => {
-    if (!(isValid)) {
-      console.log("Connection from " + req.origin + " rejected");
-      req.reject();
-      return;
-    } else {
-      console.log("Connection from " + req.origin + " accepted");
-      const connection = req.accept('echo-protocol', req.origin);
-      const sessionKey = req.resourceURL.query.sessionKey;
-      const userId = req.resourceURL.query.userId;
-      const indexOfSocket = socketDict[sessionKey].clients.push(connection) - 1;
-      connection.on("message", function(message){
-        const messageJSON = JSON.parse(message.utf8Data);
-        const datatype = messageJSON.datatype;
-        if (datatype === "status"){
-          const statusVector = messageJSON.data;
-          updateParticipantStatus(sessionKey, userId, statusVector);
-        } else if (datatype === "remark") {
-          const remark = messageJSON.data.text;
-          const timeStampId = messageJSON.data.timeStampId;
-          const time = new Date().getTime();
-          socketDict[sessionKey].host.send(JSON.stringify({datatype: "remark", data: {text: remark, timeStampId: timeStampId, time: time}}));
-          updateRemarks(remark, time, timeStampId, sessionKey);
-        }
-      })
-      connection.on("close", function(){
-        if (socketDict[sessionKey]){
-          socketDict[sessionKey].clients.splice(indexOfSocket, 1);
-        }
-        markParticipantAsInactive(sessionKey, userId);
-      });
-      }
-    });
-}
-});
-
-webSocketServerDashboard.on("request", function(req, err){
-  if (err) {
-    console.log(err);
-  } else {
+function handleDashboardSocket(req){
   checkSocketConnectDashboard(req).then(isValid => {
     if (!(isValid)) {
-      console.log("Connection from " + req.origin + " rejected");
       req.reject();
       return;
     } else {
-      console.log("Connection from " + req.origin + " accepted");
       const sessionKey = req.resourceURL.query.sessionKey;
       const connection = req.accept('echo-protocol', req.origin);
       socketDict[sessionKey] = {host: connection, clients: []};
@@ -509,7 +464,6 @@ webSocketServerDashboard.on("request", function(req, err){
         getSessionData(sessionKey).then(sessionData => {
           connection.send(JSON.stringify({datatype: "participants", data: generateParticipants(sessionData)}));
         });
-
         socketDict[sessionKey].clients.forEach(clientSocket => {
           clientSocket.send(JSON.stringify({datatype: "request", id: timeStampId}));
         })
@@ -531,4 +485,39 @@ webSocketServerDashboard.on("request", function(req, err){
       deleteSession(sessionKey);
       console.log("Connection closed!");
     });
-  }})}});
+  }})
+}
+
+function handleClientSocket(req){
+  checkSocketConnectParticipant(req).then(isValid => {
+    if (!(isValid)) {
+      req.reject();
+      return;
+    } else {
+      const connection = req.accept('echo-protocol', req.origin);
+      const sessionKey = req.resourceURL.query.sessionKey;
+      const userId = req.resourceURL.query.userId;
+      const indexOfSocket = socketDict[sessionKey].clients.push(connection) - 1;
+      connection.on("message", function(message){
+        const messageJSON = JSON.parse(message.utf8Data);
+        const datatype = messageJSON.datatype;
+        if (datatype === "status"){
+          const statusVector = messageJSON.data;
+          updateParticipantStatus(sessionKey, userId, statusVector);
+        } else if (datatype === "comment") {
+          const comment = messageJSON.data.text;
+          const timeStampId = messageJSON.data.timeStampId;
+          const time = new Date().getTime();
+          socketDict[sessionKey].host.send(JSON.stringify({datatype: "comment", data: {text: comment, timeStampId: timeStampId, time: time}}));
+          updateComments(comment, time, timeStampId, sessionKey);
+        }
+      })
+      connection.on("close", function(){
+        if (socketDict[sessionKey]){
+          socketDict[sessionKey].clients.splice(indexOfSocket, 1);
+        }
+        markParticipantAsInactive(sessionKey, userId);
+      });
+      }
+    });
+}

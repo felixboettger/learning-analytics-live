@@ -3,7 +3,7 @@
 const sessionKey = document.getElementById("session-key").textContent;
 const secret = document.getElementById("secret").textContent;
 
-const webSocket = new WebSocket("ws://localhost:8080/?sessionKey=" + sessionKey + "&secret=" + secret, "echo-protocol");
+const webSocket = new WebSocket("ws://localhost:443/?sessionKey=" + sessionKey + "&secret=" + secret + "&type=dashboard", "echo-protocol");
 
 // Websocket listener
 
@@ -16,8 +16,8 @@ webSocket.addEventListener("message", function(event){
     refreshParticipantList(messageJSON.data)
   } else if (datatype === "download"){
     downloadJSONFile(messageJSON.data);
-  } else if (datatype === "remark"){
-    addRemarkToList(messageJSON.data);
+  } else if (datatype === "comment"){
+    addCommentToList(messageJSON.data);
   }
 });
 
@@ -36,6 +36,14 @@ const beforeUnloadListener = (event) => {
 
 
 // Button event listeners
+
+document.getElementById("comment-list").addEventListener("click",function(evt) {
+  const t = evt.target;
+  if (t.tagName.toUpperCase() == "TD") {
+    const tr = t.parentNode;
+    tr.parentNode.removeChild(tr);
+  }
+});
 
 document.getElementById("download-btn").addEventListener("click", function() {
  webSocket.send("download");
@@ -66,15 +74,16 @@ document.getElementById("key-btn").addEventListener("click", function() {
 
 // Helper Functions
 
-function addRemarkToList(remarkObj){
-  const newRemark = remarkObj.text;
-  const timeStampId = remarkObj.timeStampId;
-  const dateObj = new Date(remarkObj.time);
+function addCommentToList(commentObj){
+  document.getElementById("nr-comments").innerHTML ++;
+  const newComment = commentObj.text;
+  const timeStampId = commentObj.timeStampId;
+  const dateObj = new Date(commentObj.time);
   const timeStr = dateObj.getHours() + ":" + dateObj.getMinutes() + ":" + dateObj.getSeconds()
-  const remarkElement = document.createElement("tr");
-  remarkElement.innerHTML = `<td>` + newRemark + `</td>
+  const commentElement = document.createElement("tr");
+  commentElement.innerHTML = `<td>` + newComment + `</td>
   <td>` + timeStampId + `</td>` + `<td>` + timeStr + `</td>`;
-  document.getElementById("remark-list").appendChild(remarkElement);
+  document.getElementById("comment-list").appendChild(commentElement);
 }
 
 function downloadJSONFile(object){
@@ -92,12 +101,13 @@ async function refreshCounterElements(counters){
   const neutralPercentage = (activeParticipantCounter > 0) ? 100 * Math.round(emotionCounters["neutral"] / activeParticipantCounter) : 0;
   const sadPercentage = (activeParticipantCounter > 0) ? 100 * Math.round(emotionCounters["sad"] / activeParticipantCounter) : 0;
   const otherPercentage = (activeParticipantCounter > 0) ? 100 * Math.round(otherEmotionCounter / activeParticipantCounter) : 0;
+  const lookingPercentage = (activeParticipantCounter > 0) ? 100 * Math.round(lookingAtCamera / activeParticipantCounter) : 0;
   document.getElementById("emotion-happy-participants").innerHTML =  happyPercentage + "% (" + emotionCounters["happy"] + ")";
   document.getElementById("emotion-neutral-participants").innerHTML = neutralPercentage + "% (" + emotionCounters["neutral"] + ")";
   document.getElementById("emotion-sad-participants").innerHTML = sadPercentage + "% (" + emotionCounters["sad"] + ")";
   document.getElementById("emotion-other-participants").innerHTML = otherPercentage + "% (" + otherEmotionCounter + ")";
   document.getElementById("nr-participants").innerHTML = activeParticipantCounter;
-  document.getElementById("nr-looking-at-camera").innerHTML = lookingAtCamera;
+  document.getElementById("nr-looking-at-camera").innerHTML = lookingPercentage + "% (" + lookingAtCamera + ")";
 }
 
 async function refreshParticipantList(participants){

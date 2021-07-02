@@ -33,15 +33,15 @@ async function main() {
 
   // Connect to socket
 
-  const webSocket = new WebSocket("ws://localhost:8081/?sessionKey=" + sessionKey + "&userId=" + userId + "&secret=" + secret, "echo-protocol");
+  const webSocket = new WebSocket("ws://localhost:443/?sessionKey=" + sessionKey + "&userId=" + userId + "&secret=" + secret + "&type=client", "echo-protocol");
 
   // Button event listeners
 
-  document.getElementById("send-remark-btn").addEventListener("click", function() {
-    const remark = document.getElementById("input-remark").value;
+  document.getElementById("send-comment-btn").addEventListener("click", function() {
+    const comment = document.getElementById("input-comment").value;
     const timeStampId = parseInt(document.getElementById("timestamp-id").innerHTML);
-    document.getElementById("input-remark").value = "";
-    webSocket.send(JSON.stringify({datatype:"remark", data: {text: remark, timeStampId: timeStampId}}));
+    document.getElementById("input-comment").value = "";
+    webSocket.send(JSON.stringify({datatype:"comment", data: {text: comment, timeStampId: timeStampId}}));
   });
 
   // Websocket event listener
