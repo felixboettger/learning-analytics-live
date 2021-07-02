@@ -3,7 +3,8 @@
 const sessionKey = document.getElementById("session-key").textContent;
 const secret = document.getElementById("secret").textContent;
 
-const webSocket = new WebSocket("ws://localhost:443/?sessionKey=" + sessionKey + "&secret=" + secret + "&type=dashboard", "echo-protocol");
+const webSocketProtocol = (window.location.protocol === "https:") ? "wss://" : "ws://";
+const webSocket = new WebSocket(webSocketProtocol + document.domain + "/?sessionKey=" + sessionKey + "&secret=" + secret + "&type=dashboard", "echo-protocol");
 
 // Websocket listener
 

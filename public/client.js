@@ -33,7 +33,8 @@ async function main() {
 
   // Connect to socket
 
-  const webSocket = new WebSocket("ws://localhost:443/?sessionKey=" + sessionKey + "&userId=" + userId + "&secret=" + secret + "&type=client", "echo-protocol");
+  const webSocketProtocol = (window.location.protocol === "https:") ? "wss://" : "ws://";
+  const webSocket = new WebSocket(webSocketProtocol + document.domain + "/?sessionKey=" + sessionKey + "&userId=" + userId + "&secret=" + secret + "&type=client", "echo-protocol");
 
   // Button event listeners
 
