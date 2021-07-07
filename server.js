@@ -1,22 +1,8 @@
 //jshint esversion:6
 
-// --- Configs ---
-
-const updateInterval = 1000;
-const portNr = 443;
-
-// set below to false for server deploy, set to true to enable local testing
-const localEnv = true;
-
-// MongoDB URL. A MongoDB is required for running the server.
-const mongodbURL = localEnv ? "mongodb+srv://server-admin:PmNpZDqNTxNzm82@mmla.p8d9g.mongodb.net/mmlaDB?retryWrites=true&w=majority" : "mongodb://localhost:27017/mmlaDB";
-
-// --- Objects ---
-
-const socketDict = {}; // Running sockets are stored in this object
-
 // --- Imports---
 
+const dotenv = require("dotenv").config();
 const fs = require("fs");
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -25,6 +11,21 @@ const http = require("http");
 const https = require("https");
 const crypto = require("crypto");
 const WebSocketServer = require("websocket").server;
+
+// --- Configs ---
+
+const updateInterval = 1000;
+const portNr = process.env.PORT;
+
+// Set localEnv to false for server deploy, set to true to enable local testing
+const localEnv = true;
+
+// MongoDB URL. A MongoDB is required for running the server.
+const mongodbURL = localEnv ? process.env.DB_HOST_LOCAL : process.env.DB_HOST;
+
+// --- Objects ---
+
+const socketDict = {}; // Running sockets are stored in this object
 
 // --- Express Setup ---
 
@@ -178,26 +179,29 @@ app.post("/participant", function(req, res) {
 // generates counters (used for API requests)
 function generateCounterElements(sessionData) {
   var counterElements = {
-    activeParticipantCounter: 0,
-    emotionCounters: {
-      happy: 0,
-      sad: 0,
-      neutral: 0,
-      disgusted: 0,
-      fearful: 0,
-      surprised: 0,
-      angry: 0
+    apc: 0,
+    lacc: 0,
+    ec: {
+      ha: 0,
+      sa: 0,
+      ne: 0,
+      di: 0,
+      fe: 0,
+      su: 0,
+      an: 0
     },
-    lookingAtCamera: 0
+
   };
   sessionData.participants.forEach(function(participant) {
     const currentStatus = participant.participantStatus.pop();
     const currentEmotion = currentStatus.emotion;
     if (!participant.inactive) {
-      counterElements.emotionCounters[currentEmotion] += 1;
-      counterElements.activeParticipantCounter += 1;
+      if (!(currentEmotion === undefined)){
+        counterElements.ec[currentEmotion.substring(0,2)] += 1;
+      }
+      counterElements.apc += 1;
       if (currentStatus.looks) {
-        counterElements.lookingAtCamera += 1;
+        counterElements.lacc += 1;
       }
     }
   });
@@ -280,8 +284,17 @@ function generateSessionKey() {
   return newKey;
 }
 
-// returns session data and updates last dashboard access parameter for this session
+// returns session data
 async function getSessionData(sessionKey) {
+  return await Session.findOne(
+    {
+      sessionKey: sessionKey
+    }
+  );
+}
+
+// returns session data without unnecessary information for export
+async function exportSessionData(sessionKey) {
   return await Session.findOne(
     {
       sessionKey: sessionKey
@@ -401,9 +414,9 @@ if (!localEnv) {
   server = https
     .createServer(
       {
-        key: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/privkey.pem"),
-        cert: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/cert.pem"),
-        ca: fs.readFileSync("/etc/letsencrypt/live/mmlatool.de/chain.pem")
+        key: fs.readFileSync(process.env.SSL_KEY),
+        cert: fs.readFileSync(process.env.SSL_CERT),
+        ca: fs.readFileSync(process.env.SSL_CHAIN)
       },
       app
     )
@@ -472,7 +485,7 @@ function handleDashboardSocket(req){
       if (message.type === 'utf8') {
           const request = message.utf8Data;
           if (request === "download"){
-            getSessionData(sessionKey
+            exportSessionData(sessionKey
             ).then(exportData => {
               connection.send(JSON.stringify({datatype: "download", data: exportData}));
             });
@@ -489,6 +502,7 @@ function handleDashboardSocket(req){
 }
 
 function handleClientSocket(req){
+
   checkSocketConnectParticipant(req).then(isValid => {
     if (!(isValid)) {
       req.reject();
@@ -505,10 +519,10 @@ function handleClientSocket(req){
           const statusVector = messageJSON.data;
           updateParticipantStatus(sessionKey, userId, statusVector);
         } else if (datatype === "comment") {
-          const comment = messageJSON.data.text;
-          const timeStampId = messageJSON.data.timeStampId;
+          const comment = messageJSON.data.te;
+          const timeStampId = messageJSON.data.id;
           const time = new Date().getTime();
-          socketDict[sessionKey].host.send(JSON.stringify({datatype: "comment", data: {text: comment, timeStampId: timeStampId, time: time}}));
+          socketDict[sessionKey].host.send(JSON.stringify({datatype: "comment", data: {te: comment, id: timeStampId, ti: time}}));
           updateComments(comment, time, timeStampId, sessionKey);
         }
       })

@@ -4,7 +4,7 @@ const sessionKey = document.getElementById("session-key").textContent;
 const secret = document.getElementById("secret").textContent;
 
 const webSocketProtocol = (window.location.protocol === "https:") ? "wss://" : "ws://";
-const webSocket = new WebSocket(webSocketProtocol + document.domain + "/?sessionKey=" + sessionKey + "&secret=" + secret + "&type=dashboard", "echo-protocol");
+const webSocket = new WebSocket(webSocketProtocol + document.domain + ":443/?sessionKey=" + sessionKey + "&secret=" + secret + "&type=dashboard", "echo-protocol");
 
 // Websocket listener
 
@@ -77,9 +77,9 @@ document.getElementById("key-btn").addEventListener("click", function() {
 
 function addCommentToList(commentObj){
   document.getElementById("nr-comments").innerHTML ++;
-  const newComment = commentObj.text;
-  const timeStampId = commentObj.timeStampId;
-  const dateObj = new Date(commentObj.time);
+  const newComment = commentObj.te;
+  const timeStampId = commentObj.id;
+  const dateObj = new Date(commentObj.ti);
   const timeStr = dateObj.getHours() + ":" + dateObj.getMinutes() + ":" + dateObj.getSeconds()
   const commentElement = document.createElement("tr");
   commentElement.innerHTML = `<td>` + newComment + `</td>
@@ -96,19 +96,20 @@ function downloadJSONFile(object){
 }
 
 async function refreshCounterElements(counters){
-  const {activeParticipantCounter, emotionCounters, lookingAtCamera} = counters;
-  const otherEmotionCounter = emotionCounters["angry"] + emotionCounters["fearful"] + emotionCounters["disgusted"] + emotionCounters["surprised"];
-  const happyPercentage = (activeParticipantCounter > 0) ? 100 * Math.round(emotionCounters["happy"] / activeParticipantCounter) : 0;
-  const neutralPercentage = (activeParticipantCounter > 0) ? 100 * Math.round(emotionCounters["neutral"] / activeParticipantCounter) : 0;
-  const sadPercentage = (activeParticipantCounter > 0) ? 100 * Math.round(emotionCounters["sad"] / activeParticipantCounter) : 0;
-  const otherPercentage = (activeParticipantCounter > 0) ? 100 * Math.round(otherEmotionCounter / activeParticipantCounter) : 0;
-  const lookingPercentage = (activeParticipantCounter > 0) ? 100 * Math.round(lookingAtCamera / activeParticipantCounter) : 0;
-  document.getElementById("emotion-happy-participants").innerHTML =  happyPercentage + "% (" + emotionCounters["happy"] + ")";
-  document.getElementById("emotion-neutral-participants").innerHTML = neutralPercentage + "% (" + emotionCounters["neutral"] + ")";
-  document.getElementById("emotion-sad-participants").innerHTML = sadPercentage + "% (" + emotionCounters["sad"] + ")";
+  // apc = activeParticipantCounter, ec = emotionCounter, lacc = lookingAtCameraCounter
+  const {apc, ec, lacc} = counters;
+  const otherEmotionCounter = ec["an"] + ec["fe"] + ec["di"] + ec["su"];
+  const happyPercentage = (apc > 0) ? 100 * Math.round(ec["ha"] / apc) : 0;
+  const neutralPercentage = (apc > 0) ? 100 * Math.round(ec["ne"] / apc) : 0;
+  const sadPercentage = (apc > 0) ? 100 * Math.round(ec["sa"] / apc) : 0;
+  const otherPercentage = (apc > 0) ? 100 * Math.round(otherEmotionCounter / apc) : 0;
+  const lookingPercentage = (apc > 0) ? 100 * Math.round(lacc / apc) : 0;
+  document.getElementById("emotion-happy-participants").innerHTML =  happyPercentage + "% (" + ec["ha"] + ")";
+  document.getElementById("emotion-neutral-participants").innerHTML = neutralPercentage + "% (" + ec["ne"] + ")";
+  document.getElementById("emotion-sad-participants").innerHTML = sadPercentage + "% (" + ec["sa"] + ")";
   document.getElementById("emotion-other-participants").innerHTML = otherPercentage + "% (" + otherEmotionCounter + ")";
-  document.getElementById("nr-participants").innerHTML = activeParticipantCounter;
-  document.getElementById("nr-looking-at-camera").innerHTML = lookingPercentage + "% (" + lookingAtCamera + ")";
+  document.getElementById("nr-participants").innerHTML = apc;
+  document.getElementById("nr-looking-at-camera").innerHTML = lookingPercentage + "% (" + lacc + ")";
 }
 
 async function refreshParticipantList(participants){

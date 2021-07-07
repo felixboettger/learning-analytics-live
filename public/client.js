@@ -34,7 +34,7 @@ async function main() {
   // Connect to socket
 
   const webSocketProtocol = (window.location.protocol === "https:") ? "wss://" : "ws://";
-  const webSocket = new WebSocket(webSocketProtocol + document.domain + "/?sessionKey=" + sessionKey + "&userId=" + userId + "&secret=" + secret + "&type=client", "echo-protocol");
+  const webSocket = new WebSocket(webSocketProtocol + document.domain + ":443/?sessionKey=" + sessionKey + "&userId=" + userId + "&secret=" + secret + "&type=client", "echo-protocol");
 
   // Button event listeners
 
@@ -42,7 +42,7 @@ async function main() {
     const comment = document.getElementById("input-comment").value;
     const timeStampId = parseInt(document.getElementById("timestamp-id").innerHTML);
     document.getElementById("input-comment").value = "";
-    webSocket.send(JSON.stringify({datatype:"comment", data: {text: comment, timeStampId: timeStampId}}));
+    webSocket.send(JSON.stringify({datatype:"comment", data: {te: comment, id: timeStampId}}));
   });
 
   // Websocket event listener
@@ -126,28 +126,6 @@ async function checkLookingAtCamera(blazefacePredictions){
     }
   }
 }
-
-/*
-
-async function counterDiffCalc(emotion){
-  if (lastEmotion === undefined){
-    const diffObj = {};
-    diffObj[emotion] = 1;
-    lastEmotion = emotion;
-    return diffObj;
-  }
-  if (lastEmotion === emotion) {
-    return {};
-  } else {
-    const diffObj = {};
-    diffObj[lastEmotion] = -1;
-    diffObj[emotion] = 1;
-    lastEmotion = emotion;
-    return diffObj;
-  }
-}
-
-*/
 
 
 function getMaxKey(obj){
