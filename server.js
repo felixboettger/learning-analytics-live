@@ -133,42 +133,19 @@ app.get("/legal", function(req, res) {
 
 // // --- HTTP Post Request Handlers
 
+
 // Creation of new participant
 app.post("/participant", function(req, res) {
-  const b = req.body;
-
-  Session.findOne({sessionKey: b.sessionKey}, function(err, foundSession) {
-    if (err) {
-      console.log(err);
-    } else if (foundSession == null) {
-      console.log("Session " + b.sessionKey + "does not exist.");
-      res.render("client-session-not-found", {sessionKey: b.sessionKey});
+  createParticipant(req.body.sessionKey, req.body.participantName).then((participant) => {
+    if (participant === undefined) {
+      res.render("client-session-not-found", {sessionKey: req.body.sessionKey});
     } else {
-      const newStatus = new Status({
-        time: new Date()
-      });
-      const participantId = foundSession.participants.length;
-      const secret = crypto.randomBytes(4).toString("hex");
-      const newParticipant = new Participant({
-        participantId: participantId,
-        participantName: b.participantName,
-        secret: secret,
-        inactive: false,
-        participantStatus: [newStatus]
-      });
-      Session.findOneAndUpdate(
-        {sessionKey: b.sessionKey},
-        {$addToSet: {participants: newParticipant}},
-        {new: true},
-        function(err, foundSession) {
-          // console.log("New participant created");
-        }
-      );
+      console.log(participant);
       res.render("client", {
-        sessionKey: b.sessionKey,
-        participantName: b.participantName,
-        participantId: participantId,
-        secret: secret
+        sessionKey: req.body.sessionKey,
+        participantName: req.body.participantName,
+        participantId: participant[0],
+        secret: participant[1]
       });
     }
   });
@@ -190,21 +167,24 @@ function generateCounterElements(sessionData) {
       su: 0,
       an: 0
     },
-
   };
-  sessionData.participants.forEach(function(participant) {
-    const currentStatus = participant.participantStatus.pop();
-    const currentEmotion = currentStatus.emotion;
-    if (!participant.inactive) {
-      if (!(currentEmotion === undefined)){
-        counterElements.ec[currentEmotion.substring(0,2)] += 1;
+  if (sessionData.participants.length > 0) {
+    sessionData.participants.forEach(function(participant) {
+      const currentStatus = participant.participantStatus.pop();
+      if (currentStatus != null){
+        const currentEmotion = currentStatus.emotion;
+        if (!participant.inactive) {
+          if (!(currentEmotion === undefined)){
+            counterElements.ec[currentEmotion.substring(0,2)] += 1;
+          }
+          counterElements.apc += 1;
+          if (currentStatus.looks) {
+            counterElements.lacc += 1;
+          }
+        }
       }
-      counterElements.apc += 1;
-      if (currentStatus.looks) {
-        counterElements.lacc += 1;
-      }
-    }
-  });
+    });
+  }
   return counterElements;
 }
 
@@ -270,6 +250,36 @@ function updateParticipantStatus(sessionKey, userId, statusVector, id){
   );
 };
 
+
+async function createParticipant(sessionKey, name){
+  var session = await getSessionData(sessionKey);
+  if (session != null) {
+    participantId = session.participants.length;
+    secret = crypto.randomBytes(4).toString("hex");
+    const newParticipant = new Participant({
+        participantId: participantId,
+        participantName: name,
+        secret: secret,
+        inactive: false,
+        participantStatus: []
+    });
+    addParticipantToSession(newParticipant, sessionKey);
+    return [participantId, secret];
+  }
+}
+
+
+function addParticipantToSession(participant, sessionKey){
+  Session.findOneAndUpdate(
+    {sessionKey: sessionKey},
+    {$addToSet: {participants: participant}},
+    {new: true},
+    function(err, foundSession) {
+      // console.log("New participant created");a
+    }
+  )
+}
+
 // Generates a 14 digit session key
 function generateSessionKey() {
   const characters = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
@@ -303,7 +313,7 @@ async function exportSessionData(sessionKey) {
   );
 }
 
-// generates a list of participants
+// generates a list of participants for use in the dashboard
 function generateParticipants(sessionData) {
   participants = [];
   sessionData.participants.forEach(function(participant) {

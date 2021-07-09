@@ -111,8 +111,7 @@
     </div>
     <div class="container-fluid">
       <div class="row">
-        <video id="webcam" autoplay playsinline width="480" height="360"></video>
-        <canvas id="canvas" class="d-none hidden"></canvas>
+        <video id="video-input" autoplay playsinline width="480" height="360"></video>
       </div>
     </div>
   </div>
@@ -133,7 +132,7 @@
 
 
 </body>
-<script type="text/javascript" src="https://unpkg.com/webcam-easy/dist/webcam-easy.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/opencv-browser@1.0.0/opencv.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.7.0/dist/tf.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>

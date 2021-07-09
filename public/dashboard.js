@@ -4,7 +4,7 @@ const sessionKey = document.getElementById("session-key").textContent;
 const secret = document.getElementById("secret").textContent;
 
 const webSocketProtocol = (window.location.protocol === "https:") ? "wss://" : "ws://";
-const webSocket = new WebSocket(webSocketProtocol + document.domain + ":443/?sessionKey=" + sessionKey + "&secret=" + secret + "&type=dashboard", "echo-protocol");
+const webSocket = new WebSocket(webSocketProtocol + document.domain + ":" + location.port + "/?sessionKey=" + sessionKey + "&secret=" + secret + "&type=dashboard", "echo-protocol");
 
 // Websocket listener
 
@@ -134,11 +134,10 @@ function addOrCreateParticipant(participant){
 
 function generateParticipantElements(participant) {
   const {id, n, i, s} = participant;
-  const {happinessScore, emotion, looks, objects} = s; // this accesses the last status
+  const {happinessScore, emotion, looks, objects} = (s === undefined) ? "undefined" : s; // this accesses the last status
   const htmlParticipantElement = `
     <td>` + n + `</td>
     <td>` + emotion + `</td>
-    <td>` + "age" + `</td>
     <td>` + objects + `</td>
     <td>` + looks + `</td>
     <td>

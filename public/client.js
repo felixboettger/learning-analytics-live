@@ -6,6 +6,7 @@ const userName = document.getElementById("participant-name").textContent;
 const sessionKey = document.getElementById("session-key").textContent;
 
 var cocoSsdModel;
+//var mobilenetModel
 var blazefaceModel;
 var lastEmotion;
 
@@ -16,25 +17,29 @@ main();
 
 async function main() {
 
-  // Start webcam
-
-  const canvasElement = document.getElementById("canvas");
-  const webcamElement = document.getElementById("webcam");
-  const webcam = new Webcam(webcamElement, 'user', canvasElement);
-  webcam.stream();
+  const video = document.getElementById("video-input");
+  navigator.mediaDevices.getUserMedia({video:true, audio: false})
+  .then(function(stream) {
+    video.srcObject = stream;
+    video.play();
+  })
+  .catch(function(err){
+    console.log("An error with video recording occured! " + err);
+  })
 
   // Load ML models
 
   blazefaceModel = await blazeface.load();
   cocoSsdModel = await cocoSsd.load();
+  //mobilenetModel = await mobilenet.load();
+
   await faceapi.nets.ssdMobilenetv1.loadFromUri("/models");
   await faceapi.nets.faceExpressionNet.loadFromUri("/models");
-  await faceapi.nets.ageGenderNet.loadFromUri("/models");
 
   // Connect to socket
 
   const webSocketProtocol = (window.location.protocol === "https:") ? "wss://" : "ws://";
-  const webSocket = new WebSocket(webSocketProtocol + document.domain + ":443/?sessionKey=" + sessionKey + "&userId=" + userId + "&secret=" + secret + "&type=client", "echo-protocol");
+  const webSocket = new WebSocket(webSocketProtocol + document.domain + ":" + location.port + "/?sessionKey=" + sessionKey + "&userId=" + userId + "&secret=" + secret + "&type=client", "echo-protocol");
 
   // Button event listeners
 
@@ -44,6 +49,11 @@ async function main() {
     document.getElementById("input-comment").value = "";
     webSocket.send(JSON.stringify({datatype:"comment", data: {te: comment, id: timeStampId}}));
   });
+
+  webSocket.onopen = function(){
+    console.log("WebSocket connection to server established!");
+    console.log("Protocol: " + webSocketProtocol);
+  }
 
   // Websocket event listener
 
@@ -55,7 +65,7 @@ async function main() {
       document.getElementById("timestamp-id").innerHTML = timeStampId;
       document.getElementById("working-idle").setAttribute('class', 'material-icons icon-red');
       const t0 = performance.now();
-      const picture = webcam.snap();
+      //const picture = webcam.snap();
       getStatus(timeStampId).then(statusVector => {
         // check nach undefined -> sendet nur falls gesicht erkannt. Sollte am besten immer senden?!
         if (!(statusVector === undefined)){
@@ -63,7 +73,6 @@ async function main() {
         }
         const t1 = performance.now();
         const timeToComplete = Math.round(t1 - t0);
-        console.log(timeToComplete)
         document.getElementById("request-completion-time").innerHTML = timeToComplete;
         document.getElementById("working-idle").setAttribute('class', 'material-icons icon-green');
       });
@@ -81,6 +90,30 @@ async function main() {
 
 async function getStatus(timeStampId){
   const [faceDetection, objectDetections, blazefacePredictions] = await performML();
+  /*
+  // Getting Grayscale
+
+  const src = cv.imread("canvas");
+  const dst = new cv.Mat();
+  cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
+  cv.imshow("canvas-output", dst);
+  src.delete();
+  dst.delete();
+
+  // Crop
+
+  const bfp = blazefacePredictions;
+  const dx = bfp[0].topLeft[0];
+  const dy = bfp[0].topLeft[1];
+  const dWidth = bfp[0].bottomRight[1] - bfp[0].topLeft[1];
+  const dHeight = bfp[0].topLeft[0] - bfp[0].bottomRight[0];
+  const canvasCropped = document.getElementById("canvas-cropped");
+  const contex = canvasCropped.getContext("2d");
+  const imgGreyScale = document.getElementById("canvas");
+  contex.drawImage(imgGreyScale, dx, dy, dWidth, dHeight);
+
+  */
+
   const lookingAtCamera = await checkLookingAtCamera(blazefacePredictions);
   const emotion = (faceDetection === undefined) ? "none" : await getMostProminentEmotion(faceDetection);
   recentEmotionsArray.push(emotion);
@@ -98,12 +131,13 @@ async function getStatus(timeStampId){
 }
 
 async function performML(){
-  const image = await document.querySelector("canvas");
+
+  const image = document.getElementById("video-input");
   const faceDetection = await faceapi
     .detectSingleFace(image)
     .withFaceExpressions()
-    .withAgeAndGender();
   const objectDetections = await cocoSsdModel.detect(image);
+  // console.log(objectDetections)
   const blazefacePredictions = await blazefaceModel.estimateFaces(image, false);
   return [faceDetection, objectDetections, blazefacePredictions]
 }
