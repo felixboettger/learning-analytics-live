@@ -483,8 +483,6 @@ function handleDashboardSocket(req){
         timeStampId ++;
         getSessionData(sessionKey).then(sessionData => {
           connection.send(JSON.stringify({datatype: "counters", data: generateCounterElements(sessionData)}));
-        });
-        getSessionData(sessionKey).then(sessionData => {
           connection.send(JSON.stringify({datatype: "participants", data: generateParticipants(sessionData)}));
         });
         socketDict[sessionKey].clients.forEach(clientSocket => {

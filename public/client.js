@@ -67,7 +67,6 @@ async function main() {
       const t0 = performance.now();
       //const picture = webcam.snap();
       getStatus(timeStampId).then(statusVector => {
-        // check nach undefined -> sendet nur falls gesicht erkannt. Sollte am besten immer senden?!
         if (!(statusVector === undefined)){
           webSocket.send(JSON.stringify({datatype: "status", data: statusVector}));
         }
@@ -122,10 +121,11 @@ async function getStatus(timeStampId){
   const detectedObjectsArray = objectDetections.map(object => object.class);
   const statusVector = {
     e: emotion, // emotion
+    hs: getHappinessScore(), // happiness score
     id: timeStampId, // id
     l: lookingAtCamera, // looking bool
-    o: detectedObjectsArray, // objects
-    hs: getHappinessScore() // happiness score
+    o: detectedObjectsArray // objects
+
   };
   return statusVector;
 }
