@@ -52,8 +52,8 @@ app.get("/", function(req, res) {
 
 app.get("/host", function(req, res) {
   laHelp.checkSession(req.cookies.sessionKey, req.cookies.secret).then(exists => {
-    if (exists) {
-      res.render("dashboard");
+    if (exists && req.cookies.sessionKey in socketDict) {
+      res.render("host-with-join-existing");
     } else {
       res.render("host");
     }
@@ -61,17 +61,21 @@ app.get("/host", function(req, res) {
 });
 
 app.get("/dashboard", function(req, res) {
+  res.render("dashboard")
+});
+
+app.post("/dashboard", function(req, res) {
   const [sessionKey, secret] = laMain.createSession();
   const url = req.protocol + "://" + req.get("host") + "/join/" + sessionKey;
   res.cookie("sessionKey", sessionKey);
   res.cookie("secret", secret);
-  res.render("dashboard");
-});
+  res.redirect("/dashboard");
+})
 
 app.get("/participant", function(req, res) {
   laHelp.checkParticipant(req.cookies.sessionKey, req.cookies.secret, req.cookies.participantId).then(exists => {
-    if (exists){
-      res.render("client");
+    if (exists && req.cookies.sessionKey in socketDict){
+      res.render("participant-with-join-existing");
     } else {
       res.render("participant");
     }
@@ -92,6 +96,10 @@ app.get("/legal", function(req, res) {
   res.render("legal-notice");
 });
 
+app.get("/client", function(req, res) {
+  res.render("client");
+});
+
 // // --- HTTP Post Request Handlers
 
 
@@ -99,7 +107,7 @@ app.get("/legal", function(req, res) {
 app.post("/participant", function(req, res) {
   laMain.createParticipant(req.body.sessionKey, req.body.participantName).then((participant) => {
     if (participant === undefined) {
-      res.render("client-session-not-found", {sessionKey: req.body.sessionKey});
+      res.render("participant-session-not-found", {sessionKey: req.body.sessionKey});
     } else {
       res.cookie("sessionKey", req.body.sessionKey);
       res.cookie("participantName", req.body.participantName);
@@ -200,18 +208,18 @@ function handleDashboardSocket(req){
       }
     });
     connection.on("close", function(){
-      clearInterval(refreshIntervalId);
-      closeClientSockets(sessionKey);
-      laDB.deleteSession(sessionKey);
-      delete socketDict[sessionKey];
-      console.log("Connection closed!");
+      //clearInterval(refreshIntervalId);
+      //closeClientSockets(sessionKey);
+      //laDB.deleteSession(sessionKey);
+      //delete socketDict[sessionKey];
+      //console.log("Connection closed!");
     });
   }})
 }
 
 function handleClientSocket(req){
   laHelp.checkSocketConnect(req).then(isValid => {
-    if (!(isValid)) {
+    if (!(isValid) || !(req.resourceURL.query.sessionKey in socketDict)) {
       req.reject();
       return;
     } else {

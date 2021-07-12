@@ -58,6 +58,16 @@ nav .navbar-nav li a:hover{
   margin: 30px auto;
 }
 
+.form-top{
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.form-bottom{
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
 /* Footer */
 
 .footer {

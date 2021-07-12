@@ -1,0 +1,35 @@
+<%- include("partials/header") -%>
+
+<div class="home-bg position-relative overflow-hidden p-3 p-md-5 m-md-3 text-center">
+  <div class="mx-auto my-5">
+
+    <form class="form-signin" action="/dashboard" method="post">
+      <i class="fas fa-chalkboard-teacher fa-5x" alt="" width="720" height="720"></i>
+      <h1 class="h3 mb-3 font-weight-normal">Host</h1>
+      <button class="btn btn-lg btn-primary btn-block" type="submit">
+  Create a new Session
+</button>
+    </form>
+
+    <div class="card text-center bg-success">
+      <div class="card-body">
+        <h5 class="card-title text-light">Active Session found</h5>
+        <p class="card-text text-light">You are the host of session <span id="session-key"></span></p>
+        <form action="/dashboard" method="get">
+          <button href="/dashboard" class="btn btn-light" type="submit">Join this session as host again</button>
+        </form>
+
+      </div>
+    </div>
+
+
+  </div>
+</div>
+
+<script type="text/javascript">
+  const cookieValues = document.cookie.split('; ');
+  const sessionKey = cookieValues.find(row => row.startsWith('sessionKey=')).split('=')[1];
+  document.getElementById("session-key").innerHTML = sessionKey;
+</script>
+
+<%- include("partials/footer") -%>

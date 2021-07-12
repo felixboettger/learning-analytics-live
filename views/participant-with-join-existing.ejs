@@ -1,0 +1,29 @@
+<%- include("partials/header") -%>
+
+<div class="home-bg position-relative overflow-hidden p-3 p-md-5 m-md-3 text-center">
+  <div class="mx-auto my-5">
+
+
+
+<%- include("partials/session-join") -%>
+
+    <div class="card text-center bg-success">
+      <div class="card-body">
+        <h5 class="card-title text-light">Active Session found</h5>
+        <p class="card-text text-light">You joined session <span id="session-key"></span> before as <span id="participant-name"></span> (User ID: <span id="participant-id"></span>)</p>
+        <a href="/client" class="btn btn-light">Join this session again</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<%- include("partials/footer") -%>
+
+<script type="text/javascript">
+  const userId = cookieValues.find(row => row.startsWith('participantId=')).split('=')[1];
+  const userName = cookieValues.find(row => row.startsWith('participantName=')).split('=')[1];
+  document.getElementById("participant-name").innerHTML = userName;
+  document.getElementById("participant-id").innerHTML = userId;
+  document.getElementById("session-key").innerHTML = sessionKey;
+</script>
