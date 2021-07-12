@@ -5,45 +5,44 @@
 const dotenv = require("dotenv").config();
 const fs = require("fs");
 const express = require("express");
+const session = require('express-session');
 const bodyParser = require("body-parser");
+const cookieParser = require('cookie-parser');
 const http = require("http");
 const https = require("https");
 const WebSocketServer = require("websocket").server;
 
-var laCalc = require("./src/la-calculations")
-var laMain = require("./src/la-main")
-var laHelp = require("./src/la-helpers")
-var laDB = require("./src/la-database")
+const laCalc = require("./src/la-calculations")
+const laMain = require("./src/la-main")
+const laHelp = require("./src/la-helpers")
+const laDB = require("./src/la-database")
 
 // --- Configs ---
 
-const updateInterval = 1000;
+const updateInterval = process.env.UPDATE_INTERVAL;
 const portNr = process.env.PORT;
-
-// Set localEnv to false for server deploy, set to true to enable local testing
 const localEnv = ("true" === process.env.LOCAL_ENV) ? true : false;
 
 // --- Objects ---
 
-const socketDict = {}; // Running sockets are stored in this object
+const socketDict = {}; // Open sockets are referenced in this object
 
 // --- Express Setup ---
 
 const app = express();
 
-
 app.set("view engine", "ejs");
-app.use(
-  bodyParser.urlencoded({
-    extended: true
-  })
-);
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
-app.use(
-  express.json({
-    limit: "1mb"
-  })
-);
+app.use(express.json({limit: "1mb"}));
+app.use(cookieParser());
+app.use(session({resave: false,
+  saveUninitialized: false,
+  secret: laHelp.generateSecret(8),
+  cookie : {
+    secure: true,
+    sameSite: 'strict'
+  }}));
 
 // --- HTTP Get Request Handlers
 
@@ -52,26 +51,37 @@ app.get("/", function(req, res) {
 });
 
 app.get("/host", function(req, res) {
-  res.render("host");
+  laHelp.checkSession(req.cookies.sessionKey, req.cookies.secret).then(exists => {
+    if (exists) {
+      res.render("dashboard");
+    } else {
+      res.render("host");
+    }
+  });
 });
 
 app.get("/dashboard", function(req, res) {
   const [sessionKey, secret] = laMain.createSession();
   const url = req.protocol + "://" + req.get("host") + "/join/" + sessionKey;
-  res.render("dashboard", {
-    sessionKey: sessionKey,
-    secret: secret,
-    url: url
-  });
+  res.cookie("sessionKey", sessionKey);
+  res.cookie("secret", secret);
+  res.render("dashboard");
 });
 
 app.get("/participant", function(req, res) {
-  res.render("participant", {sessionKey: ""});
+  laHelp.checkParticipant(req.cookies.sessionKey, req.cookies.secret, req.cookies.participantId).then(exists => {
+    if (exists){
+      res.render("client");
+    } else {
+      res.render("participant");
+    }
+  });
 });
 
 // Join with direct link
 app.get("/join/:sessionKey", function(req, res) {
-  res.render("participant", {sessionKey: req.params.sessionKey});
+  res.cookie("sessionKey", req.params.sessionKey);
+  res.redirect("/participant");
 });
 
 app.get("/about", function(req, res) {
@@ -91,13 +101,11 @@ app.post("/participant", function(req, res) {
     if (participant === undefined) {
       res.render("client-session-not-found", {sessionKey: req.body.sessionKey});
     } else {
-      console.log(participant);
-      res.render("client", {
-        sessionKey: req.body.sessionKey,
-        participantName: req.body.participantName,
-        participantId: participant[0],
-        secret: participant[1]
-      });
+      res.cookie("sessionKey", req.body.sessionKey);
+      res.cookie("participantName", req.body.participantName);
+      res.cookie("participantId", participant[0]);
+      res.cookie("secret", participant[1]);
+      res.render("client");
     }
   });
 });
@@ -218,9 +226,7 @@ function handleClientSocket(req){
           const statusVector = messageJSON.data;
           laDB.updateParticipantStatus(sessionKey, userId, statusVector);
         } else if (datatype === "comment") {
-          const comment = messageJSON.data.te;
-          const timeStampId = messageJSON.data.id;
-          const time = new Date().getTime();
+          const [comment, timeStampId, time] = [messageJSON.data.te, messageJSON.data.id, new Date().getTime()];
           socketDict[sessionKey].host.send(JSON.stringify({datatype: "comment", data: {te: comment, id: timeStampId, ti: time}}));
           laDB.updateComments(comment, time, timeStampId, sessionKey);
         }

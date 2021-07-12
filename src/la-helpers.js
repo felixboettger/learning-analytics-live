@@ -1,4 +1,11 @@
+//jshint esversion:6
+
+// This module includes all helper functions for the server.
+
+// --- Imports ---
+
 const laDB = require("./la-database");
+const crypto = require("crypto");
 
 // Generates a 14 digit session key
 function generateSessionKey() {
@@ -14,9 +21,8 @@ function generateSessionKey() {
   return newKey;
 }
 
-async function validateSecret(req){
-  const query = {sessionKey: req.query.sessionKey, secret: req.query.secret};
-  return checkSessionExists(query);
+function generateSecret(bytes){
+  return crypto.randomBytes(bytes).toString("hex");
 }
 
 async function checkSocketConnect(req){
@@ -27,4 +33,17 @@ async function checkSocketConnect(req){
   return allowed;
 }
 
-module.exports = {generateSessionKey, checkSocketConnect, validateSecret};
+async function checkSession(sessionKey, secret){
+  const query = {sessionKey: sessionKey, secret: secret};
+  const allowed = await laDB.checkSessionExists(query);
+  console.log("Session exists:", allowed);
+  return allowed;
+}
+
+async function checkParticipant(sessionKey, secret, participantId){
+  const query = {sessionKey: sessionKey, "participants.participantId": participantId, "participants.secret": secret};
+  const allowed = await laDB.checkSessionExists(query);
+  return allowed;
+}
+
+module.exports = {generateSessionKey, checkSocketConnect, generateSecret, checkSession, checkParticipant};

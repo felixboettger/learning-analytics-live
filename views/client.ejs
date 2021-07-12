@@ -12,12 +12,11 @@
   </head>
   <body>
 
-    <p id="secret" class="d-none"><%=secret%></p>
 
     <div class="card">
       <div class="header">
         <i class="material-icons">person</i>
-        <h2>Client  - Session <span id="session-key"><%=sessionKey%><span></h2>
+        <h2>Client  - Session <span class="session-key"><span></h2>
       </div>
 
 
@@ -33,7 +32,7 @@
             </div>
             <div class="content">
               <div class="text">Session Key</div>
-              <div id="session-key" class="number count-to" data-from="0" data-to="125" data-speed="15" data-fresh-interval="20"><%=sessionKey%></div>
+              <div id="session-key" class="number count-to" data-from="0" data-to="125" data-speed="15" data-fresh-interval="20"><span class="session-key"></span></div>
             </div>
           </div>
         </div>
@@ -45,7 +44,7 @@
             </div>
             <div class="content">
               <div class="text">Name</div>
-              <div id="participant-name" class="number count-to" data-from="0" data-to="125" data-speed="15" data-fresh-interval="20"><%=participantName%></div>
+              <div id="participant-name" class="number count-to" data-from="0" data-to="125" data-speed="15" data-fresh-interval="20"><span id="user-name"></span></div>
             </div>
           </div>
         </div>
@@ -58,7 +57,7 @@
             </div>
             <div class="content">
               <div class="text">ID</div>
-              <div id="participant-id" class="number count-to" data-from="0" data-to="125" data-speed="15" data-fresh-interval="20"><%=participantId%></div>
+              <div id="participant-id" class="number count-to" data-from="0" data-to="125" data-speed="15" data-fresh-interval="20"><span id="user-id"></span></div>
             </div>
           </div>
         </div>

@@ -1,6 +1,28 @@
+//jshint esversion:6
 
-// generates counters (used for API requests)
+// This module includes all functions that prepare the data for sending it to the dashboard.
+
+// generates a list of participants for use in the dashboard
+function generateParticipants(sessionData) {
+  participants = [];
+  sessionData.participants.forEach(function(participant) {
+    participants.push({
+      id: participant.participantId,
+      n: participant.participantName, // participant name
+      i: participant.inactive, // participant inactive bool
+      s:
+        participant.participantStatus[
+          participant.participantStatus.length - 1
+          ]
+      });
+    })
+  return participants;
+};
+
+// generates counters (sent to dashboard)
 function generateCounterElements(sessionData) {
+  // variables: apc - active pariticpants, lacc - looking at camera, ec - emotions, ha - happy
+  // sa - sad, ne - neutral, di - disgusted, fe - fearful, su - surprised, an - angry
   var counterElements = {
     apc: 0,
     lacc: 0,
@@ -33,22 +55,5 @@ function generateCounterElements(sessionData) {
   }
   return counterElements;
 }
-
-// generates a list of participants for use in the dashboard
-function generateParticipants(sessionData) {
-  participants = [];
-  sessionData.participants.forEach(function(participant) {
-    participants.push({
-      id: participant.participantId,
-      n: participant.participantName, // participant name
-      i: participant.inactive, // participant inactive bool
-      s:
-        participant.participantStatus[
-          participant.participantStatus.length - 1
-          ]
-      });
-    })
-  return participants;
-};
 
 module.exports = {generateCounterElements, generateParticipants};

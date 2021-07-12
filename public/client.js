@@ -1,9 +1,18 @@
 //jshint esversion:6
 
-const secret = document.getElementById("secret").textContent;
-const userId = parseInt(document.getElementById("participant-id").textContent);
-const userName = document.getElementById("participant-name").textContent;
-const sessionKey = document.getElementById("session-key").textContent;
+const cookieValues = document.cookie.split('; ');
+
+const secret = cookieValues.find(row => row.startsWith('secret=')).split('=')[1];
+const userId = cookieValues.find(row => row.startsWith('participantId=')).split('=')[1];
+const userName = cookieValues.find(row => row.startsWith('participantName=')).split('=')[1];
+const sessionKey = cookieValues.find(row => row.startsWith('sessionKey=')).split('=')[1];
+
+const sessionKeyElements = document.getElementsByClassName("session-key");
+
+[].slice.call(sessionKeyElements).forEach((sessionKeyElement) => sessionKeyElement.innerHTML = sessionKey);
+
+document.getElementById("user-name").innerHTML = userName;
+document.getElementById("user-id").innerHTML = userId;
 
 var cocoSsdModel;
 //var mobilenetModel

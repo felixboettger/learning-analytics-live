@@ -1,5 +1,7 @@
 //jshint esversion:6
 
+// This module includes all functions that directly manipulate the database
+
 // --- Imports---
 
 const dotenv = require("dotenv").config({path: `../.env`});

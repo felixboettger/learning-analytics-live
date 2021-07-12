@@ -1,7 +1,11 @@
 //jshint esversion:6
 
-const sessionKey = document.getElementById("session-key").textContent;
-const secret = document.getElementById("secret").textContent;
+const cookieValues = document.cookie.split('; ');
+
+const sessionKey = cookieValues.find(row => row.startsWith('sessionKey=')).split('=')[1];
+const secret = cookieValues.find(row => row.startsWith('secret=')).split('=')[1];
+const directLink = window.location.protocol + "//" + window.location.host + "/join/" + sessionKey;
+document.getElementById("session-key").innerHTML = sessionKey;
 
 const webSocketProtocol = (window.location.protocol === "https:") ? "wss://" : "ws://";
 const webSocket = new WebSocket(webSocketProtocol + document.domain + ":" + location.port + "/?sessionKey=" + sessionKey + "&secret=" + secret + "&type=dashboard", "echo-protocol");
@@ -59,7 +63,6 @@ document.getElementById("end-btn").addEventListener("click", function() {
 });
 
 document.getElementById("link-btn").addEventListener("click", function() {
-  const directLink = document.getElementById("direct-link").textContent;
   navigator.clipboard.writeText(directLink).then(function() {
  }, function(err) {
    console.error('Async: Could not copy text: ', err);

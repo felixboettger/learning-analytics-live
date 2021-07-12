@@ -3,8 +3,13 @@
     <form class="form-signin" action="/participant" method="POST">
       <i class="far fa-address-card fa-5x" alt="" width="720" height="720"></i>
       <h1 class="h3 mb-3 font-weight-normal">Participant Login</h1>
-      <input type="text" id="inputSessionKey" class="form-control form-top" value="<%=sessionKey%>" placeholder="Session Key" name="sessionKey" required pattern="[A-Z]{4}-[A-Z]{4}-[A-Z]{4}" title="Session Key format is: ABCD-EFGH-JKLM">
+      <input type="text" id="inputSessionKey" class="form-control form-top" value="" placeholder="Session Key" name="sessionKey" required pattern="[A-Z]{4}-[A-Z]{4}-[A-Z]{4}" title="Session Key format is: ABCD-EFGH-JKLM">
       <input type="text" id="inputParticipantName" class="form-control form-bottom" placeholder="Your Name" name="participantName"> <!-- required for now, anonym should be possible in the future -->
       <button class="btn btn-lg btn-primary btn-block" type="submit">Login</button>
     </form>
+    <script type="text/javascript">
+      const cookieValues = document.cookie.split('; ');
+      const sessionKey = cookieValues.find(row => row.startsWith('sessionKey=')).split('=')[1];
+      document.getElementById("inputSessionKey").value = sessionKey;
+    </script>
 </div>
