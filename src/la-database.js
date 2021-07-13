@@ -12,10 +12,13 @@ const mongoose = require("mongoose");
 // Set localEnv to false for server deploy, set to true to enable local testing
 const localEnv = ("true" === process.env.LOCAL_ENV) ? true : false;
 
+// --- Mongoose & Database Setup
+
 // MongoDB URL. A MongoDB is required for running the server.
 const mongodbURL = localEnv ? process.env.DB_HOST_LOCAL : process.env.DB_HOST;
 
-// --- Mongoose & Database Setup
+// Starting cleaning Routine (run every hour)
+setInterval(cleaningRoutine, 3600000);
 
 // Establising connection with the MongoDB
 mongoose
@@ -52,6 +55,7 @@ const commentSchema = {
 }
 
 const sessionSchema = {
+  lastDashboardAccess: Date,
   sessionKey: String,
   secret: String,
   comments: [commentSchema],
@@ -85,10 +89,11 @@ function deleteSession(sessionKey){
 
 // returns session data
 async function getSessionData(sessionKey) {
-  return await Session.findOne(
+  return await Session.findOneAndUpdate(
     {
       sessionKey: sessionKey
-    }
+    },
+    {lastDashboardAccess: new Date()}
   );
 }
 
@@ -177,6 +182,8 @@ async function updateComments(comment, time, timeId, sessionKey){
     });
 };
 
+// active and inactive are almost the same, can be combined into one
+
 async function markParticipantAsInactive(sessionKey, userId){
   Session.findOneAndUpdate(
     {
@@ -190,18 +197,53 @@ async function markParticipantAsInactive(sessionKey, userId){
         console.log(err);
       }
     });
-    Session.findOne({
+};
+
+async function markParticipantAsActive(sessionKey, userId){
+  Session.findOneAndUpdate(
+    {
       sessionKey: sessionKey,
       "participants.participantId": userId
-    }, function(err){
+    },
+    {$set: {"participants.$.inactive": false}},
+    {new: true},
+    function(err){
       if (err) {
         console.log(err);
       }
-    })
+    });
 };
 
 async function checkSessionExists(query){
   return await Session.exists(query);
 }
 
-module.exports = {deleteSession, getSessionData, exportSessionData, updateParticipantStatus, checkSessionExists, updateComments, markParticipantAsInactive, addSessionToDatabase, addParticipantToSession};
+function cleaningRoutine() {
+  console.log("Cleaning routine initiated!");
+  Session.find({}, function(err, foundSessions) {
+    if (err) {
+      console.log(err);
+    } else {
+      foundSessions.forEach(function(foundSession) {
+        lastDashboardAccess = foundSession.lastDashboardAccess;
+        // Check if last session access more than 10 minutes ago
+        const willBeDeleted = new Date().getTime() - new Date(lastDashboardAccess).getTime() > 3600000 ? true : false;
+        if (willBeDeleted) {
+          Session.deleteOne({
+            sessionKey: foundSession.sessionKey
+          }, function(err) {
+            if (err) {
+              console.log(err);
+            } else {
+              console.log("Session " + foundSession.sessionKey + " has been deleted due to inactivity.");
+            }
+          })
+        }
+      })
+    }
+  })
+}
+
+
+
+module.exports = {deleteSession, getSessionData, exportSessionData, updateParticipantStatus, checkSessionExists, updateComments, markParticipantAsInactive, markParticipantAsActive, addSessionToDatabase, addParticipantToSession};

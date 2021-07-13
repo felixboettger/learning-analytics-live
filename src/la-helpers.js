@@ -29,7 +29,9 @@ async function checkSocketConnect(req){
   const type = req.resourceURL.query.type;
   const query = (type === "dashboard") ? {sessionKey: req.resourceURL.query.sessionKey, secret: req.resourceURL.query.secret} : {sessionKey: req.resourceURL.query.sessionKey, "participants.participantId": req.resourceURL.query.userId, "participants.secret": req.resourceURL.query.secret};
   const allowed = await laDB.checkSessionExists(query);
-  allowed ? console.log("Connection from Dashboard " + req.origin + " allowed") : console.log("Connection from Dashboard " + req.origin + " rejected");
+  // const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  const ip = "";
+  allowed ? console.log("Connection from Dashboard " + ip + " allowed") : console.log("Connection from Dashboard " + ip + " rejected");
   return allowed;
 }
 

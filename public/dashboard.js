@@ -56,7 +56,7 @@ document.getElementById("download-btn").addEventListener("click", function() {
 
 document.getElementById("end-btn").addEventListener("click", function() {
  if (confirm("Click ok to end this session. All session data will be deleted from the server.")){
-   webSocket.close();
+   webSocket.send("end");
    const url = window.location;
    url.replace(url.protocol + "//" + url.host + "/");
  }

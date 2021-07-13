@@ -9,6 +9,9 @@
 const laHelp = require("./la-helpers");
 const laDB = require("./la-database");
 
+// --- Objects ---
+
+const socketDict = {}; // Open sockets are referenced in this object
 
 // ---
 
@@ -29,4 +32,39 @@ async function createParticipant(sessionKey, name){
   }
 }
 
-module.exports = {createParticipant, createSession};
+function checkActiveSession(sessionKey){
+  return sessionKey in socketDict;
+}
+
+function getHostSocket(sessionKey){
+  return socketDict[sessionKey].host;
+}
+
+function getClientSockets(sessionKey){
+  return socketDict[sessionKey].clients;
+}
+
+function addHostToSocketDict(sessionKey, socket){
+  socketDict[sessionKey] = {host: socket, clients: []};
+}
+
+function addClientToSocketDict(sessionKey, socket){
+  return socketDict[sessionKey].clients.push(socket) - 1;
+}
+
+function removeFromSocketDict(sessionKey, index){
+  socketDict[sessionKey].clients.splice(index, 1);
+}
+
+function closeClientSockets(sessionKey){
+  const clientSockets = getClientSockets(sessionKey);
+  clientSockets.forEach(clientSocket => clientSocket.close());
+}
+
+function endSession(sessionKey){
+  closeClientSockets(sessionKey);
+  delete socketDict[sessionKey];
+  laDB.deleteSession(sessionKey);
+}
+
+module.exports = {createParticipant, createSession, addClientToSocketDict, addHostToSocketDict, checkActiveSession, getClientSockets, getHostSocket, removeFromSocketDict, endSession};

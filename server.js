@@ -23,10 +23,6 @@ const updateInterval = process.env.UPDATE_INTERVAL;
 const portNr = process.env.PORT;
 const localEnv = ("true" === process.env.LOCAL_ENV) ? true : false;
 
-// --- Objects ---
-
-const socketDict = {}; // Open sockets are referenced in this object
-
 // --- Express Setup ---
 
 const app = express();
@@ -52,7 +48,7 @@ app.get("/", function(req, res) {
 
 app.get("/host", function(req, res) {
   laHelp.checkSession(req.cookies.sessionKey, req.cookies.secret).then(exists => {
-    if (exists && req.cookies.sessionKey in socketDict) {
+    if (exists && laMain.checkActiveSession(req.cookies.sessionKey)) {
       res.render("host-with-join-existing");
     } else {
       res.render("host");
@@ -74,7 +70,7 @@ app.post("/dashboard", function(req, res) {
 
 app.get("/participant", function(req, res) {
   laHelp.checkParticipant(req.cookies.sessionKey, req.cookies.secret, req.cookies.participantId).then(exists => {
-    if (exists && req.cookies.sessionKey in socketDict){
+    if (exists && laMain.checkActiveSession(req.cookies.sessionKey)){
       res.render("participant-with-join-existing");
     } else {
       res.render("participant");
@@ -117,11 +113,6 @@ app.post("/participant", function(req, res) {
     }
   });
 });
-
-function closeClientSockets(sessionKey){
-  const clientSockets = socketDict[sessionKey].clients;
-  clientSockets.forEach(clientSocket => clientSocket.close());
-}
 
 // --- Server setup and start
 
@@ -184,15 +175,16 @@ function handleDashboardSocket(req){
     } else {
       const sessionKey = req.resourceURL.query.sessionKey;
       const connection = req.accept('echo-protocol', req.origin);
-      socketDict[sessionKey] = {host: connection, clients: []};
+      laMain.addHostToSocketDict(sessionKey, connection);
       var timeStampId = 0;
+      const clientSockets = laMain.getClientSockets(sessionKey);
       const refreshIntervalId = setInterval(function(){
         timeStampId ++;
         laDB.getSessionData(sessionKey).then(sessionData => {
           connection.send(JSON.stringify({datatype: "counters", data: laCalc.generateCounterElements(sessionData)}));
           connection.send(JSON.stringify({datatype: "participants", data: laCalc.generateParticipants(sessionData)}));
         });
-        socketDict[sessionKey].clients.forEach(clientSocket => {
+        clientSockets.forEach(clientSocket => {
           clientSocket.send(JSON.stringify({datatype: "request", id: timeStampId}));
         })
       }, updateInterval)
@@ -204,30 +196,31 @@ function handleDashboardSocket(req){
             ).then(exportData => {
               connection.send(JSON.stringify({datatype: "download", data: exportData}));
             });
+          } else if (request == "end"){
+            clearInterval(refreshIntervalId);
+            laMain.endSession(sessionKey);
+            console.log("Session " + sessionKey + " closed!");
           }
       }
     });
     connection.on("close", function(){
-      //clearInterval(refreshIntervalId);
-      //closeClientSockets(sessionKey);
-      //laDB.deleteSession(sessionKey);
-      //delete socketDict[sessionKey];
-      //console.log("Connection closed!");
+      clearInterval(refreshIntervalId);
     });
   }})
 }
 
 function handleClientSocket(req){
   laHelp.checkSocketConnect(req).then(isValid => {
-    if (!(isValid) || !(req.resourceURL.query.sessionKey in socketDict)) {
+    if (!(isValid) || !(laMain.checkActiveSession(req.resourceURL.query.sessionKey))) {
       req.reject();
       return;
     } else {
       const connection = req.accept('echo-protocol', req.origin);
       const sessionKey = req.resourceURL.query.sessionKey;
       const userId = req.resourceURL.query.userId;
-      const indexOfSocket = socketDict[sessionKey].clients.push(connection) - 1;
+      const index = laMain.addClientToSocketDict(sessionKey, connection);
       connection.on("message", function(message){
+        laDB.markParticipantAsActive(sessionKey, userId);
         const messageJSON = JSON.parse(message.utf8Data);
         const datatype = messageJSON.datatype;
         if (datatype === "status"){
@@ -235,13 +228,13 @@ function handleClientSocket(req){
           laDB.updateParticipantStatus(sessionKey, userId, statusVector);
         } else if (datatype === "comment") {
           const [comment, timeStampId, time] = [messageJSON.data.te, messageJSON.data.id, new Date().getTime()];
-          socketDict[sessionKey].host.send(JSON.stringify({datatype: "comment", data: {te: comment, id: timeStampId, ti: time}}));
+          laMain.getHostSocket(sessionKey).send(JSON.stringify({datatype: "comment", data: {te: comment, id: timeStampId, ti: time}}));
           laDB.updateComments(comment, time, timeStampId, sessionKey);
         }
       })
       connection.on("close", function(){
-        if (socketDict[sessionKey]){
-          socketDict[sessionKey].clients.splice(indexOfSocket, 1);
+        if (laMain.checkActiveSession(sessionKey)){
+          laMain.removeFromSocketDict(sessionKey, index);
         }
         laDB.markParticipantAsInactive(sessionKey, userId);
       });
