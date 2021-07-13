@@ -34,7 +34,7 @@ app.use(express.json({limit: "1mb"}));
 app.use(cookieParser());
 app.use(session({resave: false,
   saveUninitialized: false,
-  secret: laHelp.generateSecret(8),
+  secret: process.env.SECRET,
   cookie : {
     secure: true,
     sameSite: 'strict'
@@ -47,8 +47,8 @@ app.get("/", function(req, res) {
 });
 
 app.get("/host", function(req, res) {
-  laHelp.checkSession(req.cookies.sessionKey, req.cookies.secret).then(exists => {
-    if (exists && laMain.checkActiveSession(req.cookies.sessionKey)) {
+  laHelp.checkSession(req.cookies.sessionKey, req.cookies.hsecret).then(exists => {
+    if (exists) {
       res.render("host-with-join-existing");
     } else {
       res.render("host");
@@ -64,12 +64,12 @@ app.post("/dashboard", function(req, res) {
   const [sessionKey, secret] = laMain.createSession();
   const url = req.protocol + "://" + req.get("host") + "/join/" + sessionKey;
   res.cookie("sessionKey", sessionKey);
-  res.cookie("secret", secret);
+  res.cookie("hsecret", secret);
   res.redirect("/dashboard");
 })
 
 app.get("/participant", function(req, res) {
-  laHelp.checkParticipant(req.cookies.sessionKey, req.cookies.secret, req.cookies.participantId).then(exists => {
+  laHelp.checkParticipant(req.cookies.sessionKey, req.cookies.psecret, req.cookies.participantId).then(exists => {
     if (exists && laMain.checkActiveSession(req.cookies.sessionKey)){
       res.render("participant-with-join-existing");
     } else {
@@ -108,7 +108,7 @@ app.post("/participant", function(req, res) {
       res.cookie("sessionKey", req.body.sessionKey);
       res.cookie("participantName", req.body.participantName);
       res.cookie("participantId", participant[0]);
-      res.cookie("secret", participant[1]);
+      res.cookie("psecret", participant[1]);
       res.render("client");
     }
   });

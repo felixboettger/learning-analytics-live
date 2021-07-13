@@ -2,7 +2,7 @@
 
 const cookieValues = document.cookie.split('; ');
 
-const secret = cookieValues.find(row => row.startsWith('secret=')).split('=')[1];
+const secret = cookieValues.find(row => row.startsWith('psecret=')).split('=')[1];
 const userId = cookieValues.find(row => row.startsWith('participantId=')).split('=')[1];
 const userName = cookieValues.find(row => row.startsWith('participantName=')).split('=')[1];
 const sessionKey = cookieValues.find(row => row.startsWith('sessionKey=')).split('=')[1];
@@ -48,7 +48,7 @@ async function main() {
   // Connect to socket
 
   const webSocketProtocol = (window.location.protocol === "https:") ? "wss://" : "ws://";
-  const webSocket = new WebSocket(webSocketProtocol + document.domain + ":" + location.port + "/?sessionKey=" + sessionKey + "&userId=" + userId + "&secret=" + secret + "&type=client", "echo-protocol");
+  const webSocket = new WebSocket(webSocketProtocol + document.domain + ":" + location.port + "/?sessionKey=" + sessionKey + "&userId=" + userId + "&psecret=" + secret + "&type=client", "echo-protocol");
 
   // Button event listeners
 

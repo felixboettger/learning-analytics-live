@@ -3,12 +3,12 @@
 const cookieValues = document.cookie.split('; ');
 
 const sessionKey = cookieValues.find(row => row.startsWith('sessionKey=')).split('=')[1];
-const secret = cookieValues.find(row => row.startsWith('secret=')).split('=')[1];
+const secret = cookieValues.find(row => row.startsWith('hsecret=')).split('=')[1];
 const directLink = window.location.protocol + "//" + window.location.host + "/join/" + sessionKey;
 document.getElementById("session-key").innerHTML = sessionKey;
 
 const webSocketProtocol = (window.location.protocol === "https:") ? "wss://" : "ws://";
-const webSocket = new WebSocket(webSocketProtocol + document.domain + ":" + location.port + "/?sessionKey=" + sessionKey + "&secret=" + secret + "&type=dashboard", "echo-protocol");
+const webSocket = new WebSocket(webSocketProtocol + document.domain + ":" + location.port + "/?sessionKey=" + sessionKey + "&hsecret=" + secret + "&type=dashboard", "echo-protocol");
 
 // Websocket listener
 
