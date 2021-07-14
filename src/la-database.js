@@ -36,8 +36,8 @@ const statusSchema = {
   emotion: String,
   objects: [String],
   looks: Boolean,
+  time: Number,
   happinessScore: Number,
-  id: Number
 };
 
 const participantSchema = {
@@ -49,13 +49,13 @@ const participantSchema = {
 };
 
 const commentSchema = {
-  commentText: String,
-  commentTime: Date,
-  timeId: Number
+  text: String,
+  time: Date
 }
 
 const sessionSchema = {
-  lastDashboardAccess: Date,
+  start: Number,
+  lastDashboardAccess: Number,
   sessionKey: String,
   secret: String,
   comments: [commentSchema],
@@ -93,7 +93,15 @@ async function getSessionData(sessionKey) {
     {
       sessionKey: sessionKey
     },
-    {lastDashboardAccess: new Date()}
+    {lastDashboardAccess: Math.floor(new Date().getTime()/1000)}
+  );
+}
+
+async function getSessionDataNoDashboard(sessionKey) {
+  return await Session.findOneAndUpdate(
+    {
+      sessionKey: sessionKey
+    }
   );
 }
 
@@ -125,11 +133,11 @@ function addParticipantToSession(participantId, name, secret, sessionKey){
   )
 }
 
-function updateParticipantStatus(sessionKey, userId, statusVector, id){
+function updateParticipantStatus(sessionKey, userId, statusVector, time){
   const newStatus = new Status({
     emotion: statusVector.e,
     happinessScore: statusVector.hs,
-    id: statusVector.id,
+    time: time,
     looks: statusVector.l,
     objects: statusVector.o
   });
@@ -150,6 +158,7 @@ function updateParticipantStatus(sessionKey, userId, statusVector, id){
 
 function addSessionToDatabase(sessionKey, secret){
   const newSession = new Session({
+    start: Math.floor(new Date().getTime() / 1000),
     sessionKey: sessionKey,
     secret: secret,
     comments: [],
@@ -164,15 +173,14 @@ function addSessionToDatabase(sessionKey, secret){
   });
 }
 
-async function updateComments(comment, time, timeId, sessionKey){
+async function updateComments(comment, time, sessionKey){
   Session.findOneAndUpdate(
     {
       sessionKey: sessionKey
     },
     {$addToSet: {comments: new Comment({
-      commentText: comment,
-      commentTime: time,
-      timeId: timeId
+      text: comment,
+      time: time
     })}},
     {new: true},
     function(err){
@@ -198,6 +206,7 @@ async function markParticipantAsInactive(sessionKey, userId){
       }
     });
 };
+
 
 async function markParticipantAsActive(sessionKey, userId){
   Session.findOneAndUpdate(
@@ -225,9 +234,9 @@ function cleaningRoutine() {
       console.log(err);
     } else {
       foundSessions.forEach(function(foundSession) {
-        lastDashboardAccess = foundSession.lastDashboardAccess;
+        const lastDashboardAccess = foundSession.lastDashboardAccess;
         // Check if last session access more than 10 minutes ago
-        const willBeDeleted = new Date().getTime() - new Date(lastDashboardAccess).getTime() > 3600000 ? true : false;
+        const willBeDeleted = Math.floor(new Date().getTime()/1000) - lastDashboardAccess > 3600 ? true : false;
         if (willBeDeleted) {
           Session.deleteOne({
             sessionKey: foundSession.sessionKey
@@ -246,4 +255,4 @@ function cleaningRoutine() {
 
 
 
-module.exports = {deleteSession, getSessionData, exportSessionData, updateParticipantStatus, checkSessionExists, updateComments, markParticipantAsInactive, markParticipantAsActive, addSessionToDatabase, addParticipantToSession};
+module.exports = {deleteSession, getSessionData, exportSessionData, updateParticipantStatus, checkSessionExists, updateComments, markParticipantAsInactive, markParticipantAsActive, addSessionToDatabase, getSessionDataNoDashboard, addParticipantToSession};

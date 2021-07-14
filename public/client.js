@@ -21,11 +21,11 @@ var lastEmotion;
 
 // last 20 emotions stored here
 const recentEmotionsArray = [];
+var timeOffset;
 
 main();
 
 async function main() {
-
   const video = document.getElementById("video-input");
   navigator.mediaDevices.getUserMedia({video:true, audio: false})
   .then(function(stream) {
@@ -54,14 +54,15 @@ async function main() {
 
   document.getElementById("send-comment-btn").addEventListener("click", function() {
     const comment = document.getElementById("input-comment").value;
-    const timeStampId = parseInt(document.getElementById("timestamp-id").innerHTML);
     document.getElementById("input-comment").value = "";
-    webSocket.send(JSON.stringify({datatype:"comment", data: {te: comment, id: timeStampId}}));
+    webSocket.send(JSON.stringify({datatype:"comment", data: {te: comment}}));
   });
 
   webSocket.onopen = function(){
     console.log("WebSocket connection to server established!");
     console.log("Protocol: " + webSocketProtocol);
+    console.log("Sending 'ready' message to server.")
+    webSocket.send(JSON.stringify({datatype: "ready"}));
   }
 
   // Websocket event listener
@@ -69,21 +70,9 @@ async function main() {
   webSocket.addEventListener("message", function(event){
     const messageJSON = JSON.parse(event.data);
     const datatype = messageJSON.datatype;
-    if (datatype === "request") {
-      const timeStampId = messageJSON.id;
-      document.getElementById("timestamp-id").innerHTML = timeStampId;
-      document.getElementById("working-idle").setAttribute('class', 'material-icons icon-red');
-      const t0 = performance.now();
-      //const picture = webcam.snap();
-      getStatus(timeStampId).then(statusVector => {
-        if (!(statusVector === undefined)){
-          webSocket.send(JSON.stringify({datatype: "status", data: statusVector}));
-        }
-        const t1 = performance.now();
-        const timeToComplete = Math.round(t1 - t0);
-        document.getElementById("request-completion-time").innerHTML = timeToComplete;
-        document.getElementById("working-idle").setAttribute('class', 'material-icons icon-green');
-      });
+    if (datatype === "start") {
+      console.log("Server sent start signal!");
+      setInterval(statusInterval, messageJSON.interval);
     }
   });
 
@@ -92,11 +81,26 @@ async function main() {
     const url = window.location;
     url.replace(url.protocol + "//" + url.host + "/");
   }
+
+  function statusInterval(){
+    document.getElementById("working-idle").setAttribute('class', 'material-icons icon-red');
+    const t0 = performance.now();
+    //const picture = webcam.snap();
+    getStatus().then(statusVector => {
+      if (!(statusVector === undefined)){
+        webSocket.send(JSON.stringify({datatype: "status", data: statusVector}));
+      }
+      const t1 = performance.now();
+      const timeToComplete = Math.round(t1 - t0);
+      document.getElementById("request-completion-time").innerHTML = timeToComplete;
+      document.getElementById("working-idle").setAttribute('class', 'material-icons icon-green');
+    })
+  }
 }
 
 // Helper functions
 
-async function getStatus(timeStampId){
+async function getStatus(){
   const [faceDetection, objectDetections, blazefacePredictions] = await performML();
   /*
   // Getting Grayscale
@@ -126,21 +130,17 @@ async function getStatus(timeStampId){
   const emotion = (faceDetection === undefined) ? "none" : await getMostProminentEmotion(faceDetection);
   recentEmotionsArray.push(emotion);
   document.getElementById("current-emotion").innerHTML = emotion;
-
   const detectedObjectsArray = objectDetections.map(object => object.class);
   const statusVector = {
     e: emotion, // emotion
     hs: getHappinessScore(), // happiness score
-    id: timeStampId, // id
     l: lookingAtCamera, // looking bool
     o: detectedObjectsArray // objects
-
   };
   return statusVector;
 }
 
 async function performML(){
-
   const image = document.getElementById("video-input");
   const faceDetection = await faceapi
     .detectSingleFace(image)

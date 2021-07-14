@@ -1,29 +1,3 @@
-/* Navbar & Logo */
-
-.navbar {
-  background-color: #4c5270;
-  font-size: 18px;
-  letter-spacing: 3px;
-  padding-bottom: 0px;
-}
-
-.navbar-brand {
-  color: #fff;
-  font-size: 25px;
-}
-
-.navbar-brand:hover {
-  color: gold;
-}
-
-nav .navbar-nav li a{
-  color: #fff !important;
-  }
-
-nav .navbar-nav li a:hover{
-    color: black !important;
-}
-
 /* Main Content */
 
 .body {

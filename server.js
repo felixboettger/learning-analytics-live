@@ -176,17 +176,12 @@ function handleDashboardSocket(req){
       const sessionKey = req.resourceURL.query.sessionKey;
       const connection = req.accept('echo-protocol', req.origin);
       laMain.addHostToSocketDict(sessionKey, connection);
-      var timeStampId = 0;
       const clientSockets = laMain.getClientSockets(sessionKey);
       const refreshIntervalId = setInterval(function(){
-        timeStampId ++;
         laDB.getSessionData(sessionKey).then(sessionData => {
           connection.send(JSON.stringify({datatype: "counters", data: laCalc.generateCounterElements(sessionData)}));
           connection.send(JSON.stringify({datatype: "participants", data: laCalc.generateParticipants(sessionData)}));
         });
-        clientSockets.forEach(clientSocket => {
-          clientSocket.send(JSON.stringify({datatype: "request", id: timeStampId}));
-        })
       }, updateInterval)
     connection.on("message", function(message){
       if (message.type === 'utf8') {
@@ -211,7 +206,7 @@ function handleDashboardSocket(req){
 
 function handleClientSocket(req){
   laHelp.checkSocketConnect(req).then(isValid => {
-    if (!(isValid) || !(laMain.checkActiveSession(req.resourceURL.query.sessionKey))) {
+    if (!(isValid)) {
       req.reject();
       return;
     } else {
@@ -219,25 +214,30 @@ function handleClientSocket(req){
       const sessionKey = req.resourceURL.query.sessionKey;
       const userId = req.resourceURL.query.userId;
       const index = laMain.addClientToSocketDict(sessionKey, connection);
-      connection.on("message", function(message){
-        laDB.markParticipantAsActive(sessionKey, userId);
-        const messageJSON = JSON.parse(message.utf8Data);
-        const datatype = messageJSON.datatype;
-        if (datatype === "status"){
-          const statusVector = messageJSON.data;
-          laDB.updateParticipantStatus(sessionKey, userId, statusVector);
-        } else if (datatype === "comment") {
-          const [comment, timeStampId, time] = [messageJSON.data.te, messageJSON.data.id, new Date().getTime()];
-          laMain.getHostSocket(sessionKey).send(JSON.stringify({datatype: "comment", data: {te: comment, id: timeStampId, ti: time}}));
-          laDB.updateComments(comment, time, timeStampId, sessionKey);
-        }
-      })
-      connection.on("close", function(){
-        if (laMain.checkActiveSession(sessionKey)){
-          laMain.removeFromSocketDict(sessionKey, index);
-        }
-        laDB.markParticipantAsInactive(sessionKey, userId);
+      laMain.getSessionStartTime(sessionKey).then((sessionStartTime) => {
+        connection.on("message", function(message){
+          laDB.markParticipantAsActive(sessionKey, userId);
+          const messageJSON = JSON.parse(message.utf8Data);
+          const datatype = messageJSON.datatype;
+          if (datatype === "status"){
+            const statusVector = messageJSON.data;
+            const time = Math.floor(new Date().getTime()/1000) - sessionStartTime;
+            laDB.updateParticipantStatus(sessionKey, userId, statusVector, time);
+          } else if (datatype === "comment") {
+            const [comment, time] = [messageJSON.data.te, new Date().getTime()];
+            laMain.sendToHostSocket(sessionKey, JSON.stringify({datatype: "comment", data: {te: comment, ti: time}}));
+            laDB.updateComments(comment, time, sessionKey);
+          } else if (datatype === "ready"){
+              connection.send(JSON.stringify({datatype: "start", interval: updateInterval}));
+          }
+        });
       });
-      }
+        connection.on("close", function(){
+          if (laMain.checkActiveSession(sessionKey)){
+            laMain.removeFromSocketDict(sessionKey, index);
+          }
+          laDB.markParticipantAsInactive(sessionKey, userId);
+        });
+      };
     });
 }

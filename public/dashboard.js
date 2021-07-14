@@ -81,12 +81,10 @@ document.getElementById("key-btn").addEventListener("click", function() {
 function addCommentToList(commentObj){
   document.getElementById("nr-comments").innerHTML ++;
   const newComment = commentObj.te;
-  const timeStampId = commentObj.id;
   const dateObj = new Date(commentObj.ti);
   const timeStr = dateObj.getHours() + ":" + dateObj.getMinutes() + ":" + dateObj.getSeconds()
   const commentElement = document.createElement("tr");
-  commentElement.innerHTML = `<td>` + newComment + `</td>
-  <td>` + timeStampId + `</td>` + `<td>` + timeStr + `</td>`;
+  commentElement.innerHTML = `<td>` + newComment + `</td><td>` + timeStr + `</td>`;
   document.getElementById("comment-list").appendChild(commentElement);
 }
 
