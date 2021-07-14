@@ -214,30 +214,31 @@ function handleClientSocket(req){
       const sessionKey = req.resourceURL.query.sessionKey;
       const userId = req.resourceURL.query.userId;
       const index = laMain.addClientToSocketDict(sessionKey, connection);
-      laMain.getSessionStartTime(sessionKey).then((sessionStartTime) => {
-        connection.on("message", function(message){
-          laDB.markParticipantAsActive(sessionKey, userId);
-          const messageJSON = JSON.parse(message.utf8Data);
-          const datatype = messageJSON.datatype;
-          if (datatype === "status"){
+      const sessionStartTime = laDB.getSessionStartTime(sessionKey);
+      connection.on("message", function(message){
+        laDB.markParticipantAsActive(sessionKey, userId);
+        const messageJSON = JSON.parse(message.utf8Data);
+        const datatype = messageJSON.datatype;
+        if (datatype === "status"){
+          sessionStartTime.then(sessionStartTime => {
             const statusVector = messageJSON.data;
             const time = Math.floor(new Date().getTime()/1000) - sessionStartTime;
             laDB.updateParticipantStatus(sessionKey, userId, statusVector, time);
-          } else if (datatype === "comment") {
+          });
+        } else if (datatype === "comment") {
             const [comment, time] = [messageJSON.data.te, new Date().getTime()];
             laMain.sendToHostSocket(sessionKey, JSON.stringify({datatype: "comment", data: {te: comment, ti: time}}));
             laDB.updateComments(comment, time, sessionKey);
           } else if (datatype === "ready"){
-              connection.send(JSON.stringify({datatype: "start", interval: updateInterval}));
+            connection.send(JSON.stringify({datatype: "start", interval: updateInterval}));
           }
-        });
       });
-        connection.on("close", function(){
-          if (laMain.checkActiveSession(sessionKey)){
-            laMain.removeFromSocketDict(sessionKey, index);
-          }
-          laDB.markParticipantAsInactive(sessionKey, userId);
-        });
-      };
-    });
+      connection.on("close", function(){
+        if (laMain.checkActiveSession(sessionKey)){
+          laMain.removeFromSocketDict(sessionKey, index);
+        }
+        laDB.markParticipantAsInactive(sessionKey, userId);
+      });
+    };
+  });
 }

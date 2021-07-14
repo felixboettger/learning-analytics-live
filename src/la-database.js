@@ -227,6 +227,12 @@ async function checkSessionExists(query){
   return await Session.exists(query);
 }
 
+async function getSessionStartTime(sessionKey){
+  var session = await getSessionData(sessionKey);
+  return session.start;
+}
+
+
 function cleaningRoutine() {
   console.log("Cleaning routine initiated!");
   Session.find({}, function(err, foundSessions) {
@@ -255,4 +261,4 @@ function cleaningRoutine() {
 
 
 
-module.exports = {deleteSession, getSessionData, exportSessionData, updateParticipantStatus, checkSessionExists, updateComments, markParticipantAsInactive, markParticipantAsActive, addSessionToDatabase, getSessionDataNoDashboard, addParticipantToSession};
+module.exports = {deleteSession, getSessionData, exportSessionData, updateParticipantStatus, checkSessionExists, updateComments, getSessionStartTime, markParticipantAsInactive, markParticipantAsActive, addSessionToDatabase, getSessionDataNoDashboard, addParticipantToSession};

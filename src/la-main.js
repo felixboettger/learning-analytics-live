@@ -52,11 +52,6 @@ function addHostToSocketDict(sessionKey, socket){
   }
 }
 
-async function getSessionStartTime(sessionKey){
-  const sessionData = await laDB.getSessionDataNoDashboard(sessionKey);
-  return sessionData.start;
-}
-
 function sendToHostSocket(sessionKey, message){
   if (socketDict[sessionKey].host) {
     socketDict[sessionKey].host.send(message);
@@ -85,4 +80,4 @@ function endSession(sessionKey){
   laDB.deleteSession(sessionKey);
 }
 
-module.exports = {createParticipant, createSession, addClientToSocketDict, addHostToSocketDict, checkActiveSession, getClientSockets, getHostSocket, getSessionStartTime, sendToHostSocket, removeFromSocketDict, endSession};
+module.exports = {createParticipant, createSession, addClientToSocketDict, addHostToSocketDict, checkActiveSession, getClientSockets, getHostSocket, sendToHostSocket, removeFromSocketDict, endSession};
