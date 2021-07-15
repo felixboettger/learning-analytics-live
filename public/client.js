@@ -11,8 +11,7 @@ const sessionKeyElements = document.getElementsByClassName("session-key");
 
 [].slice.call(sessionKeyElements).forEach((sessionKeyElement) => sessionKeyElement.innerHTML = sessionKey);
 
-document.getElementById("user-name").innerHTML = userName;
-document.getElementById("user-id").innerHTML = userId;
+document.getElementById("user-id-name").innerHTML = userId + ": " + (userName || "Anonymous");
 
 var cocoSsdModel;
 //var mobilenetModel
@@ -129,8 +128,10 @@ async function getStatus(){
   const lookingAtCamera = await checkLookingAtCamera(blazefacePredictions);
   const emotion = (faceDetection === undefined) ? "none" : await getMostProminentEmotion(faceDetection);
   recentEmotionsArray.push(emotion);
-  document.getElementById("current-emotion").innerHTML = emotion;
   const detectedObjectsArray = objectDetections.map(object => object.class);
+  document.getElementById("current-emotion").innerHTML = emotion;
+  document.getElementById("looking-at-camera").innerHTML = lookingAtCamera;
+  document.getElementById("detected-objects").innerHTML = detectedObjectsArray;
   const statusVector = {
     e: emotion, // emotion
     hs: getHappinessScore(), // happiness score
