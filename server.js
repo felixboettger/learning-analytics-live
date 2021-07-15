@@ -96,7 +96,7 @@ app.post("/participant", function(req, res) {
     if (participant === undefined) {
       res.render("participant-session-not-found", {sessionKey: req.body.sessionKey});
     } else {
-      laMain.sendParticipantCookies(req.body.sessionKey, req.body.participantName, participant[0], participant[1]);
+      laMain.sendParticipantCookies(res, req.body.sessionKey, req.body.participantName, participant[0], participant[1]);
       res.render("client");
     }
   });

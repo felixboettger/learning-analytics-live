@@ -81,7 +81,7 @@ function endSession(sessionKey){
   laDB.deleteSession(sessionKey);
 }
 
-function sendParticipantCookies(sessionKey, participantName, participantId, psecret){
+function sendParticipantCookies(res, sessionKey, participantName, participantId, psecret){
   res.cookie("sessionKey", sessionKey);
   res.cookie("participantName", participantName);
   res.cookie("participantId", participantId);
@@ -137,7 +137,7 @@ function handleClientSocket(req, updateInterval){
       const index = addClientToSocketDict(sessionKey, connection);
       const sessionStartTime = laDB.getSessionStartTime(sessionKey);
       connection.on("message", function(message){
-        laDB.markParticipantAsActive(sessionKey, userId);
+        laDB.changeParticipantInactive(false, sessionKey, userId);
         const messageJSON = JSON.parse(message.utf8Data);
         const datatype = messageJSON.datatype;
         if (datatype === "status"){
@@ -158,7 +158,7 @@ function handleClientSocket(req, updateInterval){
         if (checkActiveSession(sessionKey)){
           removeFromSocketDict(sessionKey, index);
         }
-        laDB.markParticipantAsInactive(sessionKey, userId);
+        laDB.changeParticipantInactive(true, sessionKey, userId);
       });
     };
   });

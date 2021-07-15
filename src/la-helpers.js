@@ -38,7 +38,6 @@ async function checkSocketConnect(req){
 async function checkSession(sessionKey, secret){
   const query = {sessionKey: sessionKey, secret: secret};
   const allowed = await laDB.checkSessionExists(query);
-  console.log("Session exists:", allowed);
   return allowed;
 }
 

@@ -17,19 +17,21 @@ const localEnv = ("true" === process.env.LOCAL_ENV) ? true : false;
 // MongoDB URL. A MongoDB is required for running the server.
 const mongodbURL = localEnv ? process.env.DB_HOST_LOCAL : process.env.DB_HOST;
 
-// Starting cleaning Routine (run every minute)
-setInterval(cleaningRoutine, 60000);
+// Setup and starting cleaning routine
+const keepInactiveFor = process.env.KEEP_INACTIVE_FOR * 60;
+setInterval(cleaningRoutine(keepInactiveFor), 60000);
 
 // Establising connection with the MongoDB
-mongoose
-  .connect(mongodbURL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true, // check if any errors occur...
-    useFindAndModify: false
-  })
-  .then(function() {
+
+const mongooseConnectOptions = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useFindAndModify: false
+}
+
+mongoose.connect(mongodbURL, mongooseConnectOptions).then(function() {
     console.log("Connected to DB: " + mongodbURL);
-  });
+});
 
 // Schemas for database entries are being defined
 const statusSchema = {
@@ -63,45 +65,32 @@ const sessionSchema = {
 };
 
 // Monogoose models creation using above schemas
-const Participant = mongoose.model("Participant", participantSchema);
 const Session = mongoose.model("Session", sessionSchema);
+const Participant = mongoose.model("Participant", participantSchema);
 const Status = mongoose.model("Status", statusSchema);
 const Comment = mongoose.model("Comment", commentSchema);
 
 
 function deleteSession(sessionKey){
-  Session.deleteOne(
-    {
-      sessionKey: sessionKey
-    },
-    function(err) {
-      if (err) {
-        console.log(err);
-      } else {
-        console.log(
-          "Session " +
-            sessionKey +
-            " has been deleted as it is not active anymore."
-        );
-      }
-    });
-};
+  Session.deleteOne({sessionKey: sessionKey}).then((deletedSession, err) => {
+    err ? console.log(err) :
+    console.log(
+      "Session " + sessionKey + " has been deleted as host closed the session."
+    );
+  });
+}
 
 // returns session data
 async function getSessionData(sessionKey) {
   return await Session.findOneAndUpdate(
-    {
-      sessionKey: sessionKey
-    },
+    {sessionKey: sessionKey},
     {lastDashboardAccess: Math.floor(new Date().getTime()/1000)}
   );
 }
 
 async function getSessionDataNoDashboard(sessionKey) {
   return await Session.findOneAndUpdate(
-    {
-      sessionKey: sessionKey
-    }
+    {sessionKey: sessionKey}
   );
 }
 
@@ -111,7 +100,8 @@ async function exportSessionData(sessionKey) {
     {sessionKey: sessionKey},
     {'_id': false, 'secret': false, '__v': false,
     'participants._id': false, 'participants.secret': false,
-    'participants.participantStatus._id': false});
+    'participants.participantStatus._id': false}
+  );
 }
 
 function addParticipantToSession(participantId, name, secret, sessionKey){
@@ -125,11 +115,8 @@ function addParticipantToSession(participantId, name, secret, sessionKey){
   Session.findOneAndUpdate(
     {sessionKey: sessionKey},
     {$addToSet: {participants: newParticipant}},
-    {new: true},
-    function(err, foundSession) {
-      // console.log("New participant created");a
-    }
-  )
+    {new: true}
+  ).then(err => {});
 }
 
 function updateParticipantStatus(sessionKey, userId, statusVector, time){
@@ -141,19 +128,12 @@ function updateParticipantStatus(sessionKey, userId, statusVector, time){
     objects: statusVector.o
   });
   Session.findOneAndUpdate(
-    {
-      sessionKey: sessionKey,
-      "participants.participantId": userId
-    },
+    {sessionKey: sessionKey,
+    "participants.participantId": userId},
     {$addToSet: {"participants.$.participantStatus": newStatus}},
-    {new: true},
-    function(err){
-      if (err) {
-        console.log(err);
-      }
-    }
-  );
-};
+    {new: true}
+  ).then(err => {});
+}
 
 function addSessionToDatabase(sessionKey, secret){
   const newSession = new Session({
@@ -161,7 +141,8 @@ function addSessionToDatabase(sessionKey, secret){
     sessionKey: sessionKey,
     secret: secret,
     comments: [],
-    participants: []
+    participants: [],
+    lastDashboardAccess: Math.floor(new Date().getTime() / 1000)
   });
   Session.insertMany([newSession], function(err) {
     if (err) {
@@ -173,54 +154,24 @@ function addSessionToDatabase(sessionKey, secret){
 }
 
 async function updateComments(comment, time, sessionKey){
+  const newComment = new Comment({text: comment, time: time});
   Session.findOneAndUpdate(
-    {
-      sessionKey: sessionKey
-    },
-    {$addToSet: {comments: new Comment({
-      text: comment,
-      time: time
-    })}},
-    {new: true},
-    function(err){
-      if (err) {
-        console.log(err);
-      }
-    });
-};
+    {sessionKey: sessionKey},
+    {$addToSet: newComment},
+    {new: true}
+  ).then(err => {});
+}
 
 // active and inactive are almost the same, can be combined into one
 
-async function markParticipantAsInactive(sessionKey, userId){
+async function changeParticipantInactive(inactiveBool, sessionKey, userId){
   Session.findOneAndUpdate(
-    {
-      sessionKey: sessionKey,
-      "participants.participantId": userId
-    },
-    {$set: {"participants.$.inactive": true}},
-    {new: true},
-    function(err){
-      if (err) {
-        console.log(err);
-      }
-    });
-};
-
-
-async function markParticipantAsActive(sessionKey, userId){
-  Session.findOneAndUpdate(
-    {
-      sessionKey: sessionKey,
-      "participants.participantId": userId
-    },
-    {$set: {"participants.$.inactive": false}},
-    {new: true},
-    function(err){
-      if (err) {
-        console.log(err);
-      }
-    });
-};
+    {sessionKey: sessionKey,
+    "participants.participantId": userId},
+    {$set: {"participants.$.inactive": inactiveBool}},
+    {new: true}
+  ).then(err => {});
+}
 
 async function checkSessionExists(query){
   return await Session.exists(query);
@@ -231,35 +182,19 @@ async function getSessionStartTime(sessionKey){
   return session.start;
 }
 
-
-function cleaningRoutine() {
-  console.log("Cleaning routine initiated!");
-  Session.find({}, function(err, foundSessions) {
-    if (err) {
-      console.log(err);
-    } else {
-      foundSessions.forEach(function(foundSession) {
-        const lastDashboardAccess = foundSession.lastDashboardAccess;
-        // Check if last session access more than 10 minutes ago
-        const willBeDeleted = Math.floor(new Date().getTime()/1000) - lastDashboardAccess > 3600 ? true : false;
-        if (willBeDeleted) {
-          Session.deleteOne({
-            sessionKey: foundSession.sessionKey
-          }, function(err) {
-            if (err) {
-              console.log(err);
-            } else {
-              console.log("Session " + foundSession.sessionKey + " has been deleted due to inactivity.");
-            }
-          })
-        }
-      })
-    }
-  })
+function cleaningRoutine(keepInactiveFor){
+  return function(){
+    const currentTime = Math.floor(new Date().getTime()/1000);
+    const deleteBefore = currentTime - keepInactiveFor;
+    Session.deleteMany(
+      {"lastDashboardAccess": {$lte: deleteBefore}},
+      function (){console.log("Cleaning finished.")}
+    );
+  }
 }
 
 module.exports = {deleteSession, getSessionData, exportSessionData,
                   updateParticipantStatus, checkSessionExists, updateComments,
-                  getSessionStartTime, markParticipantAsInactive,
-                  markParticipantAsActive, addSessionToDatabase,
-                  getSessionDataNoDashboard, addParticipantToSession};
+                  getSessionStartTime, changeParticipantInactive,
+                  addSessionToDatabase, getSessionDataNoDashboard,
+                  addParticipantToSession};
