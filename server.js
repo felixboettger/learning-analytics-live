@@ -40,7 +40,7 @@ app.use(session({resave: false,
     sameSite: 'strict'
   }}));
 
-// --- HTTP Get Request Handlers
+// --- HTTP Get Request Handlers ---
 
 app.get("/", function(req, res) {
   res.render("home");
@@ -59,14 +59,6 @@ app.get("/host", function(req, res) {
 app.get("/dashboard", function(req, res) {
   res.render("dashboard")
 });
-
-app.post("/dashboard", function(req, res) {
-  const [sessionKey, secret] = laMain.createSession();
-  const url = req.protocol + "://" + req.get("host") + "/join/" + sessionKey;
-  res.cookie("sessionKey", sessionKey);
-  res.cookie("hsecret", secret);
-  res.redirect("/dashboard");
-})
 
 app.get("/participant", function(req, res) {
   laHelp.checkParticipant(req.cookies.sessionKey, req.cookies.psecret, req.cookies.participantId).then(exists => {
@@ -96,8 +88,7 @@ app.get("/client", function(req, res) {
   res.render("client");
 });
 
-// // --- HTTP Post Request Handlers
-
+// --- HTTP Post Request Handlers ---
 
 // Creation of new participant
 app.post("/participant", function(req, res) {
@@ -105,19 +96,25 @@ app.post("/participant", function(req, res) {
     if (participant === undefined) {
       res.render("participant-session-not-found", {sessionKey: req.body.sessionKey});
     } else {
-      res.cookie("sessionKey", req.body.sessionKey);
-      res.cookie("participantName", req.body.participantName);
-      res.cookie("participantId", participant[0]);
-      res.cookie("psecret", participant[1]);
+      laMain.sendParticipantCookies(req.body.sessionKey, req.body.participantName, participant[0], participant[1]);
       res.render("client");
     }
   });
 });
 
-// --- Server setup and start
+// Creation of a new session
+app.post("/dashboard", function(req, res) {
+  const [sessionKey, secret] = laMain.createSession();
+  const url = req.protocol + "://" + req.get("host") + "/join/" + sessionKey;
+  res.cookie("sessionKey", sessionKey);
+  res.cookie("hsecret", secret);
+  res.redirect("/dashboard");
+});
 
-// Running server as actual server, with security etc
+// --- Server setup and start ---
+
 if (!localEnv) {
+  // Running server as actual server, with security etc
   // https server for running the actual communication, serving the website etc.
   server = https
     .createServer(
@@ -131,8 +128,7 @@ if (!localEnv) {
     .listen(portNr, function() {
       console.log("Server started on Port: " + portNr);
     });
-
-  // This Server is used to forward incoming http requests to https to enable encrypted data transfer
+  // http server used to forward incoming http requests to https to enable encrypted data transfer
   http
     .createServer(function(req, res) {
       res.writeHead(301, {
@@ -141,12 +137,10 @@ if (!localEnv) {
       res.end();
     })
     .listen(80);
-}
-
-// Running the server locally for development or testing, no security etc.
-if (localEnv) {
+} else {
+  // Running the server locally for development or testing, no security etc.
   server = app.listen(portNr, function() {
-    console.log("Server started on Port: " + 443);
+    console.log("Server started on Port: " + portNr);
   });
 }
 
@@ -155,90 +149,11 @@ webSocketServer = new WebSocketServer({
   autoAcceptConnections: false
 });
 
-
 webSocketServer.on("request", function(req){
   const type = req.resourceURL.query.type;
   if (type === "dashboard") {
-    handleDashboardSocket(req);
+    laMain.handleDashboardSocket(req, updateInterval);
   } else if (type === "client") {
-    handleClientSocket(req);
+    laMain.handleClientSocket(req, updateInterval);
   }
 });
-
-// --- Web Socket Request Handling ---
-
-function handleDashboardSocket(req){
-  laHelp.checkSocketConnect(req).then(isValid => {
-    if (!(isValid)) {
-      req.reject();
-      return;
-    } else {
-      const sessionKey = req.resourceURL.query.sessionKey;
-      const connection = req.accept('echo-protocol', req.origin);
-      laMain.addHostToSocketDict(sessionKey, connection);
-      const clientSockets = laMain.getClientSockets(sessionKey);
-      const refreshIntervalId = setInterval(function(){
-        laDB.getSessionData(sessionKey).then(sessionData => {
-          connection.send(JSON.stringify({datatype: "counters", data: laCalc.generateCounterElements(sessionData)}));
-          connection.send(JSON.stringify({datatype: "participants", data: laCalc.generateParticipants(sessionData)}));
-        });
-      }, updateInterval)
-    connection.on("message", function(message){
-      if (message.type === 'utf8') {
-          const request = message.utf8Data;
-          if (request === "download"){
-            laDB.exportSessionData(sessionKey
-            ).then(exportData => {
-              connection.send(JSON.stringify({datatype: "download", data: exportData}));
-            });
-          } else if (request == "end"){
-            clearInterval(refreshIntervalId);
-            laMain.endSession(sessionKey);
-            console.log("Session " + sessionKey + " closed!");
-          }
-      }
-    });
-    connection.on("close", function(){
-      clearInterval(refreshIntervalId);
-    });
-  }})
-}
-
-function handleClientSocket(req){
-  laHelp.checkSocketConnect(req).then(isValid => {
-    if (!(isValid)) {
-      req.reject();
-      return;
-    } else {
-      const connection = req.accept('echo-protocol', req.origin);
-      const sessionKey = req.resourceURL.query.sessionKey;
-      const userId = req.resourceURL.query.userId;
-      const index = laMain.addClientToSocketDict(sessionKey, connection);
-      const sessionStartTime = laDB.getSessionStartTime(sessionKey);
-      connection.on("message", function(message){
-        laDB.markParticipantAsActive(sessionKey, userId);
-        const messageJSON = JSON.parse(message.utf8Data);
-        const datatype = messageJSON.datatype;
-        if (datatype === "status"){
-          sessionStartTime.then(sessionStartTime => {
-            const statusVector = messageJSON.data;
-            const time = Math.floor(new Date().getTime()/1000) - sessionStartTime;
-            laDB.updateParticipantStatus(sessionKey, userId, statusVector, time);
-          });
-        } else if (datatype === "comment") {
-            const [comment, time] = [messageJSON.data.te, new Date().getTime()];
-            laMain.sendToHostSocket(sessionKey, JSON.stringify({datatype: "comment", data: {te: comment, ti: time}}));
-            laDB.updateComments(comment, time, sessionKey);
-          } else if (datatype === "ready"){
-            connection.send(JSON.stringify({datatype: "start", interval: updateInterval}));
-          }
-      });
-      connection.on("close", function(){
-        if (laMain.checkActiveSession(sessionKey)){
-          laMain.removeFromSocketDict(sessionKey, index);
-        }
-        laDB.markParticipantAsInactive(sessionKey, userId);
-      });
-    };
-  });
-}

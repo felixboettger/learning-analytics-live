@@ -17,8 +17,8 @@ const localEnv = ("true" === process.env.LOCAL_ENV) ? true : false;
 // MongoDB URL. A MongoDB is required for running the server.
 const mongodbURL = localEnv ? process.env.DB_HOST_LOCAL : process.env.DB_HOST;
 
-// Starting cleaning Routine (run every hour)
-setInterval(cleaningRoutine, 3600000);
+// Starting cleaning Routine (run every minute)
+setInterval(cleaningRoutine, 60000);
 
 // Establising connection with the MongoDB
 mongoose
@@ -108,11 +108,10 @@ async function getSessionDataNoDashboard(sessionKey) {
 // returns session data without unnecessary information for export
 async function exportSessionData(sessionKey) {
   return await Session.findOne(
-    {
-      sessionKey: sessionKey
-    },
-    {'_id': false, 'secret': false, '__v': false, 'participants._id': false, 'participants.secret': false, 'participants.participantStatus._id': false}
-  );
+    {sessionKey: sessionKey},
+    {'_id': false, 'secret': false, '__v': false,
+    'participants._id': false, 'participants.secret': false,
+    'participants.participantStatus._id': false});
 }
 
 function addParticipantToSession(participantId, name, secret, sessionKey){
@@ -259,6 +258,8 @@ function cleaningRoutine() {
   })
 }
 
-
-
-module.exports = {deleteSession, getSessionData, exportSessionData, updateParticipantStatus, checkSessionExists, updateComments, getSessionStartTime, markParticipantAsInactive, markParticipantAsActive, addSessionToDatabase, getSessionDataNoDashboard, addParticipantToSession};
+module.exports = {deleteSession, getSessionData, exportSessionData,
+                  updateParticipantStatus, checkSessionExists, updateComments,
+                  getSessionStartTime, markParticipantAsInactive,
+                  markParticipantAsActive, addSessionToDatabase,
+                  getSessionDataNoDashboard, addParticipantToSession};

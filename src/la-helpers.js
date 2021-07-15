@@ -48,4 +48,5 @@ async function checkParticipant(sessionKey, secret, participantId){
   return allowed;
 }
 
-module.exports = {generateSessionKey, checkSocketConnect, generateSecret, checkSession, checkParticipant};
+module.exports = {generateSessionKey, checkSocketConnect, generateSecret,
+                  checkSession, checkParticipant};
