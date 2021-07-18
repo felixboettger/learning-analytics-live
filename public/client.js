@@ -1,12 +1,15 @@
 //jshint esversion:6
 
+// Extracting data from cookies
 const cookieValues = document.cookie.split('; ');
-
 const secret = cookieValues.find(row => row.startsWith('psecret=')).split('=')[1];
 const userId = cookieValues.find(row => row.startsWith('participantId=')).split('=')[1];
 const userName = cookieValues.find(row => row.startsWith('participantName=')).split('=')[1];
 const sessionKey = cookieValues.find(row => row.startsWith('sessionKey=')).split('=')[1];
 
+
+const video = document.getElementById("video-input");
+const image = document.getElementById('image-input');
 const sessionKeyElements = document.getElementsByClassName("session-key");
 
 [].slice.call(sessionKeyElements).forEach((sessionKeyElement) => sessionKeyElement.innerHTML = sessionKey);
@@ -17,6 +20,9 @@ var cocoSsdModel;
 //var mobilenetModel
 var blazefaceModel;
 var lastEmotion;
+var emotionModel;
+
+
 
 // last 20 emotions stored here
 const recentEmotionsArray = [];
@@ -25,7 +31,6 @@ var timeOffset;
 main();
 
 async function main() {
-  const video = document.getElementById("video-input");
   navigator.mediaDevices.getUserMedia({video:true, audio: false})
   .then(function(stream) {
     video.srcObject = stream;
@@ -33,16 +38,15 @@ async function main() {
   })
   .catch(function(err){
     console.log("An error with video recording occured! " + err);
-  })
+  });
 
   // Load ML models
 
   blazefaceModel = await blazeface.load();
   cocoSsdModel = await cocoSsd.load();
-  //mobilenetModel = await mobilenet.load();
-
-  await faceapi.nets.ssdMobilenetv1.loadFromUri("/models");
-  await faceapi.nets.faceExpressionNet.loadFromUri("/models");
+  // Emotion model uses a pretrained model created by Ufuk Cetinkaya
+  // Model is not ready yet / poor quality. Will eventually be replaced.
+  emotionModel = await tf.loadLayersModel("/models/Ufuk/model.json");
 
   // Connect to socket
 
@@ -101,32 +105,8 @@ async function main() {
 
 async function getStatus(){
   const [faceDetection, objectDetections, blazefacePredictions] = await performML();
-  /*
-  // Getting Grayscale
-
-  const src = cv.imread("canvas");
-  const dst = new cv.Mat();
-  cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
-  cv.imshow("canvas-output", dst);
-  src.delete();
-  dst.delete();
-
-  // Crop
-
-  const bfp = blazefacePredictions;
-  const dx = bfp[0].topLeft[0];
-  const dy = bfp[0].topLeft[1];
-  const dWidth = bfp[0].bottomRight[1] - bfp[0].topLeft[1];
-  const dHeight = bfp[0].topLeft[0] - bfp[0].bottomRight[0];
-  const canvasCropped = document.getElementById("canvas-cropped");
-  const contex = canvasCropped.getContext("2d");
-  const imgGreyScale = document.getElementById("canvas");
-  contex.drawImage(imgGreyScale, dx, dy, dWidth, dHeight);
-
-  */
-
   const lookingAtCamera = await checkLookingAtCamera(blazefacePredictions);
-  const emotion = (faceDetection === undefined) ? "none" : await getMostProminentEmotion(faceDetection);
+  const emotion = (faceDetection === undefined) ? "none" : faceDetection;
   recentEmotionsArray.push(emotion);
   const detectedObjectsArray = objectDetections.map(object => object.class);
   document.getElementById("current-emotion").innerHTML = emotion;
@@ -142,13 +122,9 @@ async function getStatus(){
 }
 
 async function performML(){
-  const image = document.getElementById("video-input");
-  const faceDetection = await faceapi
-    .detectSingleFace(image)
-    .withFaceExpressions()
   const objectDetections = await cocoSsdModel.detect(image);
-  // console.log(objectDetections)
   const blazefacePredictions = await blazefaceModel.estimateFaces(image, false);
+  const faceDetection = await getEmotion(blazefacePredictions);
   return [faceDetection, objectDetections, blazefacePredictions]
 }
 
@@ -171,18 +147,6 @@ async function checkLookingAtCamera(blazefacePredictions){
   }
 }
 
-
-function getMaxKey(obj){
-  const array = Object.keys(obj).map(i => obj[i])
-  const maxIndex = array.indexOf(Math.max.apply(null, array));
-  return Object.keys(obj)[maxIndex];
-}
-
-async function getMostProminentEmotion(faceDetection){
-  const e = faceDetection.expressions;
-  return getMaxKey(e);
-}
-
 function getHappinessScore() {
   (recentEmotionsArray.length > 20) ? recentEmotionsArray.shift() : "";
   var happinessScore = 0;
@@ -203,4 +167,33 @@ function getHappinessScore() {
     happinessScore = Math.floor(happinessScore / recentEmotionsArray.length);
   }
   return happinessScore;
+}
+
+async function getEmotion(blazefacePredictions){
+  const canvasInput = document.getElementById("canvas-input");
+  const ctx1 = canvasInput.getContext("2d");
+  ctx1.drawImage(video, 0, 0, video.width, video.height);
+  const image = document.getElementById('image-input');
+  image.src = canvasInput.toDataURL();
+  const bfp = await blazefacePredictions;
+  if (bfp[0] != undefined){
+    const person1 = bfp[0];
+    const p1TL = person1["topLeft"];
+    const p1BR = person1["bottomRight"];
+    const width = p1BR[0] - p1TL[0];
+    const height = p1BR[1] - p1TL[1];
+    const dx = p1TL[0];
+    const dy = p1TL[1];
+    ctx1.strokeStyle = "red";
+    ctx1.strokeRect(dx, dy, width, height);
+    const canvasCropped = document.getElementById("canvas-cropped");
+    const ctx2 = canvasCropped.getContext("2d");
+    ctx2.drawImage(image, dx, dy, width, height, 0, 0, 48, 48);
+    var inputImage = tf.browser.fromPixels(canvasCropped).mean(2)
+    .toFloat()
+    .expandDims(0)
+    .expandDims(-1);
+    const predictions = emotionModel.predict(inputImage).arraySync()[0];
+    return predictions.indexOf(Math.max.apply(null, predictions));
+  }
 }
