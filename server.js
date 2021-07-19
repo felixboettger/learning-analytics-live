@@ -10,7 +10,9 @@ const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
 const http = require("http");
 const https = require("https");
+const nodeOsUtils = require('node-os-utils')
 const WebSocketServer = require("websocket").server;
+const randomName = require("node-random-name");
 
 const laCalc = require("./src/la-calculations")
 const laMain = require("./src/la-main")
@@ -39,6 +41,12 @@ app.use(session({resave: false,
     secure: true,
     sameSite: 'strict'
   }}));
+
+setInterval(function(){
+  nodeOsUtils.cpu.usage().then(info => console.log(info));
+  //nodeOsUtils.memory.usage().then(info => console.log(info));
+
+}, 5000);
 
 // --- HTTP Get Request Handlers ---
 
@@ -88,6 +96,13 @@ app.get("/client", function(req, res) {
   res.render("client");
 });
 
+app.get("/load-simulation/:sessionKey", function(req, res) {
+  laMain.createParticipant(req.params.sessionKey, randomName()).then(testParticipant => {
+    laMain.sendParticipantCookies(res, req.body.sessionKey, req.body.participantName, testParticipant[0], testParticipant[1]);
+    res.render("load-simulation");
+  });
+});
+
 // --- HTTP Post Request Handlers ---
 
 // Creation of new participant
@@ -97,7 +112,7 @@ app.post("/participant", function(req, res) {
       res.render("participant-session-not-found", {sessionKey: req.body.sessionKey});
     } else {
       laMain.sendParticipantCookies(res, req.body.sessionKey, req.body.participantName, participant[0], participant[1]);
-      res.render("client");
+      res.redirect("/client");
     }
   });
 });

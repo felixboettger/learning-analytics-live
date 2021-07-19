@@ -99,6 +99,7 @@ function downloadJSONFile(object){
 async function refreshCounterElements(counters){
   // apc = activeParticipantCounter, ec = emotionCounter, lacc = lookingAtCameraCounter
   const {apc, ec, lacc} = counters;
+  console.log(counters);
   const otherEmotionCounter = ec["an"] + ec["fe"] + ec["di"] + ec["su"];
   const happyPercentage = (apc > 0) ? 100 * Math.round(ec["ha"] / apc) : 0;
   const neutralPercentage = (apc > 0) ? 100 * Math.round(ec["ne"] / apc) : 0;
@@ -136,9 +137,11 @@ function addOrCreateParticipant(participant){
 function generateParticipantElements(participant) {
   const {id, n, i, s} = participant;
   const {happinessScore, emotion, looks, objects} = (s === undefined) ? "undefined" : s; // this accesses the last status
+  const emotionList = ["happy", "neutral", "sad", "fearful", "disgusted", "angry", "surprised"];
+  const fullEmotion = emotionList[emotion];
   const htmlParticipantElement = `
     <td>` + n + `</td>
-    <td>` + emotion + `</td>
+    <td>` + fullEmotion + `</td>
     <td>` + objects + `</td>
     <td>` + looks + `</td>
     <td>

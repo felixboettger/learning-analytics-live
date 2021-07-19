@@ -7,7 +7,6 @@ const userId = cookieValues.find(row => row.startsWith('participantId=')).split(
 const userName = cookieValues.find(row => row.startsWith('participantName=')).split('=')[1];
 const sessionKey = cookieValues.find(row => row.startsWith('sessionKey=')).split('=')[1];
 
-
 const video = document.getElementById("video-input");
 const image = document.getElementById('image-input');
 const sessionKeyElements = document.getElementsByClassName("session-key");

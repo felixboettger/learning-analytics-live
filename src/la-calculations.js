@@ -25,7 +25,7 @@ function generateCounterElements(sessionData) {
   // sa - sad, ne - neutral, di - disgusted, fe - fearful, su - surprised, an - angry
   var counterElements = {
     apc: 0, lacc: 0,
-    ec: {ha: 0, sa: 0, ne: 0, di: 0, fe: 0, su: 0, an: 0},
+    ec: {"ha": 0, "sa": 0, "ne": 0, "di": 0, "fe": 0, "su": 0, "an": 0},
   };
   if (sessionData.participants.length > 0) {
     sessionData.participants.forEach(function(participant) {
@@ -34,7 +34,7 @@ function generateCounterElements(sessionData) {
         const currentEmotion = currentStatus.emotion;
         if (!participant.inactive) {
           if (!(currentEmotion === undefined)){
-            counterElements.ec[currentEmotion.substring(0,2)] += 1;
+            counterElements.ec[currentEmotion] += 1;
           }
           counterElements.apc += 1;
           counterElements.lacc += currentStatus.looks;
