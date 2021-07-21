@@ -112,7 +112,7 @@ async function getStatus(){
   document.getElementById("looking-at-camera").innerHTML = lookingAtCamera;
   document.getElementById("detected-objects").innerHTML = detectedObjectsArray;
   const statusVector = {
-    e: emotion, // emotion
+    e: emotion.substring(0,2), // emotion
     hs: getHappinessScore(), // happiness score
     l: lookingAtCamera, // looking bool
     o: detectedObjectsArray // objects
@@ -154,8 +154,8 @@ function getHappinessScore() {
       happinessScore += 100;
     } else if (
       emotion === "sad" ||
-      emotion === "fearful" ||
-      emotion === "disgusted"
+      emotion === "fear" ||
+      emotion === "disgust"
     ) {
       happinessScore += 0;
     } else {
@@ -188,11 +188,14 @@ async function getEmotion(blazefacePredictions){
     const canvasCropped = document.getElementById("canvas-cropped");
     const ctx2 = canvasCropped.getContext("2d");
     ctx2.drawImage(image, dx, dy, width, height, 0, 0, 48, 48);
-    var inputImage = tf.browser.fromPixels(canvasCropped).mean(2)
+    var inputImage = tf.browser.fromPixels(canvasCropped)
+    .mean(2)
     .toFloat()
     .expandDims(0)
     .expandDims(-1);
+    inputImage = tf.image.resizeBilinear(inputImage, [48, 48]).div(tf.scalar(255))
     const predictions = emotionModel.predict(inputImage).arraySync()[0];
-    return predictions.indexOf(Math.max.apply(null, predictions));
+    const emotionArray = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
+    return emotionArray[predictions.indexOf(Math.max.apply(null, predictions))];
   }
 }
