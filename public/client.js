@@ -10,9 +10,12 @@ const sessionKey = cookieValues.find(row => row.startsWith('sessionKey=')).split
 const video = document.getElementById("video-input");
 const image = document.getElementById('image-input');
 const sessionKeyElements = document.getElementsByClassName("session-key");
+const canvasInput = document.getElementById("canvas-input");
+const ctx1 = canvasInput.getContext("2d");
+const canvasCropped = document.getElementById("canvas-cropped");
+const ctx2 = canvasCropped.getContext("2d");
 
 [].slice.call(sessionKeyElements).forEach((sessionKeyElement) => sessionKeyElement.innerHTML = sessionKey);
-
 document.getElementById("user-id-name").innerHTML = userId + ": " + (userName || "Anonymous");
 
 var cocoSsdModel;
@@ -44,7 +47,6 @@ async function main() {
   blazefaceModel = await blazeface.load();
   cocoSsdModel = await cocoSsd.load();
   // Emotion model uses a pretrained model created by Ufuk Cetinkaya
-  // Model is not ready yet / poor quality. Will eventually be replaced.
   emotionModel = await tf.loadLayersModel("/models/Ufuk/model.json");
 
   // Connect to socket
@@ -94,7 +96,7 @@ async function main() {
       }
       const t1 = performance.now();
       const timeToComplete = Math.round(t1 - t0);
-      document.getElementById("request-completion-time").innerHTML = timeToComplete;
+      setPerformanceTile(timeToComplete);
       document.getElementById("working-idle").setAttribute('class', 'material-icons icon-green');
     })
   }
@@ -104,13 +106,11 @@ async function main() {
 
 async function getStatus(){
   const [faceDetection, objectDetections, blazefacePredictions] = await performML();
-  const lookingAtCamera = await checkLookingAtCamera(blazefacePredictions);
+  const lookingAtCamera = checkLookingAtCamera(blazefacePredictions);
   const emotion = (faceDetection === undefined) ? "none" : faceDetection;
   recentEmotionsArray.push(emotion);
   const detectedObjectsArray = objectDetections.map(object => object.class);
-  document.getElementById("current-emotion").innerHTML = emotion;
-  document.getElementById("looking-at-camera").innerHTML = lookingAtCamera;
-  document.getElementById("detected-objects").innerHTML = detectedObjectsArray;
+  setInfoTiles(emotion, lookingAtCamera, detectedObjectsArray);
   const statusVector = {
     e: emotion.substring(0,2), // emotion
     hs: getHappinessScore(), // happiness score
@@ -127,18 +127,31 @@ async function performML(){
   return [faceDetection, objectDetections, blazefacePredictions]
 }
 
-async function checkLookingAtCamera(blazefacePredictions){
+function setInfoTiles(emotion, lookingAtCamera, detectedObjectsArray){
+  document.getElementById("current-emotion").innerHTML = emotion;
+  document.getElementById("looking-at-camera").innerHTML = lookingAtCamera;
+  document.getElementById("detected-objects").innerHTML = detectedObjectsArray;
+}
+
+function setPerformanceTile(timeToComplete){
+  document.getElementById("request-completion-time").innerHTML = timeToComplete;
+}
+
+function checkLookingAtCamera(blazefacePredictions){
   if (blazefacePredictions.length === 0) {
     return false;
   } else {
+    const height = blazefacePredictions[0]["bottomRight"][1] - blazefacePredictions[0]["topLeft"][1]
     const rightEyeX = blazefacePredictions[0]["landmarks"][0][0];
     const leftEyeX = blazefacePredictions[0]["landmarks"][1][0];
     const noseY = blazefacePredictions[0]["landmarks"][2][1];
     const mouthY = blazefacePredictions[0]["landmarks"][3][1];
     const distanceBetweenEyes = Math.abs(leftEyeX - rightEyeX);
-    const distanceBetweenNoseAndMouth = Math.abs(noseY - mouthY);
-    const attentionQuotient = distanceBetweenEyes / distanceBetweenNoseAndMouth;
-    if (attentionQuotient > 2.3) {
+    // const distanceBetweenNoseAndMouth = Math.abs(noseY - mouthY);
+
+    const attentionQuotient = distanceBetweenEyes / height;
+    console.log(attentionQuotient);
+    if (attentionQuotient > 0.43) {
       return true;
     } else {
       return false;
@@ -169,24 +182,19 @@ function getHappinessScore() {
 }
 
 async function getEmotion(blazefacePredictions){
-  const canvasInput = document.getElementById("canvas-input");
-  const ctx1 = canvasInput.getContext("2d");
   ctx1.drawImage(video, 0, 0, video.width, video.height);
-  const image = document.getElementById('image-input');
   image.src = canvasInput.toDataURL();
   const bfp = await blazefacePredictions;
   if (bfp[0] != undefined){
-    const person1 = bfp[0];
-    const p1TL = person1["topLeft"];
-    const p1BR = person1["bottomRight"];
+    const p1 = bfp[0];
+    const p1TL = p1["topLeft"];
+    const p1BR = p1["bottomRight"];
     const width = p1BR[0] - p1TL[0];
     const height = p1BR[1] - p1TL[1];
     const dx = p1TL[0];
     const dy = p1TL[1];
     ctx1.strokeStyle = "red";
     ctx1.strokeRect(dx, dy, width, height);
-    const canvasCropped = document.getElementById("canvas-cropped");
-    const ctx2 = canvasCropped.getContext("2d");
     ctx2.drawImage(image, dx, dy, width, height, 0, 0, 48, 48);
     var inputImage = tf.browser.fromPixels(canvasCropped)
     .mean(2)
