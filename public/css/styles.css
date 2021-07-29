@@ -1,7 +1,7 @@
 /* Main Content */
 
 .body {
-  height: 100vh;
+  margin-bottom: 70px;
 }
 
 .btn {
@@ -23,7 +23,6 @@
   height: auto !important;
   height: 100%;
   max-width: 960px;
-  margin: 0 auto -70px;
   min-height: 100%;
 }
 
@@ -42,12 +41,18 @@
   border-top-right-radius: 0;
 }
 
+html{
+  position: relative;
+  min-height: 100%;
+}
+
 /* Footer */
 
 .footer {
   background-color: #4c5270;
   bottom: 0;
   height: 70px;
+  line-height: 0.5;
   position: absolute;
 	text-align: center;
 	width: 100%;
