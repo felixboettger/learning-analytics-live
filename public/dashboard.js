@@ -36,7 +36,7 @@ webSocket.onclose = function(){
 
 const beforeUnloadListener = (event) => {
     event.preventDefault();
-    return event.returnValue = "Attention! You won't have access to this session if you reload or close the page!";
+    return event.returnValue = "Please confirm to leave the session!";
 };
 
 

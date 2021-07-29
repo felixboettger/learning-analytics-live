@@ -24,6 +24,7 @@ const laDB = require("./src/la-database")
 const updateInterval = process.env.UPDATE_INTERVAL;
 const portNr = process.env.PORT;
 const localEnv = ("true" === process.env.LOCAL_ENV) ? true : false;
+const testing = ("true" === process.env.TESTING) ? true : false;
 
 // --- Express Setup ---
 
@@ -96,12 +97,14 @@ app.get("/client", function(req, res) {
   res.render("client");
 });
 
-app.get("/load-simulation/:sessionKey", function(req, res) {
-  laMain.createParticipant(req.params.sessionKey, randomName()).then(testParticipant => {
-    laMain.sendParticipantCookies(res, req.body.sessionKey, req.body.participantName, testParticipant[0], testParticipant[1]);
-    res.render("load-simulation");
+if (testing){
+  app.get("/load-simulation/:sessionKey", function(req, res) {
+    laMain.createParticipant(req.params.sessionKey, randomName()).then(testParticipant => {
+      laMain.sendParticipantCookies(res, req.body.sessionKey, req.body.participantName, testParticipant[0], testParticipant[1]);
+      res.render("load-simulation");
+    });
   });
-});
+}
 
 // --- HTTP Post Request Handlers ---
 

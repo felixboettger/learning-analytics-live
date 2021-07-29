@@ -19,28 +19,17 @@ const ctx2 = canvasCropped.getContext("2d");
 document.getElementById("user-id-name").innerHTML = userId + ": " + (userName || "Anonymous");
 
 var cocoSsdModel;
-//var mobilenetModel
 var blazefaceModel;
 var lastEmotion;
 var emotionModel;
 
-
-
 // last 20 emotions stored here
 const recentEmotionsArray = [];
-var timeOffset;
 
 main();
 
 async function main() {
-  navigator.mediaDevices.getUserMedia({video:true, audio: false})
-  .then(function(stream) {
-    video.srcObject = stream;
-    video.play();
-  })
-  .catch(function(err){
-    console.log("An error with video recording occured! " + err);
-  });
+  startWebcam();
 
   // Load ML models
 
@@ -76,7 +65,7 @@ async function main() {
     const datatype = messageJSON.datatype;
     if (datatype === "start") {
       console.log("Server sent start signal!");
-      setInterval(statusInterval, messageJSON.interval);
+      setInterval(sendStatus, messageJSON.interval);
     }
   });
 
@@ -86,7 +75,7 @@ async function main() {
     url.replace(url.protocol + "//" + url.host + "/");
   }
 
-  function statusInterval(){
+  function sendStatus(){
     document.getElementById("working-idle").setAttribute('class', 'material-icons icon-red');
     const t0 = performance.now();
     //const picture = webcam.snap();
@@ -125,6 +114,17 @@ async function performML(){
   const blazefacePredictions = await blazefaceModel.estimateFaces(image, false);
   const faceDetection = await getEmotion(blazefacePredictions);
   return [faceDetection, objectDetections, blazefacePredictions]
+}
+
+function startWebcam(){
+  navigator.mediaDevices.getUserMedia({video:true, audio: false})
+  .then(function(stream) {
+    video.srcObject = stream;
+    video.play();
+  })
+  .catch(function(err){
+    console.log("An error with video recording occured! " + err);
+  });
 }
 
 function setInfoTiles(emotion, lookingAtCamera, detectedObjectsArray){
