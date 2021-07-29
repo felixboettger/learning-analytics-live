@@ -26,6 +26,11 @@
   min-height: 100%;
 }
 
+.cookie-warning{
+  margin-top: 5px;
+  font-size: 8pt;
+}
+
 .form-signin{
   max-width: 300px;
   margin: 30px auto;
