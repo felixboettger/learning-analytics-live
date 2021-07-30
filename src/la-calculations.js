@@ -35,15 +35,15 @@ function generateCounterElements(sessionData) {
         const currentEmotion = currentStatus.emotion;
         if (!participant.inactive) {
           if (!(currentEmotion === undefined)){
-            counterElements.ec[currentEmotion] += 1;
+            counterElements.ec[currentEmotion.substr(0,2)] += 1;
           }
           counterElements.apc += 1;
           counterElements.lacc += currentStatus.looks;
           counterElements.mhc += currentStatus.happinessScore;
         }
       }
-      counterElements.mhc /= counterElements.apc;
     });
+    counterElements.mhc = Math.round(counterElements.mhc/counterElements.apc);
   }
   return counterElements;
 }
