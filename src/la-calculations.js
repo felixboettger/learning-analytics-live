@@ -21,10 +21,11 @@ function generateParticipants(sessionData) {
 
 // generates counters (sent to dashboard)
 function generateCounterElements(sessionData) {
-  // variables: apc - active pariticpants, lacc - looking at camera, ec - emotions, ha - happy
-  // sa - sad, ne - neutral, di - disgusted, fe - fearful, su - surprised, an - angry
+  // variables: apc - active pariticpants, lacc - looking at camera, ec - emotions,
+  // mhc - mean happiness counter, ha - happy sa - sad, ne - neutral, di - disgusted,
+  // fe - fearful, su - surprised, an - angry
   var counterElements = {
-    apc: 0, lacc: 0,
+    apc: 0, lacc: 0, mhc: 0,
     ec: {"ha": 0, "sa": 0, "ne": 0, "di": 0, "fe": 0, "su": 0, "an": 0},
   };
   if (sessionData.participants.length > 0) {
@@ -38,8 +39,10 @@ function generateCounterElements(sessionData) {
           }
           counterElements.apc += 1;
           counterElements.lacc += currentStatus.looks;
+          counterElements.mhc += currentStatus.happinessScore;
         }
       }
+      counterElements.mhc /= counterElements.apc;
     });
   }
   return counterElements;

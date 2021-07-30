@@ -98,7 +98,7 @@ function downloadJSONFile(object){
 
 async function refreshCounterElements(counters){
   // apc = activeParticipantCounter, ec = emotionCounter, lacc = lookingAtCameraCounter
-  const {apc, ec, lacc} = counters;
+  const {apc, ec, mhc, lacc} = counters;
   console.log(counters);
   const otherEmotionCounter = ec["an"] + ec["fe"] + ec["di"] + ec["su"];
   const happyPercentage = (apc > 0) ? 100 * Math.round(ec["ha"] / apc) : 0;
@@ -106,6 +106,7 @@ async function refreshCounterElements(counters){
   const sadPercentage = (apc > 0) ? 100 * Math.round(ec["sa"] / apc) : 0;
   const otherPercentage = (apc > 0) ? 100 * Math.round(otherEmotionCounter / apc) : 0;
   const lookingPercentage = (apc > 0) ? 100 * Math.round(lacc / apc) : 0;
+  document.getElementById("mean-happiness").innerHTML = mhc;
   document.getElementById("emotion-happy-participants").innerHTML =  happyPercentage + "% (" + ec["ha"] + ")";
   document.getElementById("emotion-neutral-participants").innerHTML = neutralPercentage + "% (" + ec["ne"] + ")";
   document.getElementById("emotion-sad-participants").innerHTML = sadPercentage + "% (" + ec["sa"] + ")";
