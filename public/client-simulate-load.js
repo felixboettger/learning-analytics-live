@@ -1,11 +1,9 @@
 const path = location.pathname.split("/");
 const sessionKey = path[2];
-const names = ["Liam", "Olivia", "Noah", "Emma", "Ava", "Sophia", "Charlotte", "Henry",
-"Alex", "Azami", "Kamal", "Remi", "Leonardo", "Simone"];
-const randomName = names[Math.floor(Math.random() * names.length)];
+const emotions = ['an', 'di', 'fe', 'ha', 'sa', 'su', 'ne'];
 fetch("/participant", {
   method: "POST",
-  body: JSON.stringify({sessionKey: sessionKey, participantName: randomName}),
+  body: JSON.stringify({sessionKey: sessionKey, participantName: "x"}),
 }).then(res => {
   const cookieValues = document.cookie.split('; ');
   console.log(res);
@@ -51,7 +49,7 @@ fetch("/participant", {
   }
 
   function getRandomEmotion(){
-    return Math.floor(Math.random() * 7);
+    return emotions[Math.floor(Math.random() * 7)];
   }
 
   function getRandomHappinessScore(){

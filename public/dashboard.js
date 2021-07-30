@@ -138,11 +138,9 @@ function addOrCreateParticipant(participant){
 function generateParticipantElements(participant) {
   const {id, n, i, s} = participant;
   const {happinessScore, emotion, looks, objects} = (s === undefined) ? "undefined" : s; // this accesses the last status
-  const emotionList = ["happy", "neutral", "sad", "fearful", "disgusted", "angry", "surprised"];
-  const fullEmotion = emotionList[emotion];
   const htmlParticipantElement = `
     <td>` + n + `</td>
-    <td>` + fullEmotion + `</td>
+    <td>` + getFullEmotionName(emotion) + `</td>
     <td>` + objects + `</td>
     <td>` + looks + `</td>
     <td>
@@ -152,4 +150,32 @@ function generateParticipantElements(participant) {
     </td>
   `;
   return [htmlParticipantElement, i];
+}
+
+const emotionList = ["happy", "neutral", "sad", "fearful", "disgusted", "angry", "surprised"];
+
+function getFullEmotionName(emotion){
+  switch (emotion) {
+    case "ha":
+    return "happy";
+    break;
+    case "ne":
+    return "neutral";
+    break;
+    case "sa":
+    return "sad";
+    break;
+    case "fe":
+    return "fearful";
+    break;
+    case "di":
+    return "disgusted";
+    break;
+    case "an":
+    return "angry";
+    break;
+    case "su":
+    return "surprised";
+    break;
+  }
 }
