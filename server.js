@@ -85,6 +85,14 @@ app.get("/join/:sessionKey", function(req, res) {
   res.redirect("/participant");
 });
 
+app.get("/privacy", function(req, res) {
+  res.render("privacy");
+});
+
+app.get("/privacy-german", function(req, res) {
+  res.render("privacy-german");
+});
+
 app.get("/about", function(req, res) {
   res.render("about");
 });

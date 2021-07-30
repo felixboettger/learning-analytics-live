@@ -3,17 +3,8 @@
 <div class="home-bg position-relative overflow-hidden p-3 p-md-5 m-md-3 text-center">
   <div class="mx-auto my-5">
 
-
-
-<%- include("partials/session-join") -%>
-
-    <div class="form-signin card text-center bg-success">
-      <div class="card-body">
-        <h5 class="card-title text-light">Active Session found</h5>
-        <p class="card-text text-light">You joined session <span id="session-key"></span> before as <span id="participant-name"></span> (User ID: <span id="participant-id"></span>)</p>
-        <a href="/client" class="btn btn-light">Join this session again</a>
-      </div>
-    </div>
+<%- include("partials/session-join-participant") -%>
+<%- include("partials/existing-session-join-participant") -%>
 
   </div>
 </div>
