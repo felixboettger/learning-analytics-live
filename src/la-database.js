@@ -47,6 +47,7 @@ const participantSchema = {
   participantName: String,
   secret: String,
   inactive: Boolean,
+  currentStatus: statusSchema,
   participantStatus: [statusSchema]
 };
 
@@ -88,8 +89,20 @@ async function getSessionData(sessionKey) {
   );
 }
 
+// returns session data
+async function getSmallSessionData(sessionKey) {
+  await Session.updateOne(
+    {sessionKey: sessionKey},
+    {lastDashboardAccess: Math.floor(new Date().getTime()/1000)},
+  );
+  return await Session.find(
+    {sessionKey: sessionKey},
+    ['participants.currentStatus', 'participants.inactive', 'participants.participantId', 'participants.participantName']
+  );
+}
+
 async function getSessionDataNoDashboard(sessionKey) {
-  return await Session.findOneAndUpdate(
+  return await Session.findOne(
     {sessionKey: sessionKey}
   );
 }
@@ -127,10 +140,11 @@ function updateParticipantStatus(sessionKey, userId, statusVector, time){
     looks: statusVector.l,
     objects: statusVector.o
   });
-  Session.findOneAndUpdate(
+  Session.updateOne(
     {sessionKey: sessionKey,
     "participants.participantId": userId},
-    {$addToSet: {"participants.$.participantStatus": newStatus}},
+    {$addToSet: {"participants.$.participantStatus": newStatus},
+    "participants.$.currentStatus": newStatus},
     {new: true}
   ).then(err => {});
 }
@@ -155,7 +169,7 @@ function addSessionToDatabase(sessionKey, secret){
 
 async function updateComments(comment, time, sessionKey){
   const newComment = new Comment({text: comment, time: time});
-  Session.findOneAndUpdate(
+  Session.updateOne(
     {sessionKey: sessionKey},
     {$addToSet: newComment},
     {new: true}
@@ -165,7 +179,7 @@ async function updateComments(comment, time, sessionKey){
 // active and inactive are almost the same, can be combined into one
 
 async function changeParticipantInactive(inactiveBool, sessionKey, userId){
-  Session.findOneAndUpdate(
+  Session.updateOne(
     {sessionKey: sessionKey,
     "participants.participantId": userId},
     {$set: {"participants.$.inactive": inactiveBool}},
@@ -197,4 +211,4 @@ module.exports = {deleteSession, getSessionData, exportSessionData,
                   updateParticipantStatus, checkSessionExists, updateComments,
                   getSessionStartTime, changeParticipantInactive,
                   addSessionToDatabase, getSessionDataNoDashboard,
-                  addParticipantToSession};
+                  getSmallSessionData, addParticipantToSession};

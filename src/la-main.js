@@ -99,7 +99,7 @@ function handleDashboardSocket(req, updateInterval){
       addHostToSocketDict(sessionKey, connection);
       const clientSockets = getClientSockets(sessionKey);
       const refreshIntervalId = setInterval(function(){
-        laDB.getSessionData(sessionKey).then(sessionData => {
+        laDB.getSmallSessionData(sessionKey).then(sessionData => {
           connection.send(JSON.stringify({datatype: "counters", data: laCalc.generateCounterElements(sessionData)}));
           connection.send(JSON.stringify({datatype: "participants", data: laCalc.generateParticipants(sessionData)}));
         });
