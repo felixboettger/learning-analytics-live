@@ -101,11 +101,11 @@ async function refreshCounterElements(counters){
   const {apc, ec, mhc, lacc} = counters;
   console.log(counters);
   const otherEmotionCounter = ec["an"] + ec["fe"] + ec["di"] + ec["su"];
-  const happyPercentage = (apc > 0) ? 100 * Math.round(ec["ha"] / apc) : 0;
-  const neutralPercentage = (apc > 0) ? 100 * Math.round(ec["ne"] / apc) : 0;
-  const sadPercentage = (apc > 0) ? 100 * Math.round(ec["sa"] / apc) : 0;
-  const otherPercentage = (apc > 0) ? 100 * Math.round(otherEmotionCounter / apc) : 0;
-  const lookingPercentage = (apc > 0) ? 100 * Math.round(lacc / apc) : 0;
+  const happyPercentage = (apc > 0) ? Math.round(100 * (ec["ha"] / apc)) : 0;
+  const neutralPercentage = (apc > 0) ? Math.round(100 * (ec["ne"] / apc)) : 0;
+  const sadPercentage = (apc > 0) ? Math.round(100 * (ec["sa"] / apc)) : 0;
+  const otherPercentage = (apc > 0) ? Math.round(100 * (otherEmotionCounter / apc)) : 0;
+  const lookingPercentage = (apc > 0) ? Math.round(100 * (lacc / apc)) : 0;
   document.getElementById("mean-happiness").innerHTML = mhc;
   document.getElementById("emotion-happy-participants").innerHTML =  happyPercentage + "% (" + ec["ha"] + ")";
   document.getElementById("emotion-neutral-participants").innerHTML = neutralPercentage + "% (" + ec["ne"] + ")";
