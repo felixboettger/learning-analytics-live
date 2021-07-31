@@ -31,7 +31,7 @@ function generateCounterElements(sessionData) {
   if (sessionData[0] != undefined){
   sessionData[0].participants.forEach(function(participant) {
       const currentStatus = participant.currentStatus;
-      if (currentStatus != null){
+      if (currentStatus != undefined){
         const currentEmotion = currentStatus.emotion;
         if (!participant.inactive) {
           if (!(currentEmotion === undefined)){

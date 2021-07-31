@@ -125,7 +125,7 @@ function addParticipantToSession(participantId, name, secret, sessionKey){
       inactive: false,
       participantStatus: []
   });
-  Session.findOneAndUpdate(
+  Session.updateOne(
     {sessionKey: sessionKey},
     {$addToSet: {participants: newParticipant}},
     {new: true}
@@ -192,7 +192,7 @@ async function checkSessionExists(query){
 }
 
 async function getSessionStartTime(sessionKey){
-  var session = await getSessionData(sessionKey);
+  var session = await Session.findOne({sessionKey: sessionKey}, ["start"]);
   return session.start;
 }
 
