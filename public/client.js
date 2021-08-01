@@ -150,7 +150,6 @@ function checkLookingAtCamera(blazefacePredictions){
     // const distanceBetweenNoseAndMouth = Math.abs(noseY - mouthY);
 
     const attentionQuotient = distanceBetweenEyes / height;
-    console.log(attentionQuotient);
     if (attentionQuotient > 0.43) {
       return true;
     } else {

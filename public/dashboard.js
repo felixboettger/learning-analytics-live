@@ -98,7 +98,6 @@ function downloadJSONFile(object){
 async function refreshCounterElements(counters){
   // apc = activeParticipantCounter, ec = emotionCounter, lacc = lookingAtCameraCounter
   const {apc, ec, mhc, lacc} = counters;
-  console.log(counters);
   const otherEmotionCounter = ec["an"] + ec["fe"] + ec["di"] + ec["su"];
   const happyPercentage = (apc > 0) ? Math.round(100 * (ec["ha"] / apc)) : 0;
   const neutralPercentage = (apc > 0) ? Math.round(100 * (ec["ne"] / apc)) : 0;
@@ -131,7 +130,7 @@ async function refreshParticipantList(participants){
 };
 
 function addOrCreateParticipant(participant){
-  const [participantElement] = generateParticipantElements(participant);
+  const participantElement = generateParticipantElements(participant);
   if (document.getElementById(participant.id)) {
     document.getElementById(participant.id).innerHTML = participantElement;
   } else {
@@ -144,10 +143,10 @@ function addOrCreateParticipant(participant){
 };
 
 function generateParticipantElements(participant) {
-  const {id, n, s} = participant;
-  const {happinessScore, emotion, looks, objects} = (s === undefined) ? "undefined" : s; // this accesses the last status
+  const {currentStatus, id, name} = participant;
+  const {happinessScore, emotion, looks, objects} = (currentStatus === undefined) ? "undefined" : currentStatus; // this accesses the last status
   const htmlParticipantElement = `
-    <td>` + n + `</td>
+    <td>` + name + `</td>
     <td>` + getFullEmotionName(emotion) + `</td>
     <td>` + objects + `</td>
     <td>` + looks + `</td>

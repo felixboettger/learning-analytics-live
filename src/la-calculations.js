@@ -4,18 +4,8 @@
 
 // generates a list of participants for use in the dashboard
 function generateParticipants(sessionData) {
-  participants = [];
-  if (sessionData[0] != undefined){
-  sessionData[0].participants.forEach(function(participant) {
-    participants.push({
-      id: participant.id,
-      n: participant.name,
-      s: participant.currentStatus
-      });
-    });
-  }
+  participants = (sessionData[0] != undefined) ? sessionData[0].participants : [];
   return participants;
-
 };
 
 // generates counters (sent to dashboard)
@@ -30,19 +20,21 @@ function generateCounterElements(sessionData) {
   if (sessionData[0] != undefined){
   sessionData[0].participants.forEach(function(participant) {
       const currentStatus = participant.currentStatus;
-      if (currentStatus != undefined){
+      if (currentStatus.emotion != undefined){
         const currentEmotion = currentStatus.emotion;
 
         if (!(currentEmotion === undefined)){
           counterElements.ec[currentEmotion.substr(0,2)] += 1;
         }
         counterElements.apc += 1;
-        counterElements.lacc += currentStatus.looks;
+        counterElements.lacc += (currentStatus.looks) ? 1 : 0;
         counterElements.mhc += currentStatus.happinessScore;
       }
     });
   };
+  if (counterElements.apc > 0){
     counterElements.mhc = Math.round(counterElements.mhc/counterElements.apc);
+  }
   return counterElements;
 }
 

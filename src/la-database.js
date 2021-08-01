@@ -122,7 +122,7 @@ function addParticipantToSession(participantId, name, secret, sessionKey){
       id: participantId,
       name: name,
       secret: secret,
-      inactive: false,
+      inactive: true,
       statuses: []
   });
   Session.updateOne(
