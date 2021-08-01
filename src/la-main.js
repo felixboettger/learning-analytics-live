@@ -149,7 +149,7 @@ function handleClientSocket(req, updateInterval){
         } else if (datatype === "comment") {
             const [comment, time] = [messageJSON.data.te, new Date().getTime()];
             sendToHostSocket(sessionKey, JSON.stringify({datatype: "comment", data: {te: comment, ti: time}}));
-            laDB.updateComments(comment, time, sessionKey);
+            laDB.updateComments(comment, Math.floor(new Date().getTime()/1000) - sessionStartTime, sessionKey);
           } else if (datatype === "ready"){
             connection.send(JSON.stringify({datatype: "start", interval: updateInterval}));
           }

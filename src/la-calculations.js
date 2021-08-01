@@ -8,8 +8,8 @@ function generateParticipants(sessionData) {
   if (sessionData[0] != undefined){
   sessionData[0].participants.forEach(function(participant) {
     participants.push({
-      id: participant.participantId,
-      n: participant.participantName,
+      id: participant.id,
+      n: participant.name,
       s: participant.currentStatus
       });
     });

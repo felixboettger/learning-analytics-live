@@ -27,7 +27,7 @@ function generateSecret(bytes){
 
 async function checkSocketConnect(req){
   const type = req.resourceURL.query.type;
-  const query = (type === "dashboard") ? {sessionKey: req.resourceURL.query.sessionKey, secret: req.resourceURL.query.hsecret} : {sessionKey: req.resourceURL.query.sessionKey, "participants.participantId": req.resourceURL.query.userId, "participants.secret": req.resourceURL.query.psecret};
+  const query = (type === "dashboard") ? {sessionKey: req.resourceURL.query.sessionKey, secret: req.resourceURL.query.hsecret} : {sessionKey: req.resourceURL.query.sessionKey, "participants.id": req.resourceURL.query.userId, "participants.secret": req.resourceURL.query.psecret};
   const allowed = await laDB.checkSessionExists(query);
   // const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
   const ip = "";
@@ -42,7 +42,7 @@ async function checkSession(sessionKey, secret){
 }
 
 async function checkParticipant(sessionKey, secret, participantId){
-  const query = {sessionKey: sessionKey, "participants.participantId": participantId, "participants.secret": secret};
+  const query = {sessionKey: sessionKey, "participants.id": participantId, "participants.secret": secret};
   const allowed = await laDB.checkSessionExists(query);
   return allowed;
 }

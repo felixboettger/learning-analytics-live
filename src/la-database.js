@@ -43,17 +43,17 @@ const statusSchema = {
 };
 
 const participantSchema = {
-  participantId: Number,
-  participantName: String,
+  id: Number,
+  name: String,
   secret: String,
   inactive: Boolean,
   currentStatus: statusSchema,
-  participantStatus: [statusSchema]
+  statuses: [statusSchema]
 };
 
 const commentSchema = {
   text: String,
-  time: Date
+  time: Number
 }
 
 const sessionSchema = {
@@ -97,7 +97,7 @@ async function getSmallSessionData(sessionKey) {
   );
   return await Session.find(
     {sessionKey: sessionKey, "participants.inactive": false},
-    ['participants.currentStatus', 'participants.participantId', 'participants.participantName']
+    ['participants.currentStatus', 'participants.id', 'participants.name']
   );
 }
 
@@ -113,17 +113,17 @@ async function exportSessionData(sessionKey) {
     {sessionKey: sessionKey},
     {'_id': false, 'secret': false, '__v': false,
     'participants._id': false, 'participants.secret': false,
-    'participants.participantStatus._id': false}
+    'participants.statuses._id': false}
   );
 }
 
 function addParticipantToSession(participantId, name, secret, sessionKey){
   const newParticipant = new Participant({
-      participantId: participantId,
-      participantName: name,
+      id: participantId,
+      name: name,
       secret: secret,
       inactive: false,
-      participantStatus: []
+      statuses: []
   });
   Session.updateOne(
     {sessionKey: sessionKey},
@@ -142,8 +142,8 @@ function updateParticipantStatus(sessionKey, userId, statusVector, time){
   });
   Session.updateOne(
     {sessionKey: sessionKey,
-    "participants.participantId": userId},
-    {$addToSet: {"participants.$.participantStatus": newStatus},
+    "participants.id": userId},
+    {$addToSet: {"participants.$.statuses": newStatus},
     "participants.$.currentStatus": newStatus},
     {new: true}
   ).then(err => {});
@@ -171,7 +171,7 @@ async function updateComments(comment, time, sessionKey){
   const newComment = new Comment({text: comment, time: time});
   Session.updateOne(
     {sessionKey: sessionKey},
-    {$addToSet: newComment},
+    {$addToSet: {comments: newComment}},
     {new: true}
   ).then(err => {});
 }
@@ -181,7 +181,7 @@ async function updateComments(comment, time, sessionKey){
 async function changeParticipantInactive(inactiveBool, sessionKey, userId){
   Session.updateOne(
     {sessionKey: sessionKey,
-    "participants.participantId": userId},
+    "participants.id": userId},
     {$set: {"participants.$.inactive": inactiveBool}},
     {new: true}
   ).then(err => {});
