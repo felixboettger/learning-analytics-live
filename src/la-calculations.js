@@ -9,8 +9,7 @@ function generateParticipants(sessionData) {
   sessionData[0].participants.forEach(function(participant) {
     participants.push({
       id: participant.participantId,
-      n: participant.participantName, // participant name
-      i: participant.inactive, // participant inactive bool
+      n: participant.participantName,
       s: participant.currentStatus
       });
     });
@@ -33,14 +32,13 @@ function generateCounterElements(sessionData) {
       const currentStatus = participant.currentStatus;
       if (currentStatus != undefined){
         const currentEmotion = currentStatus.emotion;
-        if (!participant.inactive) {
-          if (!(currentEmotion === undefined)){
-            counterElements.ec[currentEmotion.substr(0,2)] += 1;
-          }
-          counterElements.apc += 1;
-          counterElements.lacc += currentStatus.looks;
-          counterElements.mhc += currentStatus.happinessScore;
+
+        if (!(currentEmotion === undefined)){
+          counterElements.ec[currentEmotion.substr(0,2)] += 1;
         }
+        counterElements.apc += 1;
+        counterElements.lacc += currentStatus.looks;
+        counterElements.mhc += currentStatus.happinessScore;
       }
     });
   };

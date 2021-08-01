@@ -96,8 +96,8 @@ async function getSmallSessionData(sessionKey) {
     {lastDashboardAccess: Math.floor(new Date().getTime()/1000)},
   );
   return await Session.find(
-    {sessionKey: sessionKey},
-    ['participants.currentStatus', 'participants.inactive', 'participants.participantId', 'participants.participantName']
+    {sessionKey: sessionKey, "participants.inactive": false},
+    ['participants.currentStatus', 'participants.participantId', 'participants.participantName']
   );
 }
 

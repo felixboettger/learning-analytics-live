@@ -39,7 +39,6 @@ const beforeUnloadListener = (event) => {
     return event.returnValue = "Please confirm to leave the session!";
 };
 
-
 // Button event listeners
 
 document.getElementById("comment-list").addEventListener("click",function(evt) {
@@ -116,16 +115,24 @@ async function refreshCounterElements(counters){
 }
 
 async function refreshParticipantList(participants){
+  const participantsInList = document.getElementsByClassName("participant");
+  const participantIdsInList = [];
+  for (let element of participantsInList) {
+    participantIdsInList.push(parseInt(element.id));
+  }
   participants.forEach(function(participant){
-    addOrCreateParticipant(participant);
+    const id = addOrCreateParticipant(participant);
+    const index = participantIdsInList.indexOf(id);
+    if (index !== -1) {
+      participantIdsInList.splice(index, 1);
+    }
   });
+  participantIdsInList.forEach(id => document.getElementById(id).remove());
 };
 
 function addOrCreateParticipant(participant){
-  const [participantElement, i] = generateParticipantElements(participant);
-  if (i && document.getElementById(participant.id)) {
-    document.getElementById(participant.id).remove()
-  } else if (document.getElementById(participant.id)) {
+  const [participantElement] = generateParticipantElements(participant);
+  if (document.getElementById(participant.id)) {
     document.getElementById(participant.id).innerHTML = participantElement;
   } else {
     const newParticipantElement = document.createElement("tr");
@@ -133,10 +140,11 @@ function addOrCreateParticipant(participant){
     newParticipantElement.setAttribute('class', 'participant');
     document.getElementById("participant-list").appendChild(newParticipantElement);
   }
+  return participant.id;
 };
 
 function generateParticipantElements(participant) {
-  const {id, n, i, s} = participant;
+  const {id, n, s} = participant;
   const {happinessScore, emotion, looks, objects} = (s === undefined) ? "undefined" : s; // this accesses the last status
   const htmlParticipantElement = `
     <td>` + n + `</td>
@@ -149,7 +157,7 @@ function generateParticipantElements(participant) {
       </div>
     </td>
   `;
-  return [htmlParticipantElement, i];
+  return [htmlParticipantElement];
 }
 
 const emotionList = ["happy", "neutral", "sad", "fearful", "disgusted", "angry", "surprised"];
