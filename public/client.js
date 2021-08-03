@@ -23,6 +23,15 @@ var blazefaceModel;
 var lastEmotion;
 var emotionModel;
 
+emotionWeights = {
+  'angry': 0.25,
+  'disgust': 0.2,
+  'fear': 0.3,
+  'happy': 0.6,
+  'sad': 0.3,
+  'surprise': 0.6,
+  'neutral': 0.9};
+
 // last 20 emotions stored here
 const recentEmotionsArray = [];
 
@@ -94,15 +103,17 @@ async function main() {
 // Helper functions
 
 async function getStatus(){
-  const [faceDetection, objectDetections, blazefacePredictions] = await performML();
+  const [emotionDetection, objectDetections, blazefacePredictions] = await performML();
   const lookingAtCamera = checkLookingAtCamera(blazefacePredictions);
-  const emotion = (faceDetection === undefined) ? "none" : faceDetection;
-  recentEmotionsArray.push(emotion);
+  const emotion = (emotionDetection === undefined) ? "none" : emotionDetection[0];
+  if (emotionDetection != undefined){
+    recentEmotionsArray.push(emotionDetection);
+  }
   const detectedObjectsArray = objectDetections.map(object => object.class);
   setInfoTiles(emotion, lookingAtCamera, detectedObjectsArray);
   const statusVector = {
     e: emotion.substring(0,2), // emotion
-    hs: getHappinessScore(), // happiness score
+    cs: getConcentrationIndex(), // happiness score
     l: lookingAtCamera, // looking bool
     o: detectedObjectsArray // objects
   };
@@ -112,8 +123,8 @@ async function getStatus(){
 async function performML(){
   const objectDetections = await cocoSsdModel.detect(image);
   const blazefacePredictions = await blazefaceModel.estimateFaces(image, false);
-  const faceDetection = await getEmotion(blazefacePredictions);
-  return [faceDetection, objectDetections, blazefacePredictions]
+  const emotionDetection = await getEmotion(blazefacePredictions);
+  return [emotionDetection, objectDetections, blazefacePredictions]
 }
 
 function startWebcam(){
@@ -158,26 +169,18 @@ function checkLookingAtCamera(blazefacePredictions){
   }
 }
 
-function getHappinessScore() {
+function getConcentrationIndex() {
   (recentEmotionsArray.length > 20) ? recentEmotionsArray.shift() : "";
-  var happinessScore = 0;
-  recentEmotionsArray.forEach(emotion => {
-    if (emotion == "happy") {
-      happinessScore += 100;
-    } else if (
-      emotion === "sad" ||
-      emotion === "fear" ||
-      emotion === "disgust"
-    ) {
-      happinessScore += 0;
-    } else {
-      happinessScore += 50;
-    }
-  });
+  let score = 0;
   if (recentEmotionsArray.length > 0) {
-    happinessScore = Math.floor(happinessScore / recentEmotionsArray.length);
-  }
-  return happinessScore;
+    recentEmotionsArray.forEach(emotion => {
+      console.log(emotion);
+      score += emotionWeights[emotion[0]] * emotion[1];
+    });
+
+    score = score / recentEmotionsArray.length;
+  };
+  return score * 100;
 }
 
 async function getEmotion(blazefacePredictions){
@@ -203,6 +206,7 @@ async function getEmotion(blazefacePredictions){
     inputImage = tf.image.resizeBilinear(inputImage, [48, 48]).div(tf.scalar(255))
     const predictions = emotionModel.predict(inputImage).arraySync()[0];
     const emotionArray = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
-    return emotionArray[predictions.indexOf(Math.max.apply(null, predictions))];
+    const emotionIndex = predictions.indexOf(Math.max.apply(null, predictions));
+    return [emotionArray[emotionIndex], predictions[emotionIndex]];
   }
 }

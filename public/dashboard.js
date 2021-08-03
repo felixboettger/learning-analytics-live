@@ -96,15 +96,17 @@ function downloadJSONFile(object){
 }
 
 async function refreshCounterElements(counters){
-  // apc = activeParticipantCounter, ec = emotionCounter, lacc = lookingAtCameraCounter
-  const {apc, ec, mhc, lacc} = counters;
+  // apc = activeParticipantCounter, ec = emotionCounter, lacc = lookingAtCameraCounter, mcs = mean concentration score
+
+  const {apc, ec, mcs, lacc} = counters;
+  console.log(mcs);
   const otherEmotionCounter = ec["an"] + ec["fe"] + ec["di"] + ec["su"];
   const happyPercentage = (apc > 0) ? Math.round(100 * (ec["ha"] / apc)) : 0;
   const neutralPercentage = (apc > 0) ? Math.round(100 * (ec["ne"] / apc)) : 0;
   const sadPercentage = (apc > 0) ? Math.round(100 * (ec["sa"] / apc)) : 0;
   const otherPercentage = (apc > 0) ? Math.round(100 * (otherEmotionCounter / apc)) : 0;
   const lookingPercentage = (apc > 0) ? Math.round(100 * (lacc / apc)) : 0;
-  document.getElementById("mean-happiness").innerHTML = mhc;
+  document.getElementById("mean-concentration").innerHTML = mcs;
   document.getElementById("emotion-happy-participants").innerHTML =  happyPercentage + "% (" + ec["ha"] + ")";
   document.getElementById("emotion-neutral-participants").innerHTML = neutralPercentage + "% (" + ec["ne"] + ")";
   document.getElementById("emotion-sad-participants").innerHTML = sadPercentage + "% (" + ec["sa"] + ")";
@@ -144,7 +146,7 @@ function addOrCreateParticipant(participant){
 
 function generateParticipantElements(participant) {
   const {currentStatus, id, name} = participant;
-  const {happinessScore, emotion, looks, objects} = (currentStatus === undefined) ? "undefined" : currentStatus; // this accesses the last status
+  const {concentrationScore, emotion, looks, objects} = (currentStatus === undefined) ? "undefined" : currentStatus; // this accesses the last status
   const htmlParticipantElement = `
     <td>` + name + `</td>
     <td>` + getFullEmotionName(emotion) + `</td>
@@ -152,7 +154,7 @@ function generateParticipantElements(participant) {
     <td>` + looks + `</td>
     <td>
       <div class="progress">
-        <div class="progress-bar bg-green" role="progressbar" aria-valuenow="` + happinessScore + `" aria-valuemin="0" aria-valuemax="100" style="width: ` + happinessScore + `%"></div>
+        <div class="progress-bar bg-green" role="progressbar" aria-valuenow="` + concentrationScore + `" aria-valuemin="0" aria-valuemax="100" style="width: ` + concentrationScore + `%"></div>
       </div>
     </td>
   `;

@@ -39,7 +39,7 @@ const statusSchema = {
   objects: [String],
   looks: Boolean,
   time: Number,
-  happinessScore: Number,
+  concentrationScore: Number,
 };
 
 const participantSchema = {
@@ -135,7 +135,7 @@ function addParticipantToSession(participantId, name, secret, sessionKey){
 function updateParticipantStatus(sessionKey, userId, statusVector, time){
   const newStatus = new Status({
     emotion: statusVector.e,
-    happinessScore: statusVector.hs,
+    concentrationScore: statusVector.cs,
     time: time,
     looks: statusVector.l,
     objects: statusVector.o
