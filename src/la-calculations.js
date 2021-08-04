@@ -4,7 +4,7 @@
 
 // generates a list of participants for use in the dashboard
 function generateParticipants(sessionData) {
-  participants = (sessionData[0] != undefined) ? sessionData[0].participants : [];
+  participants = (sessionData != undefined) ? sessionData : [];
   return participants;
 };
 
@@ -17,8 +17,8 @@ function generateCounterElements(sessionData) {
     apc: 0, lacc: 0, mcs: 0,
     ec: {"ha": 0, "sa": 0, "ne": 0, "di": 0, "fe": 0, "su": 0, "an": 0},
   };
-  if (sessionData[0] != undefined){
-  sessionData[0].participants.forEach(function(participant) {
+  if (sessionData != undefined){
+  sessionData.forEach(function(participant) {
       const currentStatus = participant.currentStatus;
       if (currentStatus.emotion != undefined){
         const currentEmotion = currentStatus.emotion;

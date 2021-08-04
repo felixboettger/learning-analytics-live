@@ -71,6 +71,8 @@ const Participant = mongoose.model("Participant", participantSchema);
 const Status = mongoose.model("Status", statusSchema);
 const Comment = mongoose.model("Comment", commentSchema);
 
+// Marking all participants as inactive after server restart (only executed on restart)
+markAllAsInactive();
 
 function deleteSession(sessionKey){
   Session.deleteOne({sessionKey: sessionKey}).then((deletedSession, err) => {
@@ -95,10 +97,17 @@ async function getSmallSessionData(sessionKey) {
     {sessionKey: sessionKey},
     {lastDashboardAccess: Math.floor(new Date().getTime()/1000)},
   );
-  return await Session.find(
+  foundSession = await Session.find(
     {sessionKey: sessionKey, "participants.inactive": false},
-    ['participants.currentStatus', 'participants.id', 'participants.name']
+    ['participants.inactive', 'participants.currentStatus', 'participants.id', 'participants.name'],
   );
+  if (foundSession.length === 1){
+    return foundSession[0]["participants"].filter(function(obj){
+      return (obj.inactive === false);
+    });
+  } else {
+    return []
+  }
 }
 
 async function getSessionDataNoDashboard(sessionKey) {
@@ -179,10 +188,20 @@ async function updateComments(comment, time, sessionKey){
 // active and inactive are almost the same, can be combined into one
 
 async function changeParticipantInactive(inactiveBool, sessionKey, userId){
-  Session.updateOne(
+  await Session.updateOne(
     {sessionKey: sessionKey,
     "participants.id": userId},
     {$set: {"participants.$.inactive": inactiveBool}},
+    {new: true}
+  ).then(err => {});
+}
+
+async function markAllAsInactive(){
+  console.log("Marking all participants as inactive (server restarted)");
+
+  await Session.updateMany(
+    {"participants.inactive": false},
+    {$set: {"participants.$.inactive": true}},
     {new: true}
   ).then(err => {});
 }
