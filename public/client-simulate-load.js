@@ -41,7 +41,7 @@ fetch("/participant", {
   async function getRandomStatus(){
     const statusVector = {
       e: getRandomEmotion(), // emotion
-      hs: getRandomHappinessScore(), // happiness score
+      cs: getRandomConcentrationScore(), // happiness score
       l: getRandomBool(), // looking bool
       o: getRandomObjectsArray() // objects
     };
@@ -52,7 +52,7 @@ fetch("/participant", {
     return emotions[Math.floor(Math.random() * 7)];
   }
 
-  function getRandomHappinessScore(){
+  function getRandomConcentrationScore(){
     return Math.floor(Math.random() * 101);
   }
 

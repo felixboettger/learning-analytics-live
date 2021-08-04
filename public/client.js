@@ -153,15 +153,17 @@ function checkLookingAtCamera(blazefacePredictions){
     return false;
   } else {
     const height = blazefacePredictions[0]["bottomRight"][1] - blazefacePredictions[0]["topLeft"][1]
+    const width = blazefacePredictions[0]["bottomRight"][0] - blazefacePredictions[0]["topLeft"][0]
     const rightEyeX = blazefacePredictions[0]["landmarks"][0][0];
     const leftEyeX = blazefacePredictions[0]["landmarks"][1][0];
     const noseY = blazefacePredictions[0]["landmarks"][2][1];
     const mouthY = blazefacePredictions[0]["landmarks"][3][1];
     const distanceBetweenEyes = Math.abs(leftEyeX - rightEyeX);
-    // const distanceBetweenNoseAndMouth = Math.abs(noseY - mouthY);
-
-    const attentionQuotient = distanceBetweenEyes / height;
-    if (attentionQuotient > 0.43) {
+    const distanceBetweenNoseAndMouth = Math.abs(noseY - mouthY);
+    const factor = Math.max(height, width);
+    const gazeQuotient1 = distanceBetweenEyes / factor;
+    const gazeQuotient2 = distanceBetweenNoseAndMouth / factor;
+    if ((0.42  > gazeQuotient1) && (gazeQuotient1 > 0.36) && (0.21 > gazeQuotient2) && (gazeQuotient2 > 0.15)) {
       return true;
     } else {
       return false;
@@ -174,10 +176,8 @@ function getConcentrationIndex() {
   let score = 0;
   if (recentEmotionsArray.length > 0) {
     recentEmotionsArray.forEach(emotion => {
-      console.log(emotion);
       score += emotionWeights[emotion[0]] * emotion[1];
     });
-
     score = score / recentEmotionsArray.length;
   };
   return score * 100;

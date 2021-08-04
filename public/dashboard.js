@@ -99,7 +99,6 @@ async function refreshCounterElements(counters){
   // apc = activeParticipantCounter, ec = emotionCounter, lacc = lookingAtCameraCounter, mcs = mean concentration score
 
   const {apc, ec, mcs, lacc} = counters;
-  console.log(mcs);
   const otherEmotionCounter = ec["an"] + ec["fe"] + ec["di"] + ec["su"];
   const happyPercentage = (apc > 0) ? Math.round(100 * (ec["ha"] / apc)) : 0;
   const neutralPercentage = (apc > 0) ? Math.round(100 * (ec["ne"] / apc)) : 0;
