@@ -6,7 +6,6 @@
 
 const laHelp = require("./la-helpers");
 const laDB = require("./la-database");
-const laCalc = require("./la-calculations");
 
 // --- Objects ---
 
@@ -186,7 +185,7 @@ function handleDashboardSocket(req, updateInterval){
       const clientSockets = getClientSockets(sessionKey);
       const refreshIntervalId = setInterval(function(){
         laDB.getParticipantData(sessionKey).then(participantData => {
-          connection.send(JSON.stringify({datatype: "counters", data: laCalc.generateCounterElements(participantData)}));
+          console.log(new Date().getMinutes() + " " + new Date().getSeconds());
           connection.send(JSON.stringify({datatype: "participants", data: participantData}));
         });
       }, updateInterval)

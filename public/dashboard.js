@@ -1,24 +1,18 @@
 //jshint esversion:6
 
-const cookieValues = document.cookie.split('; ');
+const [sessionKey, secret] = getCookieValues();
+const directLink = getDirectLink();
+const webSocket = createWebSocket(sessionKey, secret);
 
-const sessionKey = cookieValues.find(row => row.startsWith('sessionKey=')).split('=')[1];
-const secret = cookieValues.find(row => row.startsWith('hsecret=')).split('=')[1];
-const directLink = window.location.protocol + "//" + window.location.host + "/join/" + sessionKey;
-document.getElementById("session-key").innerHTML = sessionKey;
+// --- Event Listeners ---
 
-const webSocketProtocol = (window.location.protocol === "https:") ? "wss://" : "ws://";
-const webSocket = new WebSocket(webSocketProtocol + document.domain + ":" + location.port + "/?sessionKey=" + sessionKey + "&hsecret=" + secret + "&type=dashboard", "echo-protocol");
-
-// Websocket listener
+// WebSocket
 
 webSocket.addEventListener("message", function(event){
   const messageJSON = JSON.parse(event.data);
   const datatype = messageJSON.datatype;
-  if (datatype === "counters") {
-    refreshCounterElements(messageJSON.data);
-  } else if (datatype === "participants") {
-    refreshParticipantList(messageJSON.data)
+  if (datatype === "participants") {
+    refreshDashboard(messageJSON.data);
   } else if (datatype === "download"){
     downloadJSONFile(messageJSON.data);
   } else if (datatype === "comment"){
@@ -32,14 +26,7 @@ webSocket.onclose = function(){
   url.replace(url.protocol + "//" + url.host + "/");
 }
 
-// Unload event listener (for warning)
-
-const beforeUnloadListener = (event) => {
-    event.preventDefault();
-    return event.returnValue = "Please confirm to leave the session!";
-};
-
-// Button event listeners
+// Buttons
 
 document.getElementById("comment-list").addEventListener("click",function(evt) {
   const t = evt.target;
@@ -75,7 +62,8 @@ document.getElementById("key-btn").addEventListener("click", function() {
  });
 });
 
-// Helper Functions
+
+// --- Function Definitions ---
 
 function addCommentToList(commentObj){
   document.getElementById("nr-comments").innerHTML ++;
@@ -87,6 +75,30 @@ function addCommentToList(commentObj){
   document.getElementById("comment-list").appendChild(commentElement);
 }
 
+function addOrChangeParticipant(participantElement, id){
+  if (document.getElementById(id)) {
+    document.getElementById(id).innerHTML = participantElement;
+  } else {
+    const newTr = document.createElement("tr");
+    newTr.setAttribute('id', id);
+    newTr.setAttribute('class', 'participant');
+    document.getElementById("participant-list").appendChild(newTr);
+  }
+}
+
+function createWebSocket(sessionKey, secret){
+  const wl = window.location;
+  const webSocketProtocol = (wl.protocol === "https:") ? "wss://" : "ws://";
+  const domain = document.domain;
+  const port = location.port;
+  const webSocketAddress = webSocketProtocol + domain + ":" + port;
+  const sessionKeyParam = "/?sessionKey=" + sessionKey;
+  const secretParam = "&hsecret=" + secret ;
+  const typeParam = "&type=dashboard";
+  const webSocketURL = webSocketAddress + sessionKeyParam + secretParam + typeParam;
+  return new WebSocket(webSocketURL, "echo-protocol");
+}
+
 function downloadJSONFile(object){
   const downloadElement = document.createElement("a");
   const date = new Date();
@@ -95,60 +107,10 @@ function downloadJSONFile(object){
   downloadElement.click();
 }
 
-async function refreshCounterElements(counters){
-  // apc = activeParticipantCounter, ec = emotionCounter, lacc = lookingAtCameraCounter, mcs = mean concentration score
-
-  const {apc, ec, mcs, lacc} = counters;
-  const otherEmotionCounter = ec["an"] + ec["fe"] + ec["di"] + ec["su"];
-  const happyPercentage = (apc > 0) ? Math.round(100 * (ec["ha"] / apc)) : 0;
-  const neutralPercentage = (apc > 0) ? Math.round(100 * (ec["ne"] / apc)) : 0;
-  const sadPercentage = (apc > 0) ? Math.round(100 * (ec["sa"] / apc)) : 0;
-  const otherPercentage = (apc > 0) ? Math.round(100 * (otherEmotionCounter / apc)) : 0;
-  const lookingPercentage = (apc > 0) ? Math.round(100 * (lacc / apc)) : 0;
-  document.getElementById("mean-concentration").innerHTML = mcs;
-  document.getElementById("emotion-happy-participants").innerHTML =  happyPercentage + "% (" + ec["ha"] + ")";
-  document.getElementById("emotion-neutral-participants").innerHTML = neutralPercentage + "% (" + ec["ne"] + ")";
-  document.getElementById("emotion-sad-participants").innerHTML = sadPercentage + "% (" + ec["sa"] + ")";
-  document.getElementById("emotion-other-participants").innerHTML = otherPercentage + "% (" + otherEmotionCounter + ")";
-  document.getElementById("nr-participants").innerHTML = apc;
-  document.getElementById("nr-looking-at-camera").innerHTML = lookingPercentage + "% (" + lacc + ")";
-}
-
-async function refreshParticipantList(participants){
-  const participantsInList = document.getElementsByClassName("participant");
-  const participantIdsInList = [];
-  for (let element of participantsInList) {
-    participantIdsInList.push(parseInt(element.id));
-  }
-  participants.forEach(function(participant){
-    const id = addOrCreateParticipant(participant);
-    const index = participantIdsInList.indexOf(id);
-    if (index !== -1) {
-      participantIdsInList.splice(index, 1);
-    }
-  });
-  participantIdsInList.forEach(id => document.getElementById(id).remove());
-};
-
-function addOrCreateParticipant(participant){
-  const participantElement = generateParticipantElements(participant);
-  if (document.getElementById(participant.id)) {
-    document.getElementById(participant.id).innerHTML = participantElement;
-  } else {
-    const newParticipantElement = document.createElement("tr");
-    newParticipantElement.setAttribute('id', participant.id);
-    newParticipantElement.setAttribute('class', 'participant');
-    document.getElementById("participant-list").appendChild(newParticipantElement);
-  }
-  return participant.id;
-};
-
-function generateParticipantElements(participant) {
-  const {currentStatus, id, name} = participant;
-  const {concentrationScore, emotion, looks, objects} = (currentStatus === undefined) ? "undefined" : currentStatus; // this accesses the last status
-  const htmlParticipantElement = `
+function generateParticipantElement(name, emotion, objects, looks, concentrationScore){
+  const participantElement = `
     <td>` + name + `</td>
-    <td>` + getFullEmotionName(emotion) + `</td>
+    <td>` + emotion + `</td>
     <td>` + objects + `</td>
     <td>` + looks + `</td>
     <td>
@@ -157,10 +119,20 @@ function generateParticipantElements(participant) {
       </div>
     </td>
   `;
-  return [htmlParticipantElement];
+  return participantElement;
 }
 
-const emotionList = ["happy", "neutral", "sad", "fearful", "disgusted", "angry", "surprised"];
+function getCookieValues(){
+  const cookieValues = document.cookie.split('; ');
+  const sessionKey = cookieValues.find(row => row.startsWith('sessionKey=')).split('=')[1];
+  const secret = cookieValues.find(row => row.startsWith('hsecret=')).split('=')[1];
+  return [sessionKey, secret];
+}
+
+function getDirectLink(){
+  const wl = window.location;
+  return wl.protocol + "//" + wl.host + "/join/" + sessionKey;
+}
 
 function getFullEmotionName(emotion){
   switch (emotion) {
@@ -185,5 +157,63 @@ function getFullEmotionName(emotion){
     case "su":
     return "surprised";
     break;
+    default:
+    return ""
+    break;
   }
+}
+
+function refreshDashboard(participantsList){
+  // variables: apc - active pariticpants, lacc - looking at camera, ec - emotions,
+  // mcs - mean concentration score, ha - happy sa - sad, ne - neutral, di - disgusted,
+  // fe - fearful, su - surprised, an - angry
+  var counterElements = {
+    apc: 0, lacc: 0, mcs: 0,
+    ec: {"ha": 0, "sa": 0, "ne": 0, "di": 0, "fe": 0, "su": 0, "an": 0},
+  };
+  participantsList.forEach(function(participant){
+    const {inactive, currentStatus, id, name} = participant;
+    if (!(inactive)){
+      const {concentrationScore, emotion, looks, objects} = (currentStatus === undefined) ? "" : currentStatus;
+      if (!(emotion === undefined)){
+        counterElements.ec[emotion.substr(0,2)] += 1;
+      }
+      counterElements.apc += 1;
+      counterElements.lacc += (currentStatus.looks) ? 1 : 0;
+      counterElements.mcs += currentStatus.concentrationScore;
+      const fullEmotion = getFullEmotionName(emotion);
+      participantElement = generateParticipantElement(name, fullEmotion, objects, looks, concentrationScore);
+      addOrChangeParticipant(participantElement, id);
+    } else {
+      removeParticipant(id);
+    }
+  });
+  if (counterElements.apc > 0){
+    counterElements.mcs = Math.round(counterElements.mcs/counterElements.apc);
+  }
+  setCounterElements(counterElements);
+}
+
+function removeParticipant(id){
+  if (document.getElementById(id)) {
+    document.getElementById(id).remove();
+  };
+}
+
+function setCounterElements(counterElements){
+  // apc = activeParticipantCounter, ec = emotionCounter, lacc = lookingAtCameraCounter, mcs = mean concentration score
+  const {apc, ec, mcs, lacc} = counterElements;
+  const otherEmotionCounter = ec["an"] + ec["fe"] + ec["di"] + ec["su"];
+  const happyPercentage = (apc > 0) ? Math.round(100 * (ec["ha"] / apc)) : 0;
+  const neutralPercentage = (apc > 0) ? Math.round(100 * (ec["ne"] / apc)) : 0;
+  const sadPercentage = (apc > 0) ? Math.round(100 * (ec["sa"] / apc)) : 0;
+  const otherPercentage = (apc > 0) ? Math.round(100 * (otherEmotionCounter / apc)) : 0;
+  const lookingPercentage = (apc > 0) ? Math.round(100 * (lacc / apc)) : 0;
+  document.getElementById("mean-concentration").innerHTML = mcs;
+  document.getElementById("emotion-happy-participants").innerHTML =  happyPercentage + "% (" + ec["ha"] + ")";
+  document.getElementById("emotion-neutral-participants").innerHTML = neutralPercentage + "% (" + ec["ne"] + ")";
+  document.getElementById("emotion-sad-participants").innerHTML = sadPercentage + "% (" + ec["sa"] + ")";
+  document.getElementById("emotion-other-participants").innerHTML = otherPercentage + "% (" + otherEmotionCounter + ")";
+  document.getElementById("nr-participants").innerHTML = apc;
+  document.getElementById("nr-looking-at-camera").innerHTML = lookingPercentage + "% (" + lacc + ")";
 }

@@ -61,7 +61,7 @@ fetch("/participant", {
   }
 
   function getRandomObjectsArray(){
-    const nrOfObjects = Math.floor(Math.random() * 6);
+    const nrOfObjects = Math.floor(Math.random() * 3);
     return randomWords(nrOfObjects);
   }
 

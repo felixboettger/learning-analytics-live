@@ -230,13 +230,14 @@ async function getParticipantData(sessionKey) {
     {sessionKey: sessionKey},
     ['participants.inactive', 'participants.currentStatus', 'participants.id', 'participants.name'],
   );
-  try{
-    return foundSession["participants"].filter(function(obj){
-      return (obj.inactive === false);
-    });
-  } catch(e) {
-    return [];
-  }
+  // try{
+  //   return foundSession["participants"].filter(function(obj){
+  //     return (obj.inactive === false);
+  //   });
+  // } catch(e) {
+  //   return [];
+  // }
+  return foundSession["participants"];
 }
 
 /**
@@ -302,8 +303,8 @@ function updateParticipantStatus(sessionKey, participantId, statusVector, time){
   Session.updateOne(
     {sessionKey: sessionKey,
     "participants.id": participantId},
-    {$addToSet: {"participants.$.statuses": newStatus},
-    "participants.$.currentStatus": newStatus},
+    // {$addToSet: {"participants.$.statuses": newStatus}},
+    {"participants.$.currentStatus": newStatus},
     {new: true}
   ).then(info => {});
 }

@@ -14,7 +14,6 @@ const nodeOsUtils = require('node-os-utils')
 const WebSocketServer = require("websocket").server;
 const randomName = require("node-random-name");
 
-const laCalc = require("./src/la-calculations")
 const laMain = require("./src/la-main")
 const laHelp = require("./src/la-helpers")
 const laDB = require("./src/la-database")
