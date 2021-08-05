@@ -154,7 +154,7 @@ function addSessionToDatabase(secret, sessionKey){
 async function changeParticipantInactive(inactiveBool, sessionKey, participantId){
   await Session.updateOne(
     {sessionKey: sessionKey,
-    "participants.id": userId},
+    "participants.id": participantId},
     {$set: {"participants.$.inactive": inactiveBool}},
     {new: true}
   ).then(info => {});
@@ -230,12 +230,12 @@ async function getParticipantData(sessionKey) {
     {sessionKey: sessionKey},
     ['participants.inactive', 'participants.currentStatus', 'participants.id', 'participants.name'],
   );
-  if (foundSession[0]["participants"] != undefined){
-    return foundSession[0]["participants"].filter(function(obj){
+  try{
+    return foundSession["participants"].filter(function(obj){
       return (obj.inactive === false);
     });
-  } else {
-    return []
+  } catch(e) {
+    return [];
   }
 }
 
@@ -301,7 +301,7 @@ function updateParticipantStatus(sessionKey, participantId, statusVector, time){
   });
   Session.updateOne(
     {sessionKey: sessionKey,
-    "participants.id": userId},
+    "participants.id": participantId},
     {$addToSet: {"participants.$.statuses": newStatus},
     "participants.$.currentStatus": newStatus},
     {new: true}

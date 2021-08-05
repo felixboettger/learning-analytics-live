@@ -221,7 +221,6 @@ function removeFromSocketDict(sessionKey, index){
   socketDict[sessionKey].clients.splice(index, 1);
 }
 
-
 /**
  * sendToHostSocket - Function that sends a message to the host socket of a session.
  *
