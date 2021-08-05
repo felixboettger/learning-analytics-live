@@ -1,8 +1,6 @@
 //jshint esversion:6
 
-// This module includes functions that are used by the server, but
-// that don't interact directly with the database.
-
+// This module includes handling functions for most actions on the server.
 
 // --- Imports ---
 
@@ -14,37 +12,28 @@ const laCalc = require("./la-calculations");
 
 const socketDict = {}; // Open sockets are referenced in this object
 
-// ---
+// --- Function Definitions ---
 
-function createSession(){
-  const newKey = laHelp.generateSessionKey();
-  const secret = laHelp.generateSecret(8);
-  laDB.addSessionToDatabase(newKey, secret);
-  return [newKey, secret]
-}
-
-async function createParticipant(sessionKey, name){
-  var session = await laDB.getSessionData(sessionKey);
-  if (session != null) {
-    participantId = session.participants.length;
-    secret = laHelp.generateSecret(8);
-    laDB.addParticipantToSession(participantId, name, secret, sessionKey);
-    return [participantId, secret];
+/**
+ * addClientToSocketDict - Function that adds a client socket to the socket dictionary.
+ *
+ * @param  {string} sessionKey Unique session identifier that was generated on session creation.
+ * @param  {object} socket Socket object of the client.
+ * @return {int} Index of client socket in socket dictionary client array.
+ */
+function addClientToSocketDict(sessionKey, socket){
+  if (!(sessionKey in socketDict)){
+    socketDict[sessionKey] = {clients: []}
   }
+  return socketDict[sessionKey].clients.push(socket) - 1;
 }
 
-function checkActiveSession(sessionKey){
-  return sessionKey in socketDict;
-}
-
-function getHostSocket(sessionKey){
-  return socketDict[sessionKey].host;
-}
-
-function getClientSockets(sessionKey){
-  return socketDict[sessionKey].clients;
-}
-
+/**
+ * addHostToSocketDict - Function that adds the host's socket to the socket dictionary
+ *
+ * @param  {string} sessionKey Unique session identifier that was generated on session creation.
+ * @param  {object} socket Socket object of the host.
+ */
 function addHostToSocketDict(sessionKey, socket){
   if (sessionKey in socketDict){
     socketDict[sessionKey].host = socket
@@ -53,41 +42,138 @@ function addHostToSocketDict(sessionKey, socket){
   }
 }
 
-function sendToHostSocket(sessionKey, message){
-  if (socketDict[sessionKey].host) {
-    socketDict[sessionKey].host.send(message);
-  }
+/**
+ * checkActiveSession - Function that checks if host or participants are active in a session.
+ *
+ * @param  {string} sessionKey Unique session identifier that was generated on session creation.
+ * @return {boolean} Boolean if there are active participants or hosts for the session.
+ */
+function checkActiveSession(sessionKey){
+  return sessionKey in socketDict;
 }
 
-function addClientToSocketDict(sessionKey, socket){
-  if (!(sessionKey in socketDict)){
-    socketDict[sessionKey] = {clients: []}
-  }
-  return socketDict[sessionKey].clients.push(socket) - 1;
-}
-
-function removeFromSocketDict(sessionKey, index){
-  socketDict[sessionKey].clients.splice(index, 1);
-}
-
+/**
+ * closeClientSockets - Function that closes all client sockets (on session end).
+ *
+ * @param  {type} sessionKey Unique session identifier that was generated on session creation.
+ */
 function closeClientSockets(sessionKey){
   const clientSockets = getClientSockets(sessionKey);
   clientSockets.forEach(clientSocket => clientSocket.close());
 }
 
+/**
+ * createParticipant - Function that creates a participant and adds it to the database.
+ *
+ * @param  {string} name Name that the participant entered when joining.
+ * @param  {string} sessionKey Unique session identifier that was generated on session creation.
+ * @return {array} Array that contains the new ID of the participant and his secret.
+ */
+async function createParticipant(name, sessionKey){
+  var session = await laDB.getSessionData(sessionKey, false);
+  if (session != null) {
+    participantId = session.participants.length;
+    secret = laHelp.generateSecret(8);
+    laDB.addParticipantToSession(participantId, name, secret, sessionKey);
+    return [participantId, secret];
+  }
+}
+
+/**
+ * createSession - Function that creates a new session and adds it to the database.
+ *
+ * @return {array}  Array that contains sessionKey and secret of the new session
+ */
+function createSession(){
+  const sessionKey = laHelp.generateSessionKey();
+  const secret = laHelp.generateSecret(8);
+  laDB.addSessionToDatabase(secret, sessionKey);
+  return [secret, sessionKey]
+}
+
+/**
+ * endSession - Function that ends a session (closes all connections and deletes it from database.)
+ *
+ * @param  {type} sessionKey Unique session identifier that was generated on session creation.
+ */
 function endSession(sessionKey){
   closeClientSockets(sessionKey);
   delete socketDict[sessionKey];
   laDB.deleteSession(sessionKey);
 }
 
-function sendParticipantCookies(res, sessionKey, participantName, participantId, psecret){
-  res.cookie("sessionKey", sessionKey);
-  res.cookie("participantName", participantName);
-  res.cookie("participantId", participantId);
-  res.cookie("psecret", psecret);
+/**
+ * getClientSockets - Function that returns all sockets for active clients in the session.
+ *
+ * @param  {string} sessionKey Unique session identifier that was generated on session creation.
+ * @return {array} Array containing all client socket objects for the given session.
+ */
+function getClientSockets(sessionKey){
+  return socketDict[sessionKey].clients;
 }
 
+/**
+ * getHostSocket - Function that returns the host socket from the socket dictionary
+ *
+ * @param  {string} sessionKey Unique session identifier that was generated on session creation.
+ * @return {object} Socket Object
+ */
+function getHostSocket(sessionKey){
+  return socketDict[sessionKey].host;
+}
+
+/**
+ * handleClientSocket - Function that handles WebSocket connections from participant/client side
+ *
+ * @param  {object} req HTTP(s) request object
+ * @param  {int} updateInterval Interval for generation of new status by client, set in .env file.
+
+ */
+function handleClientSocket(req, updateInterval){
+  laHelp.checkSocketConnect(req).then(isValid => {
+    if (!(isValid)) {
+      req.reject();
+      return;
+    } else {
+      const connection = req.accept('echo-protocol', req.origin);
+      const sessionKey = req.resourceURL.query.sessionKey;
+      const participantId = req.resourceURL.query.userId;
+      const index = addClientToSocketDict(sessionKey, connection);
+      const sessionStartTime = laDB.getSessionStartTime(sessionKey);
+      connection.on("message", function(message){
+        laDB.changeParticipantInactive(false, sessionKey, participantId);
+        const messageJSON = JSON.parse(message.utf8Data);
+        const datatype = messageJSON.datatype;
+        if (datatype === "status"){
+          sessionStartTime.then(sessionStartTime => {
+            const statusVector = messageJSON.data;
+            const time = Math.floor(new Date().getTime()/1000) - sessionStartTime;
+            laDB.updateParticipantStatus(sessionKey, participantId, statusVector, time);
+          });
+        } else if (datatype === "comment") {
+            const [comment, time] = [messageJSON.data.te, new Date().getTime()];
+            sendToHostSocket(sessionKey, JSON.stringify({datatype: "comment", data: {te: comment, ti: time}}));
+            laDB.addCommentToSession(comment, Math.floor(new Date().getTime()/1000) - sessionStartTime, sessionKey);
+          } else if (datatype === "ready"){
+            connection.send(JSON.stringify({datatype: "start", interval: updateInterval}));
+          }
+      });
+      connection.on("close", function(){
+        if (checkActiveSession(sessionKey)){
+          removeFromSocketDict(sessionKey, index);
+        }
+        laDB.changeParticipantInactive(true, sessionKey, participantId);
+      });
+    };
+  });
+}
+
+/**
+ * handleDashboardSocket - Function that handles WebSocket connections from dashboard/host side
+ *
+ * @param  {object} req HTTP(s) request object
+ * @param  {int} updateInterval Interval for updates of the dashboard, set in .env file.
+ */
 function handleDashboardSocket(req, updateInterval){
   laHelp.checkSocketConnect(req).then(isValid => {
     if (!(isValid)) {
@@ -99,10 +185,9 @@ function handleDashboardSocket(req, updateInterval){
       addHostToSocketDict(sessionKey, connection);
       const clientSockets = getClientSockets(sessionKey);
       const refreshIntervalId = setInterval(function(){
-        laDB.getSmallSessionData(sessionKey).then(sessionData => {
-          console.log(sessionData);
-          connection.send(JSON.stringify({datatype: "counters", data: laCalc.generateCounterElements(sessionData)}));
-          connection.send(JSON.stringify({datatype: "participants", data: laCalc.generateParticipants(sessionData)}));
+        laDB.getParticipantData(sessionKey).then(participantData => {
+          connection.send(JSON.stringify({datatype: "counters", data: laCalc.generateCounterElements(participantData)}));
+          connection.send(JSON.stringify({datatype: "participants", data: participantData}));
         });
       }, updateInterval)
     connection.on("message", function(message){
@@ -126,46 +211,46 @@ function handleDashboardSocket(req, updateInterval){
   }})
 }
 
-function handleClientSocket(req, updateInterval){
-  laHelp.checkSocketConnect(req).then(isValid => {
-    if (!(isValid)) {
-      req.reject();
-      return;
-    } else {
-      const connection = req.accept('echo-protocol', req.origin);
-      const sessionKey = req.resourceURL.query.sessionKey;
-      const userId = req.resourceURL.query.userId;
-      const index = addClientToSocketDict(sessionKey, connection);
-      const sessionStartTime = laDB.getSessionStartTime(sessionKey);
-      connection.on("message", function(message){
-        laDB.changeParticipantInactive(false, sessionKey, userId);
-        const messageJSON = JSON.parse(message.utf8Data);
-        const datatype = messageJSON.datatype;
-        if (datatype === "status"){
-          sessionStartTime.then(sessionStartTime => {
-            const statusVector = messageJSON.data;
-            const time = Math.floor(new Date().getTime()/1000) - sessionStartTime;
-            laDB.updateParticipantStatus(sessionKey, userId, statusVector, time);
-          });
-        } else if (datatype === "comment") {
-            const [comment, time] = [messageJSON.data.te, new Date().getTime()];
-            sendToHostSocket(sessionKey, JSON.stringify({datatype: "comment", data: {te: comment, ti: time}}));
-            laDB.updateComments(comment, Math.floor(new Date().getTime()/1000) - sessionStartTime, sessionKey);
-          } else if (datatype === "ready"){
-            connection.send(JSON.stringify({datatype: "start", interval: updateInterval}));
-          }
-      });
-      connection.on("close", function(){
-        if (checkActiveSession(sessionKey)){
-          removeFromSocketDict(sessionKey, index);
-        }
-        laDB.changeParticipantInactive(true, sessionKey, userId);
-      });
-    };
-  });
+/**
+ * removeFromSocketDict - Function to remove a client from the socket dictionary.
+ *
+ * @param  {string} sessionKey Unique session identifier that was generated on session creation.
+ * @param  {int} index Index of the client that is to be removed.
+ */
+function removeFromSocketDict(sessionKey, index){
+  socketDict[sessionKey].clients.splice(index, 1);
 }
 
 
-module.exports = {createParticipant, createSession, addClientToSocketDict, sendParticipantCookies,
-                  addHostToSocketDict, checkActiveSession, handleClientSocket, handleDashboardSocket,
-                  getClientSockets, getHostSocket, sendToHostSocket, removeFromSocketDict, endSession};
+/**
+ * sendToHostSocket - Function that sends a message to the host socket of a session.
+ *
+ * @param  {string} sessionKey Unique session identifier that was generated on session creation.
+ * @param  {string} message Content of the WebSocket message that will be sent.
+ */
+function sendToHostSocket(sessionKey, message){
+  if (socketDict[sessionKey].host) {
+    socketDict[sessionKey].host.send(message);
+  }
+}
+
+/**
+ * sendParticipantCookies - Function that sends all cookies for participant authentication.
+ *
+ * @param  {object} res HTTP(s) response object.
+ * @param  {type} sessionKey Unique session identifier that was generated on session creation.
+ * @param  {type} participantName Name that the participant entered when joining.
+ * @param  {type} participantId Unique ID for the participants in respect to their session.
+ * @param  {type} psecret Secret that is used to authenticate the participant.
+ */
+function sendParticipantCookies(res, sessionKey, participantName, participantId, psecret){
+  res.cookie("sessionKey", sessionKey);
+  res.cookie("participantName", participantName);
+  res.cookie("participantId", participantId);
+  res.cookie("psecret", psecret);
+}
+
+module.exports = {addClientToSocketDict, addHostToSocketDict, checkActiveSession,
+  createParticipant, createSession, endSession, getClientSockets, getHostSocket,
+  handleClientSocket, handleDashboardSocket, removeFromSocketDict,
+  sendParticipantCookies, sendToHostSocket};

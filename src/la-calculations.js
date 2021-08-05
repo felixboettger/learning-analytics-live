@@ -2,14 +2,15 @@
 
 // This module includes all functions that prepare the data for sending it to the dashboard.
 
-// generates a list of participants for use in the dashboard
-function generateParticipants(sessionData) {
-  participants = (sessionData != undefined) ? sessionData : [];
-  return participants;
-};
+// --- Function Definitions ---
 
-// generates counters (sent to dashboard)
-function generateCounterElements(sessionData) {
+/**
+ * generateCounterElements - Function that generates counters (cross participant statistics)
+ *
+ * @param  {object} participantData Data of all active participants in the session.
+ * @return {object} Object that contains all counter values.
+ */
+function generateCounterElements(participantData) {
   // variables: apc - active pariticpants, lacc - looking at camera, ec - emotions,
   // mcs - mean concentration score, ha - happy sa - sad, ne - neutral, di - disgusted,
   // fe - fearful, su - surprised, an - angry
@@ -38,4 +39,6 @@ function generateCounterElements(sessionData) {
   return counterElements;
 }
 
-module.exports = {generateCounterElements, generateParticipants};
+// --- Definition of module exports ---
+
+module.exports = {generateCounterElements};

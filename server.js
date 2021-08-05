@@ -107,7 +107,7 @@ app.get("/client", function(req, res) {
 
 if (testing){
   app.get("/load-simulation/:sessionKey", function(req, res) {
-    laMain.createParticipant(req.params.sessionKey, randomName()).then(testParticipant => {
+    laMain.createParticipant(randomName(), req.params.sessionKey).then(testParticipant => {
       laMain.sendParticipantCookies(res, req.body.sessionKey, req.body.participantName, testParticipant[0], testParticipant[1]);
       res.render("load-simulation");
     });
@@ -118,7 +118,7 @@ if (testing){
 
 // Creation of new participant
 app.post("/participant", function(req, res) {
-  laMain.createParticipant(req.body.sessionKey, req.body.participantName).then((participant) => {
+  laMain.createParticipant(req.body.participantName, req.body.sessionKey).then((participant) => {
     if (participant === undefined) {
       res.render("participant-session-not-found", {sessionKey: req.body.sessionKey});
     } else {
@@ -130,7 +130,7 @@ app.post("/participant", function(req, res) {
 
 // Creation of a new session
 app.post("/dashboard", function(req, res) {
-  const [sessionKey, secret] = laMain.createSession();
+  const [secret, sessionKey] = laMain.createSession();
   const url = req.protocol + "://" + req.get("host") + "/join/" + sessionKey;
   res.cookie("sessionKey", sessionKey);
   res.cookie("hsecret", secret);

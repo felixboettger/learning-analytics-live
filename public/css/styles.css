@@ -2,6 +2,7 @@
 
 .background{
   background-image: url("/img/bg.png");
+  background-size: cover;
 }
 
 .body {
@@ -53,6 +54,12 @@
 html{
   position: relative;
   min-height: 100%;
+}
+
+img{
+    max-width: 100vh;
+    max-height: 100%;
+    height: auto;
 }
 
 /* Footer */
