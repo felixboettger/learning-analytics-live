@@ -3,6 +3,12 @@
 const [sessionKey, secret] = getCookieValues();
 const directLink = getDirectLink();
 const webSocket = createWebSocket(sessionKey, secret);
+const [concentrationPlot, emotionPie] = initializeCharts();
+
+let concentrationArray = Array(100);
+concentrationArray = concentrationArray.fill([0, 0]);
+
+document.getElementById("session-key").innerHTML = sessionKey;
 
 // --- Event Listeners ---
 
@@ -180,7 +186,7 @@ function refreshDashboard(participantsList){
       }
       counterElements.apc += 1;
       counterElements.lacc += (currentStatus.looks) ? 1 : 0;
-      counterElements.mcs += currentStatus.concentrationScore;
+      counterElements.mcs += currentStatus.concentrationScore || 0;
       const fullEmotion = getFullEmotionName(emotion);
       participantElement = generateParticipantElement(name, fullEmotion, objects, looks, concentrationScore);
       addOrChangeParticipant(participantElement, id);
@@ -191,7 +197,36 @@ function refreshDashboard(participantsList){
   if (counterElements.apc > 0){
     counterElements.mcs = Math.round(counterElements.mcs/counterElements.apc);
   }
+  updateConcentrationPlot(counterElements.mcs);
+  updateEmotionPie(counterElements.ec);
   setCounterElements(counterElements);
+}
+
+function updateConcentrationPlot(concentrationScore){
+  (concentrationArray.length > 100) ? concentrationArray.shift() : "";
+  concentrationArray.push([0, concentrationScore]);
+  const nrDataPoints = concentrationArray.length;
+  for (let i = 0; i < nrDataPoints; i++){
+    concentrationArray[i] = [i, concentrationArray[i][1]];
+  }
+  $(function () {
+    concentrationPlot.setData([concentrationArray]);
+    concentrationPlot.draw();
+  });
+}
+
+function updateEmotionPie(emotionCounters){
+  const data = [
+    {label:"Happy", data: emotionCounters["ha"], color: "#f9d000"},
+    {label:"Neutral", data: emotionCounters["ne"], color: "#888888"},
+    {label:"Sad", data: emotionCounters["sa"], color: "#0098d2"},
+    {label:"Surprised", data: emotionCounters["su"], color: "#ff8800"},
+    {label:"Angry", data: emotionCounters["an"], color: "#7d3c8b"},
+    {label:"Fearful", data: emotionCounters["fe"], color: "#005CDE"},
+    {label:"Disgust", data: emotionCounters["di"], color: "#009e2f"}
+  ]
+  emotionPie.setData(data);
+  emotionPie.draw();
 }
 
 function removeParticipant(id){
@@ -209,11 +244,62 @@ function setCounterElements(counterElements){
   const sadPercentage = (apc > 0) ? Math.round(100 * (ec["sa"] / apc)) : 0;
   const otherPercentage = (apc > 0) ? Math.round(100 * (otherEmotionCounter / apc)) : 0;
   const lookingPercentage = (apc > 0) ? Math.round(100 * (lacc / apc)) : 0;
-  document.getElementById("mean-concentration").innerHTML = mcs;
+  document.getElementById("mean-concentration").innerHTML = mcs + "%";
   document.getElementById("emotion-happy-participants").innerHTML =  happyPercentage + "% (" + ec["ha"] + ")";
   document.getElementById("emotion-neutral-participants").innerHTML = neutralPercentage + "% (" + ec["ne"] + ")";
   document.getElementById("emotion-sad-participants").innerHTML = sadPercentage + "% (" + ec["sa"] + ")";
   document.getElementById("emotion-other-participants").innerHTML = otherPercentage + "% (" + otherEmotionCounter + ")";
   document.getElementById("nr-participants").innerHTML = apc;
   document.getElementById("nr-looking-at-camera").innerHTML = lookingPercentage + "% (" + lacc + ")";
+}
+
+function initializeCharts(){
+  const concentrationPlotOptions = {
+          series: {
+              shadowSize: 0,
+              color: 'rgb(0, 188, 212)'
+          },
+          grid: {
+              borderColor: '#f3f3f3',
+              borderWidth: 1,
+              tickColor: '#f3f3f3'
+          },
+          lines: {
+              fill: true
+          },
+          yaxis: {
+              min: 0,
+              max: 100
+          },
+          xaxis: {
+            min: 0,
+            max: 100,
+            ticks: [[0,'100s ago'], [25, "75s ago"], [50, "50s ago"], [75, "25s ago"], [100, "now"]]
+          }
+      };
+  const concentrationPlot = $.plot('#real_time_chart', [{data: [0, 0], lines: {show: true, fill: false}}], concentrationPlotOptions);
+  concentrationPlot.draw();
+  const emotionPieOptions = {
+      series: {
+          pie: {
+            radius: 100,
+              show: true,
+              label: {
+                  show: true,
+                  background: {
+                      color: '#000'
+                  }
+              }
+          }
+      },
+      legend: {
+          show: false
+      },
+      grid: {
+          hoverable: true
+      }
+  };
+  const emotionPie = $.plot('#pie_chart', [[1]], emotionPieOptions);
+  emotionPie.draw();
+  return [concentrationPlot, emotionPie];
 }

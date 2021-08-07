@@ -66,7 +66,7 @@
         </div>
       </div>
 
-      <!-- Placeholder Element -->
+      <!-- Mean Concetration Element -->
 
       <div class="col-lg-6 col-md-6 col-sm-6">
         <div class="info-box bg-blue hover-expand-effect" style="margin-bottom: 0.4em;">
@@ -141,6 +141,44 @@
 
   </div>
   </div>
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6">
+      <div class="card">
+        <div class="header">
+          <div class="row clearfix">
+            <div class="col-xs-12 col-sm-6">
+              <h2>Mean Concentration (%)</h2>
+            </div>
+
+            <div class="body">
+              <div id="real_time_chart" class="dashboard-flot-chart" style="padding: 0px; position: relative;"><canvas class="flot-base" style="direction: ltr; position: absolute; left: 0px; top: 0px; width: 1146px; height: 275px;" width="1432" height="343"></canvas><div class="flot-text" style="position: absolute; inset: 0px; font-size: smaller; color: rgb(84, 84, 84);"><div class="flot-x-axis flot-x1-axis xAxis x1Axis" style="position: absolute; inset: 0px; display: block;"><div style="position: absolute; max-width: 104px; top: 257px; left: 23px; text-align: center;" class="flot-tick-label tickLabel">0</div><div style="position: absolute; max-width: 104px; top: 257px; left: 131px; text-align: center;" class="flot-tick-label tickLabel">10</div><div style="position: absolute; max-width: 104px; top: 257px; left: 242px; text-align: center;" class="flot-tick-label tickLabel">20</div><div style="position: absolute; max-width: 104px; top: 257px; left: 353px; text-align: center;" class="flot-tick-label tickLabel">30</div><div style="position: absolute; max-width: 104px; top: 257px; left: 464px; text-align: center;" class="flot-tick-label tickLabel">40</div><div style="position: absolute; max-width: 104px; top: 257px; left: 575px; text-align: center;" class="flot-tick-label tickLabel">50</div><div style="position: absolute; max-width: 104px; top: 257px; left: 686px; text-align: center;" class="flot-tick-label tickLabel">60</div><div style="position: absolute; max-width: 104px; top: 257px; left: 797px; text-align: center;" class="flot-tick-label tickLabel">70</div><div style="position: absolute; max-width: 104px; top: 257px; left: 908px; text-align: center;" class="flot-tick-label tickLabel">80</div><div style="position: absolute; max-width: 104px; top: 257px; left: 1019px; text-align: center;" class="flot-tick-label tickLabel">90</div><div style="position: absolute; max-width: 104px; top: 257px; left: 1126px; text-align: center;" class="flot-tick-label tickLabel">100</div></div><div class="flot-y-axis flot-y1-axis yAxis y1Axis" style="position: absolute; inset: 0px; display: block;"><div style="position: absolute; top: 244px; left: 14px; text-align: right;" class="flot-tick-label tickLabel">0</div><div style="position: absolute; top: 195px; left: 8px; text-align: right;" class="flot-tick-label tickLabel">20</div><div style="position: absolute; top: 146px; left: 8px; text-align: right;" class="flot-tick-label tickLabel">40</div><div style="position: absolute; top: 98px; left: 8px; text-align: right;" class="flot-tick-label tickLabel">60</div><div style="position: absolute; top: 49px; left: 8px; text-align: right;" class="flot-tick-label tickLabel">80</div><div style="position: absolute; top: 1px; left: 1px; text-align: right;" class="flot-tick-label tickLabel">100</div></div></div><canvas class="flot-overlay" style="direction: ltr; position: absolute; left: 0px; top: 0px; width: 1146px; height: 275px;" width="1432" height="343"></canvas></div>
+              </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6">
+    <div class="card">
+      <div class="header">
+        <div class="row clearfix">
+          <div class="col-xs-12 col-sm-6">
+            <h2>Emotion Distribution (%)</h2>
+          </div>
+
+          <div class="body">
+
+            <div id="pie_chart" style="width:475.6px;height:275px;position: relative;"></div>
+      </div>
+    </div>
+  </div>
+  </div>
+  </div>
+  </div>
+
+
+
+
 </body>
 
   </div>
@@ -233,8 +271,14 @@
       </div>
     </div>
   </div>
-
+  <script src="https://code.jquery.com/jquery-3.6.0.slim.min.js" integrity="sha256-u7e5khyithlIdTpu22PHhENmPcRdFiHRjhAuHcs05RI=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flot-charts@0.8.3/jquery.flot.min.js" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flot-charts@0.8.3/jquery.flot.resize.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flot-charts@0.8.3/jquery.flot.pie.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flot-charts@0.8.3/jquery.flot.categories.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flot-charts@0.8.3/jquery.flot.time.min.js"></script>
   <script src="/dashboard.js" charset="utf-8"></script>
+
 </body>
 
 </html>

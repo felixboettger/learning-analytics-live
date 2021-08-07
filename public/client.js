@@ -179,8 +179,9 @@ function getConcentrationIndex() {
       score += emotionWeights[emotion[0]] * emotion[1];
     });
     score = score / recentEmotionsArray.length;
+    return Math.round((score / 0.9) * 100);
   };
-  return score * 100;
+  return 0;
 }
 
 async function getEmotion(blazefacePredictions){
