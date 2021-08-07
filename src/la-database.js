@@ -4,7 +4,9 @@
 
 // --- Imports ---
 
-const dotenv = require("dotenv").config({path: `../.env`});
+const dotenv = require("dotenv").config({
+  path: `../.env`
+});
 const mongoose = require("mongoose");
 
 // --- Config ---
@@ -29,7 +31,7 @@ const mongooseConnectOptions = {
 
 // Function that connects with the MongoDB.
 mongoose.connect(mongodbURL, mongooseConnectOptions).then(function() {
-    console.log("Connected to DB: " + mongodbURL);
+  console.log("Connected to DB: " + mongodbURL);
 });
 
 // --- MongoDB Schemas ---
@@ -88,13 +90,20 @@ markAllAsInactive();
  * @param  {int} time Time of the comment (in seconds since session start).
  * @param  {string} sessionKey Unique session identifier that was generated on session creation.
  */
-async function addCommentToSession(comment, time, sessionKey){
-  const newComment = new Comment({text: comment, time: time});
-  Session.updateOne(
-    {sessionKey: sessionKey},
-    {$addToSet: {comments: newComment}},
-    {new: true}
-  ).then(info => {});
+async function addCommentToSession(comment, time, sessionKey) {
+  const newComment = new Comment({
+    text: comment,
+    time: time
+  });
+  Session.updateOne({
+    sessionKey: sessionKey
+  }, {
+    $addToSet: {
+      comments: newComment
+    }
+  }, {
+    new: true
+  }).then(info => {});
 }
 
 /**
@@ -105,19 +114,23 @@ async function addCommentToSession(comment, time, sessionKey){
  * @param  {string} secret Secret that is used to authenticate the participant.
  * @param  {string} sessionKey Unique session identifier that was generated on session creation.
  */
-function addParticipantToSession(participantId, name, secret, sessionKey){
+function addParticipantToSession(participantId, name, secret, sessionKey) {
   const newParticipant = new Participant({
-      id: participantId,
-      name: name,
-      secret: secret,
-      inactive: true,
-      statuses: []
+    id: participantId,
+    name: name,
+    secret: secret,
+    inactive: true,
+    statuses: []
   });
-  Session.updateOne(
-    {sessionKey: sessionKey},
-    {$addToSet: {participants: newParticipant}},
-    {new: true}
-  ).then(info => {});
+  Session.updateOne({
+    sessionKey: sessionKey
+  }, {
+    $addToSet: {
+      participants: newParticipant
+    }
+  }, {
+    new: true
+  }).then(info => {});
 }
 
 /**
@@ -126,7 +139,7 @@ function addParticipantToSession(participantId, name, secret, sessionKey){
  * @param  {string} secret Secret that is used to authenticate the host.
  * @param  {string} sessionKey Unique session identifier that was generated on session creation.
  */
-function addSessionToDatabase(secret, sessionKey){
+function addSessionToDatabase(secret, sessionKey) {
   const newSession = new Session({
     start: Math.floor(new Date().getTime() / 1000),
     sessionKey: sessionKey,
@@ -151,13 +164,17 @@ function addSessionToDatabase(secret, sessionKey){
  * @param  {type} sessionKey Unique session identifier that was generated on session creation.
  * @param  {type} participantId Unique ID for the participants in respect to their session.
  */
-async function changeParticipantInactive(inactiveBool, sessionKey, participantId){
-  await Session.updateOne(
-    {sessionKey: sessionKey,
-    "participants.id": participantId},
-    {$set: {"participants.$.inactive": inactiveBool}},
-    {new: true}
-  ).then(info => {});
+async function changeParticipantInactive(inactiveBool, sessionKey, participantId) {
+  await Session.updateOne({
+    sessionKey: sessionKey,
+    "participants.id": participantId
+  }, {
+    $set: {
+      "participants.$.inactive": inactiveBool
+    }
+  }, {
+    new: true
+  }).then(info => {});
 }
 
 /**
@@ -166,7 +183,7 @@ async function changeParticipantInactive(inactiveBool, sessionKey, participantId
  * @param  {object} query MongoDB/Mongoose query.
  * @return {boolean} Boolean that encodes whether or not a matching session exists.
  */
-async function checkSessionExists(query){
+async function checkSessionExists(query) {
   return await Session.exists(query);
 }
 
@@ -175,13 +192,18 @@ async function checkSessionExists(query){
  *
  * @param  {int} keepInactiveFor Integer defined in .env file, determines number of minutes that a session is kept alive without host.
  */
-function cleaningRoutine(keepInactiveFor){
-  return function(){
-    const currentTime = Math.floor(new Date().getTime()/1000);
+function cleaningRoutine(keepInactiveFor) {
+  return function() {
+    const currentTime = Math.floor(new Date().getTime() / 1000);
     const deleteBefore = currentTime - keepInactiveFor;
-    Session.deleteMany(
-      {"lastDashboardAccess": {$lte: deleteBefore}},
-      function (){console.log("Cleaning finished.")}
+    Session.deleteMany({
+        "lastDashboardAccess": {
+          $lte: deleteBefore
+        }
+      },
+      function() {
+        console.log("Cleaning finished.")
+      }
     );
   }
 }
@@ -191,12 +213,14 @@ function cleaningRoutine(keepInactiveFor){
  *
  * @param  {string} sessionKey Unique session identifier that was generated on session creation.
  */
-function deleteSession(sessionKey){
-  Session.deleteOne({sessionKey: sessionKey}).then((deletedSession, err) => {
+function deleteSession(sessionKey) {
+  Session.deleteOne({
+    sessionKey: sessionKey
+  }).then((deletedSession, err) => {
     err ? console.log(err) :
-    console.log(
-      "Session " + sessionKey + " has been deleted as host closed the session."
-    );
+      console.log(
+        "Session " + sessionKey + " has been deleted as host closed the session."
+      );
   });
 }
 
@@ -207,12 +231,16 @@ function deleteSession(sessionKey){
  * @return {object} Returns object for the session, but without unnecessary details.
  */
 async function exportSessionData(sessionKey) {
-  return await Session.findOne(
-    {sessionKey: sessionKey},
-    {'_id': false, 'secret': false, '__v': false,
-    'participants._id': false, 'participants.secret': false,
-    'participants.statuses._id': false}
-  );
+  return await Session.findOne({
+    sessionKey: sessionKey
+  }, {
+    '_id': false,
+    'secret': false,
+    '__v': false,
+    'participants._id': false,
+    'participants.secret': false,
+    'participants.statuses._id': false
+  });
 }
 
 /**
@@ -222,12 +250,14 @@ async function exportSessionData(sessionKey) {
  * @return {array} Returns an array of the active participants for the given session.
  */
 async function getParticipantData(sessionKey) {
-  await Session.updateOne(
-    {sessionKey: sessionKey},
-    {lastDashboardAccess: Math.floor(new Date().getTime()/1000)},
-  );
-  foundSession = await Session.findOne(
-    {sessionKey: sessionKey},
+  await Session.updateOne({
+    sessionKey: sessionKey
+  }, {
+    lastDashboardAccess: Math.floor(new Date().getTime() / 1000)
+  }, );
+  foundSession = await Session.findOne({
+      sessionKey: sessionKey
+    },
     ['participants.inactive', 'participants.currentStatus', 'participants.id', 'participants.name'],
   );
   // try{
@@ -248,15 +278,16 @@ async function getParticipantData(sessionKey) {
  * @return {object} Returns the object for the session.
  */
 async function getSessionData(sessionKey, forDashboard) {
-  if (forDashboard){
-    return await Session.findOneAndUpdate(
-    {sessionKey: sessionKey},
-    {lastDashboardAccess: Math.floor(new Date().getTime()/1000)}
-  );
-} else {
-    return await Session.findOne(
-    {sessionKey: sessionKey},
-    )
+  if (forDashboard) {
+    return await Session.findOneAndUpdate({
+      sessionKey: sessionKey
+    }, {
+      lastDashboardAccess: Math.floor(new Date().getTime() / 1000)
+    });
+  } else {
+    return await Session.findOne({
+      sessionKey: sessionKey
+    }, )
   }
 }
 
@@ -266,22 +297,28 @@ async function getSessionData(sessionKey, forDashboard) {
  * @param  {string} sessionKey Unique session identifier that was generated on session creation.
  * @return {int} Integer of seconds since 01.01.1970.
  */
-async function getSessionStartTime(sessionKey){
-  var session = await Session.findOne({sessionKey: sessionKey}, ["start"]);
+async function getSessionStartTime(sessionKey) {
+  var session = await Session.findOne({
+    sessionKey: sessionKey
+  }, ["start"]);
   return session.start;
 }
 
 /**
  * markAllAsInactive - Function that marks all participants as inactive on server restart.
  */
-async function markAllAsInactive(){
+async function markAllAsInactive() {
   console.log("Marking all participants as inactive (server restarted)");
 
-  await Session.updateMany(
-    {"participants.inactive": false},
-    {$set: {"participants.$.inactive": true}},
-    {new: true}
-  ).then(info => {});
+  await Session.updateMany({
+    "participants.inactive": false
+  }, {
+    $set: {
+      "participants.$.inactive": true
+    }
+  }, {
+    new: true
+  }).then(info => {});
 }
 
 /**
@@ -292,7 +329,7 @@ async function markAllAsInactive(){
  * @param  {object} statusVector Object generated by the client that contains new status info.
  * @param  {int} time Time of the status (in seconds since session start).
  */
-function updateParticipantStatus(sessionKey, participantId, statusVector, time){
+function updateParticipantStatus(sessionKey, participantId, statusVector, time) {
   const newStatus = new Status({
     emotion: statusVector.e,
     concentrationScore: statusVector.cs,
@@ -300,17 +337,31 @@ function updateParticipantStatus(sessionKey, participantId, statusVector, time){
     looks: statusVector.l,
     objects: statusVector.o
   });
-  Session.updateOne(
-    {sessionKey: sessionKey,
-    "participants.id": participantId},
+  Session.updateOne({
+      sessionKey: sessionKey,
+      "participants.id": participantId
+    },
     // {$addToSet: {"participants.$.statuses": newStatus}},
-    {"participants.$.currentStatus": newStatus},
-    {new: true}
+    {
+      "participants.$.currentStatus": newStatus
+    }, {
+      new: true
+    }
   ).then(info => {});
 }
 
 // --- Definition of module exports ---
 
-module.exports = {addCommentToSession, addParticipantToSession, addSessionToDatabase,
-  changeParticipantInactive, checkSessionExists, deleteSession, exportSessionData,
-  getParticipantData, getSessionData, getSessionStartTime, updateParticipantStatus};
+module.exports = {
+  addCommentToSession,
+  addParticipantToSession,
+  addSessionToDatabase,
+  changeParticipantInactive,
+  checkSessionExists,
+  deleteSession,
+  exportSessionData,
+  getParticipantData,
+  getSessionData,
+  getSessionStartTime,
+  updateParticipantStatus
+};

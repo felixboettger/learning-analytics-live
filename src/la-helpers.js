@@ -15,8 +15,12 @@ const crypto = require("crypto");
  * @param  {type} participantId Unique ID for the participants in respect to their session.
  * @return {type} Boolean if participant is existing and accessible.
  */
-async function checkParticipant(sessionKey, secret, participantId){
-  const query = {sessionKey: sessionKey, "participants.id": participantId, "participants.secret": secret};
+async function checkParticipant(sessionKey, secret, participantId) {
+  const query = {
+    sessionKey: sessionKey,
+    "participants.id": participantId,
+    "participants.secret": secret
+  };
   const allowed = await laDB.checkSessionExists(query);
   return allowed;
 }
@@ -28,8 +32,11 @@ async function checkParticipant(sessionKey, secret, participantId){
  * @param  {type} secret Secret that is used to authenticate the host.
  * @return {type} Boolean if session is existing and accessible.
  */
-async function checkSession(sessionKey, secret){
-  const query = {sessionKey: sessionKey, secret: secret};
+async function checkSession(sessionKey, secret) {
+  const query = {
+    sessionKey: sessionKey,
+    secret: secret
+  };
   const allowed = await laDB.checkSessionExists(query);
   return allowed;
 }
@@ -40,9 +47,16 @@ async function checkSession(sessionKey, secret){
  * @param  {object} req HTTP(s) request object.
  * @return {boolean} Boolean if authentication details are valid.
  */
-async function checkSocketConnect(req){
+async function checkSocketConnect(req) {
   const type = req.resourceURL.query.type;
-  const query = (type === "dashboard") ? {sessionKey: req.resourceURL.query.sessionKey, secret: req.resourceURL.query.hsecret} : {sessionKey: req.resourceURL.query.sessionKey, "participants.id": req.resourceURL.query.userId, "participants.secret": req.resourceURL.query.psecret};
+  const query = (type === "dashboard") ? {
+    sessionKey: req.resourceURL.query.sessionKey,
+    secret: req.resourceURL.query.hsecret
+  } : {
+    sessionKey: req.resourceURL.query.sessionKey,
+    "participants.id": req.resourceURL.query.userId,
+    "participants.secret": req.resourceURL.query.psecret
+  };
   const allowed = await laDB.checkSessionExists(query);
   // const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
   const ip = "";
@@ -56,7 +70,7 @@ async function checkSocketConnect(req){
  * @param  {int} bytes Number of bytes for the new secret.
  * @return {string} Created secret as hexadecimal representation (string).
  */
-function generateSecret(bytes){
+function generateSecret(bytes) {
   return crypto.randomBytes(bytes).toString("hex");
 }
 
@@ -81,5 +95,10 @@ function generateSessionKey() {
 
 // --- Definition of module exports ---
 
-module.exports = {checkParticipant, checkSession, checkSocketConnect,
-  generateSecret, generateSessionKey};
+module.exports = {
+  checkParticipant,
+  checkSession,
+  checkSocketConnect,
+  generateSecret,
+  generateSessionKey
+};

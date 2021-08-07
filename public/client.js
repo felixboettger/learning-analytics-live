@@ -30,7 +30,8 @@ emotionWeights = {
   'happy': 0.6,
   'sad': 0.3,
   'surprise': 0.6,
-  'neutral': 0.9};
+  'neutral': 0.9
+};
 
 // last 20 emotions stored here
 const recentEmotionsArray = [];
@@ -57,19 +58,26 @@ async function main() {
   document.getElementById("send-comment-btn").addEventListener("click", function() {
     const comment = document.getElementById("input-comment").value;
     document.getElementById("input-comment").value = "";
-    webSocket.send(JSON.stringify({datatype:"comment", data: {te: comment}}));
+    webSocket.send(JSON.stringify({
+      datatype: "comment",
+      data: {
+        te: comment
+      }
+    }));
   });
 
-  webSocket.onopen = function(){
+  webSocket.onopen = function() {
     console.log("WebSocket connection to server established!");
     console.log("Protocol: " + webSocketProtocol);
     console.log("Sending 'ready' message to server.")
-    webSocket.send(JSON.stringify({datatype: "ready"}));
+    webSocket.send(JSON.stringify({
+      datatype: "ready"
+    }));
   }
 
   // Websocket event listener
 
-  webSocket.addEventListener("message", function(event){
+  webSocket.addEventListener("message", function(event) {
     const messageJSON = JSON.parse(event.data);
     const datatype = messageJSON.datatype;
     if (datatype === "start") {
@@ -78,19 +86,22 @@ async function main() {
     }
   });
 
-  webSocket.onclose = function(){
+  webSocket.onclose = function() {
     alert("Session has ended. Click ok to go back to the homepage.");
     const url = window.location;
     url.replace(url.protocol + "//" + url.host + "/");
   }
 
-  function sendStatus(){
+  function sendStatus() {
     document.getElementById("working-idle").setAttribute('class', 'material-icons icon-red');
     const t0 = performance.now();
     //const picture = webcam.snap();
     getStatus().then(statusVector => {
-      if (!(statusVector === undefined)){
-        webSocket.send(JSON.stringify({datatype: "status", data: statusVector}));
+      if (!(statusVector === undefined)) {
+        webSocket.send(JSON.stringify({
+          datatype: "status",
+          data: statusVector
+        }));
       }
       const t1 = performance.now();
       const timeToComplete = Math.round(t1 - t0);
@@ -102,17 +113,17 @@ async function main() {
 
 // Helper functions
 
-async function getStatus(){
+async function getStatus() {
   const [emotionDetection, objectDetections, blazefacePredictions] = await performML();
   const lookingAtCamera = checkLookingAtCamera(blazefacePredictions);
   const emotion = (emotionDetection === undefined) ? "none" : emotionDetection[0];
-  if (emotionDetection != undefined){
+  if (emotionDetection != undefined) {
     recentEmotionsArray.push(emotionDetection);
   }
   const detectedObjectsArray = objectDetections.map(object => object.class);
   setInfoTiles(emotion, lookingAtCamera, detectedObjectsArray);
   const statusVector = {
-    e: emotion.substring(0,2), // emotion
+    e: emotion.substring(0, 2), // emotion
     cs: getConcentrationIndex(), // happiness score
     l: lookingAtCamera, // looking bool
     o: detectedObjectsArray // objects
@@ -120,35 +131,38 @@ async function getStatus(){
   return statusVector;
 }
 
-async function performML(){
+async function performML() {
   const objectDetections = await cocoSsdModel.detect(image);
   const blazefacePredictions = await blazefaceModel.estimateFaces(image, false);
   const emotionDetection = await getEmotion(blazefacePredictions);
   return [emotionDetection, objectDetections, blazefacePredictions]
 }
 
-function startWebcam(){
-  navigator.mediaDevices.getUserMedia({video:true, audio: false})
-  .then(function(stream) {
-    video.srcObject = stream;
-    video.play();
-  })
-  .catch(function(err){
-    console.log("An error with video recording occured! " + err);
-  });
+function startWebcam() {
+  navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false
+    })
+    .then(function(stream) {
+      video.srcObject = stream;
+      video.play();
+    })
+    .catch(function(err) {
+      console.log("An error with video recording occured! " + err);
+    });
 }
 
-function setInfoTiles(emotion, lookingAtCamera, detectedObjectsArray){
+function setInfoTiles(emotion, lookingAtCamera, detectedObjectsArray) {
   document.getElementById("current-emotion").innerHTML = emotion;
   document.getElementById("looking-at-camera").innerHTML = lookingAtCamera;
   document.getElementById("detected-objects").innerHTML = detectedObjectsArray;
 }
 
-function setPerformanceTile(timeToComplete){
+function setPerformanceTile(timeToComplete) {
   document.getElementById("request-completion-time").innerHTML = timeToComplete;
 }
 
-function checkLookingAtCamera(blazefacePredictions){
+function checkLookingAtCamera(blazefacePredictions) {
   if (blazefacePredictions.length === 0) {
     return false;
   } else {
@@ -163,7 +177,7 @@ function checkLookingAtCamera(blazefacePredictions){
     const factor = Math.max(height, width);
     const gazeQuotient1 = distanceBetweenEyes / factor;
     const gazeQuotient2 = distanceBetweenNoseAndMouth / factor;
-    if ((0.42  > gazeQuotient1) && (gazeQuotient1 > 0.36) && (0.21 > gazeQuotient2) && (gazeQuotient2 > 0.15)) {
+    if ((0.42 > gazeQuotient1) && (gazeQuotient1 > 0.36) && (0.21 > gazeQuotient2) && (gazeQuotient2 > 0.15)) {
       return true;
     } else {
       return false;
@@ -172,7 +186,7 @@ function checkLookingAtCamera(blazefacePredictions){
 }
 
 function getConcentrationIndex() {
-  (recentEmotionsArray.length > 20) ? recentEmotionsArray.shift() : "";
+  (recentEmotionsArray.length > 20) ? recentEmotionsArray.shift(): "";
   let score = 0;
   if (recentEmotionsArray.length > 0) {
     recentEmotionsArray.forEach(emotion => {
@@ -184,11 +198,11 @@ function getConcentrationIndex() {
   return 0;
 }
 
-async function getEmotion(blazefacePredictions){
+async function getEmotion(blazefacePredictions) {
   ctx1.drawImage(video, 0, 0, video.width, video.height);
   image.src = canvasInput.toDataURL();
   const bfp = await blazefacePredictions;
-  if (bfp[0] != undefined){
+  if (bfp[0] != undefined) {
     const p1 = bfp[0];
     const p1TL = p1["topLeft"];
     const p1BR = p1["bottomRight"];
@@ -200,10 +214,10 @@ async function getEmotion(blazefacePredictions){
     ctx1.strokeRect(dx, dy, width, height);
     ctx2.drawImage(image, dx, dy, width, height, 0, 0, 48, 48);
     var inputImage = tf.browser.fromPixels(canvasCropped)
-    .mean(2)
-    .toFloat()
-    .expandDims(0)
-    .expandDims(-1);
+      .mean(2)
+      .toFloat()
+      .expandDims(0)
+      .expandDims(-1);
     inputImage = tf.image.resizeBilinear(inputImage, [48, 48]).div(tf.scalar(255))
     const predictions = emotionModel.predict(inputImage).arraySync()[0];
     const emotionArray = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']

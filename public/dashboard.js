@@ -15,19 +15,19 @@ document.getElementById("session-key").innerHTML = sessionKey;
 
 // WebSocket
 
-webSocket.addEventListener("message", function(event){
+webSocket.addEventListener("message", function(event) {
   const messageJSON = JSON.parse(event.data);
   const datatype = messageJSON.datatype;
   if (datatype === "participants") {
     refreshDashboard(messageJSON.data);
-  } else if (datatype === "download"){
+  } else if (datatype === "download") {
     downloadJSONFile(messageJSON.data);
-  } else if (datatype === "comment"){
+  } else if (datatype === "comment") {
     addCommentToList(messageJSON.data);
   }
 });
 
-webSocket.onclose = function(){
+webSocket.onclose = function() {
   alert("Session has ended. Click ok to go back to the homepage.");
   const url = window.location;
   url.replace(url.protocol + "//" + url.host + "/");
@@ -35,7 +35,7 @@ webSocket.onclose = function(){
 
 // Buttons
 
-document.getElementById("comment-list").addEventListener("click",function(evt) {
+document.getElementById("comment-list").addEventListener("click", function(evt) {
   const t = evt.target;
   if (t.tagName.toUpperCase() == "TD") {
     const tr = t.parentNode;
@@ -45,45 +45,45 @@ document.getElementById("comment-list").addEventListener("click",function(evt) {
 
 document.getElementById("download-btn").addEventListener("click", function() {
   document.getElementById("download-btn").classList.toggle("blinking");
- webSocket.send("download");
+  webSocket.send("download");
 });
 
 document.getElementById("end-btn").addEventListener("click", function() {
   document.getElementById("end-btn").classList.toggle("blinking");
- if (confirm("Click ok to end this session. All session data will be deleted from the server.")){
-   webSocket.send("end");
-   const url = window.location;
-   url.replace(url.protocol + "//" + url.host + "/");
- }
+  if (confirm("Click ok to end this session. All session data will be deleted from the server.")) {
+    webSocket.send("end");
+    const url = window.location;
+    url.replace(url.protocol + "//" + url.host + "/");
+  }
 });
 
 document.getElementById("link-btn").addEventListener("click", function() {
   navigator.clipboard.writeText(directLink).then(function() {
     document.getElementById("link-btn").classList.toggle("blinking");
- }, function(err) {
-   console.error('Async: Could not copy text: ', err);
- });
+  }, function(err) {
+    console.error('Async: Could not copy text: ', err);
+  });
 
 });
 
 document.getElementById("key-btn").addEventListener("click", function() {
   navigator.clipboard.writeText(sessionKey).then(function() {
     document.getElementById("key-btn").classList.toggle("blinking");
- }, function(err) {
-   console.error('Async: Could not copy text: ', err);
- });
+  }, function(err) {
+    console.error('Async: Could not copy text: ', err);
+  });
 });
 
-document.getElementById("session-key-display").addEventListener("click", function(){
+document.getElementById("session-key-display").addEventListener("click", function() {
   navigator.clipboard.writeText(sessionKey).then(function() {
     document.getElementById("session-key-display").classList.toggle("blinking");
- }, function(err) {
-   console.error('Async: Could not copy text: ', err);
- });
+  }, function(err) {
+    console.error('Async: Could not copy text: ', err);
+  });
 
 });
 
-document.getElementById("dropup-timeframe").addEventListener("click", function(){
+document.getElementById("dropup-timeframe").addEventListener("click", function() {
   const items = document.getElementById("dropup-timeframe").nextElementSibling;
   if (items.style.display == "block") {
     items.style.display = "none";
@@ -94,7 +94,7 @@ document.getElementById("dropup-timeframe").addEventListener("click", function()
 
 const timeframeButtons = document.getElementsByClassName("timeframe-set");
 [].slice.call(timeframeButtons).forEach((timeframeButton) => {
-  timeframeButton.addEventListener("click", function(){
+  timeframeButton.addEventListener("click", function() {
     changeConcentrationTimeframe(timeframeButton.lastChild.innerHTML);
     const items = document.getElementById("dropup-timeframe").nextElementSibling;
     items.style.display = "none";
@@ -103,8 +103,8 @@ const timeframeButtons = document.getElementsByClassName("timeframe-set");
 
 // --- Function Definitions ---
 
-function addCommentToList(commentObj){
-  document.getElementById("nr-comments").innerHTML ++;
+function addCommentToList(commentObj) {
+  document.getElementById("nr-comments").innerHTML++;
   const newComment = commentObj.te;
   const dateObj = new Date(commentObj.ti);
   const timeStr = dateObj.getHours() + ":" + dateObj.getMinutes() + ":" + dateObj.getSeconds()
@@ -113,7 +113,7 @@ function addCommentToList(commentObj){
   document.getElementById("comment-list").appendChild(commentElement);
 }
 
-function addOrChangeParticipant(participantElement, id){
+function addOrChangeParticipant(participantElement, id) {
   if (document.getElementById(id)) {
     document.getElementById(id).innerHTML = participantElement;
   } else {
@@ -124,20 +124,20 @@ function addOrChangeParticipant(participantElement, id){
   }
 }
 
-function createWebSocket(sessionKey, secret){
+function createWebSocket(sessionKey, secret) {
   const wl = window.location;
   const webSocketProtocol = (wl.protocol === "https:") ? "wss://" : "ws://";
   const domain = document.domain;
   const port = location.port;
   const webSocketAddress = webSocketProtocol + domain + ":" + port;
   const sessionKeyParam = "/?sessionKey=" + sessionKey;
-  const secretParam = "&hsecret=" + secret ;
+  const secretParam = "&hsecret=" + secret;
   const typeParam = "&type=dashboard";
   const webSocketURL = webSocketAddress + sessionKeyParam + secretParam + typeParam;
   return new WebSocket(webSocketURL, "echo-protocol");
 }
 
-function downloadJSONFile(object){
+function downloadJSONFile(object) {
   const downloadElement = document.createElement("a");
   const date = new Date();
   downloadElement.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(JSON.stringify(object)));
@@ -145,7 +145,7 @@ function downloadJSONFile(object){
   downloadElement.click();
 }
 
-function generateParticipantElement(name, emotion, objects, looks, concentrationScore){
+function generateParticipantElement(name, emotion, objects, looks, concentrationScore) {
   const participantElement = `
     <td>` + name + `</td>
     <td>` + emotion + `</td>
@@ -160,61 +160,81 @@ function generateParticipantElement(name, emotion, objects, looks, concentration
   return participantElement;
 }
 
-function getCookieValues(){
+function getCookieValues() {
   const cookieValues = document.cookie.split('; ');
   const sessionKey = cookieValues.find(row => row.startsWith('sessionKey=')).split('=')[1];
   const secret = cookieValues.find(row => row.startsWith('hsecret=')).split('=')[1];
   return [sessionKey, secret];
 }
 
-function getDirectLink(){
+function getDirectLink() {
   const wl = window.location;
   return wl.protocol + "//" + wl.host + "/join/" + sessionKey;
 }
 
-function getFullEmotionName(emotion){
+function getFullEmotionName(emotion) {
   switch (emotion) {
     case "ha":
-    return "happy";
-    break;
+      return "happy";
+      break;
     case "ne":
-    return "neutral";
-    break;
+      return "neutral";
+      break;
     case "sa":
-    return "sad";
-    break;
+      return "sad";
+      break;
     case "fe":
-    return "fearful";
-    break;
+      return "fearful";
+      break;
     case "di":
-    return "disgusted";
-    break;
+      return "disgusted";
+      break;
     case "an":
-    return "angry";
-    break;
+      return "angry";
+      break;
     case "su":
-    return "surprised";
-    break;
+      return "surprised";
+      break;
     default:
-    return ""
-    break;
+      return ""
+      break;
   }
 }
 
-function refreshDashboard(participantsList){
+function refreshDashboard(participantsList) {
   // variables: apc - active pariticpants, lacc - looking at camera, ec - emotions,
   // mcs - mean concentration score, ha - happy sa - sad, ne - neutral, di - disgusted,
   // fe - fearful, su - surprised, an - angry
   var counterElements = {
-    apc: 0, lacc: 0, mcs: 0,
-    ec: {"ha": 0, "sa": 0, "ne": 0, "di": 0, "fe": 0, "su": 0, "an": 0},
+    apc: 0,
+    lacc: 0,
+    mcs: 0,
+    ec: {
+      "ha": 0,
+      "sa": 0,
+      "ne": 0,
+      "di": 0,
+      "fe": 0,
+      "su": 0,
+      "an": 0
+    },
   };
-  participantsList.forEach(function(participant){
-    const {inactive, currentStatus, id, name} = participant;
-    if (!(inactive)){
-      const {concentrationScore, emotion, looks, objects} = (currentStatus === undefined) ? "" : currentStatus;
-      if (!(emotion === undefined)){
-        counterElements.ec[emotion.substr(0,2)] += 1;
+  participantsList.forEach(function(participant) {
+    const {
+      inactive,
+      currentStatus,
+      id,
+      name
+    } = participant;
+    if (!(inactive)) {
+      const {
+        concentrationScore,
+        emotion,
+        looks,
+        objects
+      } = (currentStatus === undefined) ? "" : currentStatus;
+      if (!(emotion === undefined)) {
+        counterElements.ec[emotion.substr(0, 2)] += 1;
       }
       counterElements.apc += 1;
       counterElements.lacc += (currentStatus.looks) ? 1 : 0;
@@ -226,87 +246,131 @@ function refreshDashboard(participantsList){
       removeParticipant(id);
     }
   });
-  if (counterElements.apc > 0){
-    counterElements.mcs = Math.round(counterElements.mcs/counterElements.apc);
+  if (counterElements.apc > 0) {
+    counterElements.mcs = Math.round(counterElements.mcs / counterElements.apc);
   }
   updateConcentrationPlot(counterElements.mcs);
   updateEmotionPie(counterElements.ec);
   setCounterElements(counterElements);
 }
 
-function updateConcentrationPlot(concentrationScore){
-  (concentrationArray.length > concentrationTimeframe) ? concentrationArray.shift() : "";
+function updateConcentrationPlot(concentrationScore) {
+  (concentrationArray.length > concentrationTimeframe) ? concentrationArray.shift(): "";
   concentrationArray.push([0, concentrationScore]);
   const nrDataPoints = concentrationArray.length;
-  for (let i = 0; i < nrDataPoints; i++){
+  for (let i = 0; i < nrDataPoints; i++) {
     concentrationArray[i] = [i, concentrationArray[i][1]];
   }
-  $(function () {
+  $(function() {
     concentrationPlot.setData([concentrationArray]);
     concentrationPlot.draw();
   });
 }
 
-function changeConcentrationTimeframe(seconds){
+function changeConcentrationTimeframe(seconds) {
   const concentrationPlotOptions = {
-          series: {
-              shadowSize: 0,
-              color: 'rgb(0, 188, 212)'
-          },
-          grid: {
-              borderColor: '#f3f3f3',
-              borderWidth: 1,
-              tickColor: '#f3f3f3'
-          },
-          lines: {
-              fill: true
-          },
-          yaxis: {
-              min: 0,
-              max: 100
-          },
-          xaxis: {
-            min: 0,
-            max: seconds,
-            ticks: [[0, seconds + 's ago'], [seconds/4, seconds*0.75 + "s ago"], [seconds/2, seconds/2 + "s ago"], [seconds*0.75, seconds*0.25 + "s ago"], [seconds, "now"]]
-          }
-      };
+    series: {
+      shadowSize: 0,
+      color: 'rgb(0, 188, 212)'
+    },
+    grid: {
+      borderColor: '#f3f3f3',
+      borderWidth: 1,
+      tickColor: '#f3f3f3'
+    },
+    lines: {
+      fill: true
+    },
+    yaxis: {
+      min: 0,
+      max: 100
+    },
+    xaxis: {
+      min: 0,
+      max: seconds,
+      ticks: [
+        [0, seconds + 's ago'],
+        [seconds / 4, seconds * 0.75 + "s ago"],
+        [seconds / 2, seconds / 2 + "s ago"],
+        [seconds * 0.75, seconds * 0.25 + "s ago"],
+        [seconds, "now"]
+      ]
+    }
+  };
   const secondsDiff = seconds - concentrationArray.length + 1;
   concentrationTimeframe = seconds;
-  if (secondsDiff > 0){
-    for (let i = 0; i < secondsDiff; i++){
+  if (secondsDiff > 0) {
+    for (let i = 0; i < secondsDiff; i++) {
       concentrationArray.unshift([0, 0]);
     }
   } else {
     concentrationArray = concentrationArray.slice(-secondsDiff, concentrationArray.length);
   }
-  concentrationPlot = $.plot('#real_time_chart', [{data: [0, 0], lines: {show: true, fill: false}}], concentrationPlotOptions);
+  concentrationPlot = $.plot('#real_time_chart', [{
+    data: [0, 0],
+    lines: {
+      show: true,
+      fill: false
+    }
+  }], concentrationPlotOptions);
   concentrationPlot.draw();
 }
 
-function updateEmotionPie(emotionCounters){
-  const data = [
-    {label:"Happy", data: emotionCounters["ha"], color: "#f9d000"},
-    {label:"Neutral", data: emotionCounters["ne"], color: "#888888"},
-    {label:"Sad", data: emotionCounters["sa"], color: "#0098d2"},
-    {label:"Surprised", data: emotionCounters["su"], color: "#ff8800"},
-    {label:"Angry", data: emotionCounters["an"], color: "#7d3c8b"},
-    {label:"Fearful", data: emotionCounters["fe"], color: "#005CDE"},
-    {label:"Disgust", data: emotionCounters["di"], color: "#009e2f"}
+function updateEmotionPie(emotionCounters) {
+  const data = [{
+      label: "Happy",
+      data: emotionCounters["ha"],
+      color: "#f9d000"
+    },
+    {
+      label: "Neutral",
+      data: emotionCounters["ne"],
+      color: "#888888"
+    },
+    {
+      label: "Sad",
+      data: emotionCounters["sa"],
+      color: "#0098d2"
+    },
+    {
+      label: "Surprised",
+      data: emotionCounters["su"],
+      color: "#ff8800"
+    },
+    {
+      label: "Angry",
+      data: emotionCounters["an"],
+      color: "#7d3c8b"
+    },
+    {
+      label: "Fearful",
+      data: emotionCounters["fe"],
+      color: "#005CDE"
+    },
+    {
+      label: "Disgust",
+      data: emotionCounters["di"],
+      color: "#009e2f"
+    }
   ]
   emotionPie.setData(data);
   emotionPie.draw();
 }
 
-function removeParticipant(id){
+function removeParticipant(id) {
   if (document.getElementById(id)) {
     document.getElementById(id).remove();
   };
 }
 
-function setCounterElements(counterElements){
+function setCounterElements(counterElements) {
   // apc = activeParticipantCounter, ec = emotionCounter, lacc = lookingAtCameraCounter, mcs = mean concentration score
-  const {apc, ec, mcs, lacc} = counterElements;
+  const {
+    apc,
+    ec,
+    mcs,
+    lacc
+  } = counterElements;
   const otherEmotionCounter = ec["an"] + ec["fe"] + ec["di"] + ec["su"];
   const happyPercentage = (apc > 0) ? Math.round(100 * (ec["ha"] / apc)) : 0;
   const neutralPercentage = (apc > 0) ? Math.round(100 * (ec["ne"] / apc)) : 0;
@@ -314,7 +378,7 @@ function setCounterElements(counterElements){
   const otherPercentage = (apc > 0) ? Math.round(100 * (otherEmotionCounter / apc)) : 0;
   const lookingPercentage = (apc > 0) ? Math.round(100 * (lacc / apc)) : 0;
   document.getElementById("mean-concentration").innerHTML = mcs + "%";
-  document.getElementById("emotion-happy-participants").innerHTML =  happyPercentage + "% (" + ec["ha"] + ")";
+  document.getElementById("emotion-happy-participants").innerHTML = happyPercentage + "% (" + ec["ha"] + ")";
   document.getElementById("emotion-neutral-participants").innerHTML = neutralPercentage + "% (" + ec["ne"] + ")";
   document.getElementById("emotion-sad-participants").innerHTML = sadPercentage + "% (" + ec["sa"] + ")";
   document.getElementById("emotion-other-participants").innerHTML = otherPercentage + "% (" + otherEmotionCounter + ")";
@@ -322,53 +386,67 @@ function setCounterElements(counterElements){
   document.getElementById("nr-looking-at-camera").innerHTML = lookingPercentage + "% (" + lacc + ")";
 }
 
-function initializeCharts(){
+function initializeCharts() {
   const concentrationPlotOptions = {
-          series: {
-              shadowSize: 0,
-              color: 'rgb(0, 188, 212)'
-          },
-          grid: {
-              borderColor: '#f3f3f3',
-              borderWidth: 1,
-              tickColor: '#f3f3f3'
-          },
-          lines: {
-              fill: true
-          },
-          yaxis: {
-              min: 0,
-              max: 100
-          },
-          xaxis: {
-            min: 0,
-            max: 100,
-            ticks: [[0,'100s ago'], [25, "75s ago"], [50, "50s ago"], [75, "25s ago"], [100, "now"]]
-          }
-      };
-  const concentrationPlot = $.plot('#real_time_chart', [{data: [0, 0], lines: {show: true, fill: false}}], concentrationPlotOptions);
+    series: {
+      shadowSize: 0,
+      color: 'rgb(0, 188, 212)'
+    },
+    grid: {
+      borderColor: '#f3f3f3',
+      borderWidth: 1,
+      tickColor: '#f3f3f3'
+    },
+    lines: {
+      fill: true
+    },
+    yaxis: {
+      min: 0,
+      max: 100
+    },
+    xaxis: {
+      min: 0,
+      max: 100,
+      ticks: [
+        [0, '100s ago'],
+        [25, "75s ago"],
+        [50, "50s ago"],
+        [75, "25s ago"],
+        [100, "now"]
+      ]
+    }
+  };
+  const concentrationPlot = $.plot('#real_time_chart', [{
+    data: [0, 0],
+    lines: {
+      show: true,
+      fill: false
+    }
+  }], concentrationPlotOptions);
   concentrationPlot.draw();
   const emotionPieOptions = {
-      series: {
-          pie: {
-            radius: 100,
-              show: true,
-              label: {
-                  show: true,
-                  background: {
-                      color: '#000'
-                  }
-              }
+    series: {
+      pie: {
+        radius: 100,
+        show: true,
+        label: {
+          show: true,
+          background: {
+            color: '#000'
           }
-      },
-      legend: {
-          show: false
-      },
-      grid: {
-          hoverable: true
+        }
       }
+    },
+    legend: {
+      show: false
+    },
+    grid: {
+      hoverable: true
+    }
   };
-  const emotionPie = $.plot('#pie_chart', [[]], emotionPieOptions);
+  const emotionPie = $.plot('#pie_chart', [
+    []
+  ], emotionPieOptions);
   emotionPie.draw();
   return [concentrationPlot, emotionPie];
 }

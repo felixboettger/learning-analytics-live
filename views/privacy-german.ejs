@@ -6,69 +6,71 @@
     <h1 class="display-4 font-weight-normal text-center">Privatssphäre</h1>
     <p class="lead font-weight-normal">
 
-<h2>Cookies</h2>
+    <h2>Cookies</h2>
 
-Diese Website nutzt Cookies, um vorrübergehend für den Betrieb notwendige Daten im Browser abzulegen.
+    Diese Website nutzt Cookies, um vorrübergehend für den Betrieb notwendige Daten im Browser abzulegen.
 
-Für den Host einer Session sind das die folgenden Daten:
+    Für den Host einer Session sind das die folgenden Daten:
 
-<ul>
-  <li>Session Key zu der erstellten Session</li>
-  <li>Ein Serverseitig erstelltes Geheimnis zur Authentifizierung</li>
-</ul>
+    <ul>
+      <li>Session Key zu der erstellten Session</li>
+      <li>Ein Serverseitig erstelltes Geheimnis zur Authentifizierung</li>
+    </ul>
 
-Für die Teilnehmer einer Session werden folgende Informationen als Cookies abgelegt:
+    Für die Teilnehmer einer Session werden folgende Informationen als Cookies abgelegt:
 
-<ul>
-  <li>Session Key zu der Session, der der Teilnehmer beigetreten ist</li>
-  <li>Der Name, den der Teilnehmer beim Beitreten angegeben hat</li>
-  <li>Eine Serverseitig erstellte Teilnehmer-ID zur Authentifizierung</li>
-  <li>Ein Serverseitig erstelltes Geheimnis zur Authentifizierung</li>
-</ul>
+    <ul>
+      <li>Session Key zu der Session, der der Teilnehmer beigetreten ist</li>
+      <li>Der Name, den der Teilnehmer beim Beitreten angegeben hat</li>
+      <li>Eine Serverseitig erstellte Teilnehmer-ID zur Authentifizierung</li>
+      <li>Ein Serverseitig erstelltes Geheimnis zur Authentifizierung</li>
+    </ul>
 
-Das Ablaufdatum der Cookies ist auf "Session" eingestellt. In den meisten Fällen bedeutet das, dass diese mit dem schließen des letzten Browserfensters gelöscht werden. Wie genau mit dem ablaufen von Cookies umgegangen wird, hängt jedoch vom verwendeten Browser ab.
+    Das Ablaufdatum der Cookies ist auf "Session" eingestellt. In den meisten Fällen bedeutet das, dass diese mit dem schließen des letzten Browserfensters gelöscht werden. Wie genau mit dem ablaufen von Cookies umgegangen wird, hängt jedoch vom
+    verwendeten Browser ab.
 
-<h2>Erhebung und Übermittlung von Teilnehmerdaten</h2>
+    <h2>Erhebung und Übermittlung von Teilnehmerdaten</h2>
 
-Die Plattform ist auf die Sammlung und Liveübertragung von Analysedaten über die Teilnehmer spezialisiert. Dafür wird das Webcambild der Teilnehmer anaysiert. Die Analyse erfolgt mithilfe von Machine Learning auf dem Computer des Teilnehmers. Eine Übertragung des Kamerabildes oder der Audiospur findet nicht statt.
+    Die Plattform ist auf die Sammlung und Liveübertragung von Analysedaten über die Teilnehmer spezialisiert. Dafür wird das Webcambild der Teilnehmer anaysiert. Die Analyse erfolgt mithilfe von Machine Learning auf dem Computer des Teilnehmers.
+    Eine Übertragung des Kamerabildes oder der Audiospur findet nicht statt.
 
-Es werden lediglich die Ergebnisse der Analyse durch Machine Learning übertragen. Die Übertragung erfolgt über das WebSocket Protokoll, wobei die Daten mit TLS gesichert übertragen werden. Übertragen werden folgende Daten:
+    Es werden lediglich die Ergebnisse der Analyse durch Machine Learning übertragen. Die Übertragung erfolgt über das WebSocket Protokoll, wobei die Daten mit TLS gesichert übertragen werden. Übertragen werden folgende Daten:
 
-<ul>
-  <li>Erkannte Emotion</li>
-  <li>Ein aus dem Verlauf der erkannten Emotionen berechneter Score zwischen 0 und 100</li>
-  <li>Ob der Teilnehmer aktuell in Richtung Kamera sieht (Ja/Nein)</li>
-  <li>Eine Liste der durch Machine Learning erkannten Objekte in der Umgebung des Teilnehmers</li>
-</ul>
+    <ul>
+      <li>Erkannte Emotion</li>
+      <li>Ein aus dem Verlauf der erkannten Emotionen berechneter Score zwischen 0 und 100</li>
+      <li>Ob der Teilnehmer aktuell in Richtung Kamera sieht (Ja/Nein)</li>
+      <li>Eine Liste der durch Machine Learning erkannten Objekte in der Umgebung des Teilnehmers</li>
+    </ul>
 
-Die Erkennung ist fehlerbehaftet, es kann daher dazu kommen dass fehlerbehaftete Daten übertragen werden.
+    Die Erkennung ist fehlerbehaftet, es kann daher dazu kommen dass fehlerbehaftete Daten übertragen werden.
 
-<h2>Speicherung der Teilnehmerdaten</h2>
+    <h2>Speicherung der Teilnehmerdaten</h2>
 
-Daten über die Teilnehmer werden in einer serverseitigen Datenbank gespeichert und vorgehalten, solange die Session andauert. Sie werden
+    Daten über die Teilnehmer werden in einer serverseitigen Datenbank gespeichert und vorgehalten, solange die Session andauert. Sie werden
 
-<ul>
-  <li>sofort gelöscht, falls der Host die Session manuell beendet</li>
-  <li>30 Minuten nach dem letzten Zugriff durch den Host gelöscht, falls dieser die Session verlässt, ohne sie manuell zu beenden</li>
-</ul>
+    <ul>
+      <li>sofort gelöscht, falls der Host die Session manuell beendet</li>
+      <li>30 Minuten nach dem letzten Zugriff durch den Host gelöscht, falls dieser die Session verlässt, ohne sie manuell zu beenden</li>
+    </ul>
 
-Die Daten der jeweiligen Session können durch den Host exportiert werden, wodurch dieser eine Möglichkeit zur permanenten Speicherung erhält.
+    Die Daten der jeweiligen Session können durch den Host exportiert werden, wodurch dieser eine Möglichkeit zur permanenten Speicherung erhält.
 
-<h2>Recht auf Einsicht, Löschung oder Anonymisierung</h2>
+    <h2>Recht auf Einsicht, Löschung oder Anonymisierung</h2>
 
-Sofern es sich bei den verarbeiteten Daten um personenbezogene Daten handelt, haben Sie gegebenenfalls ein Recht darauf, eine Kopie der Daten anzufordern und eine Anonymisierung oder Löschung zu verlangen.
+    Sofern es sich bei den verarbeiteten Daten um personenbezogene Daten handelt, haben Sie gegebenenfalls ein Recht darauf, eine Kopie der Daten anzufordern und eine Anonymisierung oder Löschung zu verlangen.
 
-Für Einsicht in oder Löschung von Daten vom Server der Instanz mmlatool.de wenden Sie sich bitte an privacy@felixboettger.de
+    Für Einsicht in oder Löschung von Daten vom Server der Instanz mmlatool.de wenden Sie sich bitte an privacy@felixboettger.de
 
-Für eine Einsicht oder Löschung von Daten, die vom Host einer Session exportiert wurden, wenden Sie sich bitte an den Host.
+    Für eine Einsicht oder Löschung von Daten, die vom Host einer Session exportiert wurden, wenden Sie sich bitte an den Host.
 
-<h2>Weitergabe von Daten</h2>
+    <h2>Weitergabe von Daten</h2>
 
-Eine Weitergabe der erhobenen Daten an den Host findet statt. Ansonsten findet keine Weitergabe von Daten statt.
+    Eine Weitergabe der erhobenen Daten an den Host findet statt. Ansonsten findet keine Weitergabe von Daten statt.
 
-</p>
+    </p>
 
-</div>
+  </div>
 
 </div>
 

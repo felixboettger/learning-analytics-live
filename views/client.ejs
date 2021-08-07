@@ -1,23 +1,25 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
-  <head>
-    <meta charset="utf-8">
-    <title></title>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/css/materialize.css">
-    <link rel="stylesheet" href="/css/app-styles.css">
-    <%- include("partials/navbar") -%>
-  </head>
-  <body>
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/css/materialize.css">
+  <link rel="stylesheet" href="/css/app-styles.css">
+  <%- include("partials/navbar") -%>
+</head>
+
+<body>
 
 
-    <div class="card">
-      <div class="header">
-        <i class="material-icons">person</i>
-        <h2>Client  - Session <span class="session-key"><span></h2>
-      </div>
+  <div class="card">
+    <div class="header">
+      <i class="material-icons">person</i>
+      <h2>Client - Session <span class="session-key"><span></h2>
+    </div>
 
 
     <div class="container-fluid">
@@ -112,9 +114,9 @@
       <div class="row">
         <video id="video-input" autoplay playsinline width="480" height="360"></video>
         <image id="image-input" hidden width="400px" height="360px" hidden</image>
-        <canvas id="canvas-input" hidden width="400px" height="360px"></canvas>
-        <canvas id="canvas-cropped" hidden width="48px" height="48px"></canvas>
-        <canvas id="canvas-output" hidden></canvas>
+          <canvas id="canvas-input" hidden width="400px" height="360px"></canvas>
+          <canvas id="canvas-cropped" hidden width="48px" height="48px"></canvas>
+          <canvas id="canvas-output" hidden></canvas>
       </div>
     </div>
   </div>
@@ -139,4 +141,5 @@
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
 <script type="text/javascript" src="/client.js" charset="utf-8"></script>
+
 </html>
