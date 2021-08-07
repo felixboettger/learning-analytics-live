@@ -18,7 +18,7 @@
 <div class="card">
   <div class="header">
     <i class="material-icons">speed</i>
-    <h2>Dashboard - Session <span id="session-key"></span></h2>
+    <h2 id="session-key-display" style="cursor: pointer">Dashboard - Session <span id="session-key"></span></h2>
   </div>
   <body>
   <div class="container-fluid">
@@ -250,23 +250,45 @@
           <h2>Settings</h2>
         </div>
         <div class="body">
-          <button type="button" id="link-btn" class="btn bg-teal waves-effect">
+          <button type="button" id="link-btn" class="btn btn-secondary">
             <i class="material-icons">link</i>
             <span>Copy direct link</span>
           </button>
-          <button type="button" id="key-btn" class="btn bg-teal waves-effect">
+          <button type="button" id="key-btn" class="btn btn-secondary">
             <i class="material-icons">content_copy</i>
             <span>Copy session key</span>
           </button>
-          <button type="button" id="download-btn" class="btn bg-teal waves-effect">
+          <button type="button" id="download-btn" class="btn btn-secondary">
             <i class="material-icons">file_download</i>
             <span>Download</span>
           </button>
-          <button type="button" id="end-btn" class="btn bg-teal waves-effect">
-            <i class="material-icons">close</i>
-            <span>End Session</span>
-          </button>
 
+          <div class="btn-group dropup">
+            <button type="button" class="btn btn-secondary" id="dropup-timeframe" aria-haspopup="true" aria-expanded="false">
+              <i class="material-icons">schedule</i>
+                Choose Concentration Diagram Timeframe
+            </button>
+            <div class="dropdown-menu" x-placement="top-start" style="position: absolute; transform: translate3d(0px, -2px, 0px); top: -200px; left: 50px; will-change: transform;">
+              <a class="dropdown-item timeframe-set">15 seconds<span style="display: none">15</span></a>
+              <a class="dropdown-item timeframe-set">30 seconds<span style="display: none">30</span></a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item timeframe-set">1 Minute<span style="display: none">60</span></a>
+              <a class="dropdown-item timeframe-set">2 Minutes<span style="display: none">120</span></a>
+              <a class="dropdown-item timeframe-set">5 Minutes<span style="display: none">300</span></a>
+              <a class="dropdown-item timeframe-set">10 Minutes<span style="display: none">600</span></a>
+              <a class="dropdown-item timeframe-set">30 Minutes<span style="display: none">1800</span></a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item timeframe-set">1 Hour<span style="display: none">3600</span></a>
+
+            </div>
+
+
+          </div>
+            <button type="button" id="end-btn" class="btn btn-danger">
+              <i class="material-icons">close</i>
+              <span>End Session</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

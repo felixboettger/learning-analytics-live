@@ -3,8 +3,9 @@
 const [sessionKey, secret] = getCookieValues();
 const directLink = getDirectLink();
 const webSocket = createWebSocket(sessionKey, secret);
-const [concentrationPlot, emotionPie] = initializeCharts();
+var [concentrationPlot, emotionPie] = initializeCharts();
 
+let concentrationTimeframe = 100;
 let concentrationArray = Array(100);
 concentrationArray = concentrationArray.fill([0, 0]);
 
@@ -43,10 +44,12 @@ document.getElementById("comment-list").addEventListener("click",function(evt) {
 });
 
 document.getElementById("download-btn").addEventListener("click", function() {
+  document.getElementById("download-btn").classList.toggle("blinking");
  webSocket.send("download");
 });
 
 document.getElementById("end-btn").addEventListener("click", function() {
+  document.getElementById("end-btn").classList.toggle("blinking");
  if (confirm("Click ok to end this session. All session data will be deleted from the server.")){
    webSocket.send("end");
    const url = window.location;
@@ -56,18 +59,47 @@ document.getElementById("end-btn").addEventListener("click", function() {
 
 document.getElementById("link-btn").addEventListener("click", function() {
   navigator.clipboard.writeText(directLink).then(function() {
+    document.getElementById("link-btn").classList.toggle("blinking");
  }, function(err) {
    console.error('Async: Could not copy text: ', err);
  });
+
 });
 
 document.getElementById("key-btn").addEventListener("click", function() {
   navigator.clipboard.writeText(sessionKey).then(function() {
+    document.getElementById("key-btn").classList.toggle("blinking");
  }, function(err) {
    console.error('Async: Could not copy text: ', err);
  });
 });
 
+document.getElementById("session-key-display").addEventListener("click", function(){
+  navigator.clipboard.writeText(sessionKey).then(function() {
+    document.getElementById("session-key-display").classList.toggle("blinking");
+ }, function(err) {
+   console.error('Async: Could not copy text: ', err);
+ });
+
+});
+
+document.getElementById("dropup-timeframe").addEventListener("click", function(){
+  const items = document.getElementById("dropup-timeframe").nextElementSibling;
+  if (items.style.display == "block") {
+    items.style.display = "none";
+  } else {
+    items.style.display = "block";
+  }
+});
+
+const timeframeButtons = document.getElementsByClassName("timeframe-set");
+[].slice.call(timeframeButtons).forEach((timeframeButton) => {
+  timeframeButton.addEventListener("click", function(){
+    changeConcentrationTimeframe(timeframeButton.lastChild.innerHTML);
+    const items = document.getElementById("dropup-timeframe").nextElementSibling;
+    items.style.display = "none";
+  });
+});
 
 // --- Function Definitions ---
 
@@ -203,7 +235,7 @@ function refreshDashboard(participantsList){
 }
 
 function updateConcentrationPlot(concentrationScore){
-  (concentrationArray.length > 100) ? concentrationArray.shift() : "";
+  (concentrationArray.length > concentrationTimeframe) ? concentrationArray.shift() : "";
   concentrationArray.push([0, concentrationScore]);
   const nrDataPoints = concentrationArray.length;
   for (let i = 0; i < nrDataPoints; i++){
@@ -213,6 +245,43 @@ function updateConcentrationPlot(concentrationScore){
     concentrationPlot.setData([concentrationArray]);
     concentrationPlot.draw();
   });
+}
+
+function changeConcentrationTimeframe(seconds){
+  const concentrationPlotOptions = {
+          series: {
+              shadowSize: 0,
+              color: 'rgb(0, 188, 212)'
+          },
+          grid: {
+              borderColor: '#f3f3f3',
+              borderWidth: 1,
+              tickColor: '#f3f3f3'
+          },
+          lines: {
+              fill: true
+          },
+          yaxis: {
+              min: 0,
+              max: 100
+          },
+          xaxis: {
+            min: 0,
+            max: seconds,
+            ticks: [[0, seconds + 's ago'], [seconds/4, seconds*0.75 + "s ago"], [seconds/2, seconds/2 + "s ago"], [seconds*0.75, seconds*0.25 + "s ago"], [seconds, "now"]]
+          }
+      };
+  const secondsDiff = seconds - concentrationArray.length + 1;
+  concentrationTimeframe = seconds;
+  if (secondsDiff > 0){
+    for (let i = 0; i < secondsDiff; i++){
+      concentrationArray.unshift([0, 0]);
+    }
+  } else {
+    concentrationArray = concentrationArray.slice(-secondsDiff, concentrationArray.length);
+  }
+  concentrationPlot = $.plot('#real_time_chart', [{data: [0, 0], lines: {show: true, fill: false}}], concentrationPlotOptions);
+  concentrationPlot.draw();
 }
 
 function updateEmotionPie(emotionCounters){
@@ -299,7 +368,7 @@ function initializeCharts(){
           hoverable: true
       }
   };
-  const emotionPie = $.plot('#pie_chart', [[1]], emotionPieOptions);
+  const emotionPie = $.plot('#pie_chart', [[]], emotionPieOptions);
   emotionPie.draw();
   return [concentrationPlot, emotionPie];
 }

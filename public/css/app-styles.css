@@ -18,6 +18,23 @@ td{
     word-wrap:break-word
 }
 
+body {
+  margin-top:100px;
+}
+
+@keyframes blinkingFrames {
+    0% {opacity: 1.00;}
+    50% {opacity: 0.30;}
+    100% {opacity: 1.00;}
+}
+
+.blinking {
+    animation-name: blinkingFrames;
+    animation-duration: 0.15s;
+    animation-iteration-count: 1;
+}
+
+
 /* Below styles were created entirely by Github User gurayyarar - https://github.com/gurayyarar/AdminBSBMaterialDesign/ */
 /* Navbar ====================================== */
 @import url(materialize.css);
