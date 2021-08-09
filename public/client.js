@@ -204,12 +204,12 @@ async function getEmotion(blazefacePredictions) {
     const p1 = bfp[0];
     const p1TL = p1["topLeft"];
     const p1BR = p1["bottomRight"];
-    var width = p1BR[0] - p1TL[0];
-    var height = p1BR[1] - p1TL[1];
     const dx = (p1TL[0] > 0) ? p1TL[0] : 0;
     const dy = (p1TL[1] > 0) ? p1TL[1] : 0;
-    width = (width + dx < canvasInput.width) ? width : canvasInput.width - dx;
-    height = (height + dy < canvasInput.height) ? height : canvasInput.heigth - dy;
+    var width = p1BR[0] - dx;
+    var height = p1BR[1] - dy;
+    width = (width + dx < canvasInput.width) ? width : canvasInput.width - dx - 1;
+    height = (height + dy < canvasInput.height) ? height : canvasInput.heigth - dy - 1;
     ctx1.strokeStyle = "red";
     ctx1.strokeRect(dx, dy, width, height);
     ctx2.drawImage(image, dx, dy, width, height, 0, 0, 48, 48);
