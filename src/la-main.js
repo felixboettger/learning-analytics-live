@@ -155,7 +155,7 @@ function handleClientSocket(req, updateInterval) {
             laDB.updateParticipantStatus(sessionKey, participantId, statusVector, time);
           });
         } else if (datatype === "comment") {
-          const [comment, time] = [messageJSON.data.te, new Date().getTime()];
+          const [comment, time] = [messageJSON.data, new Date().getTime()];
           sendToHostSocket(sessionKey, JSON.stringify({
             datatype: "comment",
             data: {

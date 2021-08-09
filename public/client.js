@@ -60,9 +60,7 @@ async function main() {
     document.getElementById("input-comment").value = "";
     webSocket.send(JSON.stringify({
       datatype: "comment",
-      data: {
-        te: comment
-      }
+      data: comment
     }));
   });
 
@@ -86,11 +84,11 @@ async function main() {
     }
   });
 
-  webSocket.onclose = function() {
+  /*webSocket.onclose = function() {
     alert("Session has ended. Click ok to go back to the homepage.");
     const url = window.location;
     url.replace(url.protocol + "//" + url.host + "/");
-  }
+  }*/
 
   function sendStatus() {
     document.getElementById("working-idle").setAttribute('class', 'material-icons icon-red');
