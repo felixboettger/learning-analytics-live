@@ -213,15 +213,21 @@ async function getEmotion(blazefacePredictions) {
     ctx1.strokeStyle = "red";
     ctx1.strokeRect(dx, dy, width, height);
     ctx2.drawImage(image, dx, dy, width, height, 0, 0, 48, 48);
-    var inputImage = tf.browser.fromPixels(canvasCropped)
-      .mean(2)
-      .toFloat()
-      .expandDims(0)
-      .expandDims(-1);
-    inputImage = tf.image.resizeBilinear(inputImage, [48, 48]).div(tf.scalar(255))
-    const predictions = emotionModel.predict(inputImage).arraySync()[0];
-    const emotionArray = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
-    const emotionIndex = predictions.indexOf(Math.max.apply(null, predictions));
-    return [emotionArray[emotionIndex], predictions[emotionIndex]];
+    try{
+        var inputImage = tf.browser.fromPixels(canvasCropped)
+        .mean(2)
+        .toFloat()
+        .expandDims(0)
+        .expandDims(-1);
+      } catch (e) {
+        console.log(e);
+      }
+    if (inputImage) {
+      inputImage = tf.image.resizeBilinear(inputImage, [48, 48]).div(tf.scalar(255))
+      const predictions = emotionModel.predict(inputImage).arraySync()[0];
+      const emotionArray = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
+      const emotionIndex = predictions.indexOf(Math.max.apply(null, predictions));
+      return [emotionArray[emotionIndex], predictions[emotionIndex]];
+    }
   }
 }
