@@ -84,11 +84,11 @@ async function main() {
     }
   });
 
-  /*webSocket.onclose = function() {
+  webSocket.onclose = function() {
     alert("Session has ended. Click ok to go back to the homepage.");
     const url = window.location;
     url.replace(url.protocol + "//" + url.host + "/");
-  }*/
+  }
 
   function sendStatus() {
     document.getElementById("working-idle").setAttribute('class', 'material-icons icon-red');
@@ -204,10 +204,12 @@ async function getEmotion(blazefacePredictions) {
     const p1 = bfp[0];
     const p1TL = p1["topLeft"];
     const p1BR = p1["bottomRight"];
-    const width = p1BR[0] - p1TL[0];
-    const height = p1BR[1] - p1TL[1];
-    const dx = p1TL[0];
-    const dy = p1TL[1];
+    var width = p1BR[0] - p1TL[0];
+    var height = p1BR[1] - p1TL[1];
+    const dx = (p1TL[0] > 0) ? p1TL[0] : 0;
+    const dy = (p1TL[1] > 0) ? p1TL[1] : 0;
+    width = (width + dx < canvasInput.width) ? width : canvasInput.width - dx;
+    height = (height + dy < canvasInput.height) ? height : canvasInput.heigth - dy;
     ctx1.strokeStyle = "red";
     ctx1.strokeRect(dx, dy, width, height);
     ctx2.drawImage(image, dx, dy, width, height, 0, 0, 48, 48);
