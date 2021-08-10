@@ -141,7 +141,7 @@ function handleClientSocket(req, updateInterval) {
     } else {
       const connection = req.accept('echo-protocol', req.origin);
       const sessionKey = req.resourceURL.query.sessionKey;
-      const participantId = req.resourceURL.query.userId;
+      const participantId = req.resourceURL.query.participantId;
       const index = addClientToSocketDict(sessionKey, connection);
       const sessionStartTime = laDB.getSessionStartTime(sessionKey);
       connection.on("message", function(message) {
