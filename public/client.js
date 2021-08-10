@@ -81,9 +81,10 @@ async function main(){
   function sendStatus(){
     idle.setAttribute('class', 'material-icons icon-red');
     ctx1.drawImage(video, 0, 0, video.width, video.height);
-    image.src = canvasInput.toDataURL("image/png");
+
     const t0 = performance.now(); // Start performance measurement
     getStatus().then(statusVector => {
+      console.log(statusVector);
       const t1 = performance.now();
       const timeToComplete = Math.round(t1 - t0);
       setPerformanceTile(timeToComplete);
@@ -193,18 +194,6 @@ function getCookieValues() {
 };
 
 
-/**
- * performML - Function that performs machine learning algorithms and returns the results.
- *
- * @return {array} Array containing machine learning results from all three networks.
- */
-async function performML(){
-  const objectDetections = await cocoSsdModel.detect(image);
-  const blazefacePredictions = await blazefaceModel.estimateFaces(image, false);
-  const emotionDetection = await getEmotion(blazefacePredictions);
-  return [emotionDetection, objectDetections, blazefacePredictions];
-};
-
 
 /**
  * getStatus - Function that generates the statusVector object.
@@ -212,7 +201,9 @@ async function performML(){
  * @return {object} statusVector object that contains the current status of the participant.
  */
 async function getStatus(){
-  const [emotionDetection, objectDetections, blazefacePredictions] = await performML();
+  const objectDetections = await cocoSsdModel.detect(canvasInput);
+  const blazefacePredictions = await blazefaceModel.estimateFaces(canvasInput, false);
+  const emotionDetection = await getEmotion(blazefacePredictions);
   const detectedObjectsArray = generateDetectedObjectsArray(objectDetections);
   const lookingAtCamera = checkIfLookingAtCamera(blazefacePredictions);
   const emotion = (emotionDetection === undefined) ? "none" : emotionDetection[0];
@@ -246,6 +237,7 @@ function generateDetectedObjectsArray(objectDetections){
  * @return {array} Returns array with two values: [0]: Name of the most prominent emotion, [1]: Model's confidence for this emotion.
  */
 async function getEmotion(blazefacePredictions) {
+  const image = document.getElementById('image-input');
   const bfp = await blazefacePredictions;
   if (bfp[0] != undefined) {
     const p1 = bfp[0];
@@ -256,10 +248,12 @@ async function getEmotion(blazefacePredictions) {
     const width = p1BR[0] - dx;
     const height = p1BR[1] - dy;
     const fullFaceInPicture = (dx > 0) && (dy > 0) && (dx + width < canvasInput.height) && (dy + height < canvasInput.height);
+    console.log(fullFaceInPicture);
     if (fullFaceInPicture){
       ctx1.strokeStyle = "red";
       ctx1.strokeRect(dx, dy, width, height);
-      ctx2.drawImage(image, dx, dy, width, height, 0, 0, 48, 48);
+      image.src = canvasInput.toDataURL("image/png");
+      ctx2.drawImage(image, dx, dy, width - 1, height - 1, 0, 0, 48, 48);
       var inputImage = tf.browser.fromPixels(canvasCropped)
           .mean(2)
           .toFloat()
@@ -267,6 +261,7 @@ async function getEmotion(blazefacePredictions) {
           .expandDims(-1);
       inputImage = tf.image.resizeBilinear(inputImage, [48, 48]).div(tf.scalar(255));
       const predictions = emotionModel.predict(inputImage).arraySync()[0];
+      console.log(predictions);
       const emotionArray = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
       const emotionIndex = predictions.indexOf(Math.max.apply(null, predictions));
       return [emotionArray[emotionIndex], predictions[emotionIndex]];
@@ -327,7 +322,6 @@ function startWebcam() {
       console.log("An error with video recording occured! " + err);
     });
 }
-
 
 /**
  * createWebSocket - Function that creates a WebSocket and connects to the server.
