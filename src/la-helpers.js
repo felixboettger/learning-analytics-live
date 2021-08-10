@@ -57,7 +57,6 @@ async function checkSocketConnect(req) {
     "participants.id": req.resourceURL.query.participantId,
     "participants.secret": req.resourceURL.query.psecret
   };
-  console.log(query);
   const allowed = await laDB.checkSessionExists(query);
   // const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
   const ip = "";

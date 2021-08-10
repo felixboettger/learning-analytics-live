@@ -43,9 +43,7 @@ app.use(session({resave: false,
   }}));
 
 setInterval(function(){
-  nodeOsUtils.cpu.usage().then(info => console.log(info));
-  //nodeOsUtils.memory.usage().then(info => console.log(info));
-
+  nodeOsUtils.cpu.usage().then(info => console.log("CPU usage:", info));
 }, 5000);
 
 // --- HTTP Get Request Handlers ---

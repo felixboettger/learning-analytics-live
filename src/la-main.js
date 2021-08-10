@@ -199,7 +199,6 @@ function handleDashboardSocket(req, updateInterval) {
       const clientSockets = getClientSockets(sessionKey);
       const refreshIntervalId = setInterval(function() {
         laDB.getParticipantData(sessionKey).then(participantData => {
-          console.log(new Date().getMinutes() + " " + new Date().getSeconds());
           connection.send(JSON.stringify({
             datatype: "participants",
             data: participantData

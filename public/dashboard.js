@@ -133,6 +133,7 @@ function addOrChangeParticipant(participantElement, id) {
     newTr.setAttribute('class', 'participant');
     document.getElementById("participant-list").appendChild(newTr);
   }
+}
 
 /**
  * createWebSocket - Function that creates a WebSocket and connects to the server.
@@ -476,7 +477,7 @@ function setCounterElements(counterElements) {
 /**
  * initializeCharts - Function that initializes the concentration plot and emotion pie chart.
  *
- * @return {array}  Concentration plot and pie chart references. 
+ * @return {array}  Concentration plot and pie chart references.
  */
 function initializeCharts() {
   const concentrationPlotOptions = {
@@ -541,4 +542,4 @@ function initializeCharts() {
   ], emotionPieOptions);
   emotionPie.draw();
   return [concentrationPlot, emotionPie];
-}
+};

@@ -80,22 +80,23 @@ async function main(){
    */
   function sendStatus(){
     idle.setAttribute('class', 'material-icons icon-red');
+    ctx1.drawImage(video, 0, 0, video.width, video.height);
+    image.src = canvasInput.toDataURL("image/png");
     const t0 = performance.now(); // Start performance measurement
     getStatus().then(statusVector => {
+      const t1 = performance.now();
+      const timeToComplete = Math.round(t1 - t0);
+      setPerformanceTile(timeToComplete);
+      idle.setAttribute('class', 'material-icons icon-green');
       if (!(statusVector === undefined)) {
         webSocket.send(JSON.stringify({
           datatype: "status",
           data: statusVector
         }));
       };
-      const t1 = performance.now();
-      const timeToComplete = Math.round(t1 - t0);
-      setPerformanceTile(timeToComplete);
-      idle.setAttribute('class', 'material-icons icon-green');
     });
   };
 };
-
 
 /**
  * checkIfLookingAtCamera - Function to estimate if participant is looking into camera using blazeface predictions
@@ -238,7 +239,6 @@ function generateDetectedObjectsArray(objectDetections){
   return detectedObjectsArray;
 }
 
-
 /**
  * getEmotion - Function that prepares inputs for the emotion model of Ufuk Cetinkaya and then returns the emotion.
  *
@@ -246,8 +246,6 @@ function generateDetectedObjectsArray(objectDetections){
  * @return {array} Returns array with two values: [0]: Name of the most prominent emotion, [1]: Model's confidence for this emotion.
  */
 async function getEmotion(blazefacePredictions) {
-  ctx1.drawImage(video, 0, 0, video.width, video.height);
-  image.src = canvasInput.toDataURL();
   const bfp = await blazefacePredictions;
   if (bfp[0] != undefined) {
     const p1 = bfp[0];
@@ -262,7 +260,6 @@ async function getEmotion(blazefacePredictions) {
       ctx1.strokeStyle = "red";
       ctx1.strokeRect(dx, dy, width, height);
       ctx2.drawImage(image, dx, dy, width, height, 0, 0, 48, 48);
-      console.log(canvasCropped);
       var inputImage = tf.browser.fromPixels(canvasCropped)
           .mean(2)
           .toFloat()
@@ -288,26 +285,6 @@ function addToRecentEmotionsArray(emotionDetection){
     recentEmotionsArray.push(emotionDetection);
   };
 }
-
-/*
-function sendStatus(){
-  idle.setAttribute('class', 'material-icons icon-red');
-  const t0 = performance.now(); // Start performance measurement
-  getStatus().then(statusVector => {
-    if (!(statusVector === undefined)) {
-      webSocket.send(JSON.stringify({
-        datatype: "status",
-        data: statusVector
-      }));
-    };
-    const t1 = performance.now();
-    const timeToComplete = Math.round(t1 - t0);
-    setPerformanceTile(timeToComplete);
-    idle.setAttribute('class', 'material-icons icon-green');
-  });
-};
-*/
-
 
 /**
  * setInfoTiles - Function that displays current status info in the info tiles.
@@ -358,7 +335,7 @@ function startWebcam() {
  * @param  {string} sessionKey Unique session identifier that was generated on session creation.
  * @param  {int} participantId Unique ID for the participant in respect to their session.
  * @param  {string} secret Secret that is used to authenticate the participant.
- * @return {object} 
+ * @return {object}
  */
 function createWebSocket(sessionKey, participantId, secret){
   const wl = window.location;
