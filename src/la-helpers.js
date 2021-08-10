@@ -10,10 +10,10 @@ const crypto = require("crypto");
 /**
  * checkParticipant - Checks if a participant is existing and accessible with given data.
  *
- * @param  {type} sessionKey Unique session identifier that was generated on session creation.
- * @param  {type} secret Secret that is used to authenticate the participant.
- * @param  {type} participantId Unique ID for the participants in respect to their session.
- * @return {type} Boolean if participant is existing and accessible.
+ * @param  {string} sessionKey Unique session identifier that was generated on session creation.
+ * @param  {string} secret Secret that is used to authenticate the participant.
+ * @param  {int} participantId Unique ID for the participants in respect to their session.
+ * @return {boolean} Boolean if participant is existing and accessible.
  */
 async function checkParticipant(sessionKey, secret, participantId) {
   const query = {
@@ -28,9 +28,9 @@ async function checkParticipant(sessionKey, secret, participantId) {
 /**
  * checkSession - Checks if a session is existing and accessible with given data.
  *
- * @param  {type} sessionKey Unique session identifier that was generated on session creation.
- * @param  {type} secret Secret that is used to authenticate the host.
- * @return {type} Boolean if session is existing and accessible.
+ * @param  {string} sessionKey Unique session identifier that was generated on session creation.
+ * @param  {string} secret Secret that is used to authenticate the host.
+ * @return {boolean} Boolean if session is existing and accessible.
  */
 async function checkSession(sessionKey, secret) {
   const query = {

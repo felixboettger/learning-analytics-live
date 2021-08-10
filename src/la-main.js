@@ -117,10 +117,10 @@ function getClientSockets(sessionKey) {
 }
 
 /**
- * getHostSocket - Function that returns the host socket from the socket dictionary
+ * getHostSocket - Function that returns the host socket from the socket dictionary.
  *
  * @param  {string} sessionKey Unique session identifier that was generated on session creation.
- * @return {object} Socket Object
+ * @return {object} Socket Object.
  */
 function getHostSocket(sessionKey) {
   return socketDict[sessionKey].host;
@@ -129,7 +129,7 @@ function getHostSocket(sessionKey) {
 /**
  * handleClientSocket - Function that handles WebSocket connections from participant/client side
  *
- * @param  {object} req HTTP(s) request object
+ * @param  {object} req HTTP(s) request object.
  * @param  {int} updateInterval Interval for generation of new status by client, set in .env file.
 
  */

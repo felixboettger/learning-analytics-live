@@ -103,6 +103,11 @@ const timeframeButtons = document.getElementsByClassName("timeframe-set");
 
 // --- Function Definitions ---
 
+/**
+ * addCommentToList - Function that adds a comment to the comment list on the dashboard.
+ *
+ * @param  {object} commentObj Object containing comment text and timestamp.
+ */
 function addCommentToList(commentObj) {
   document.getElementById("nr-comments").innerHTML++;
   const newComment = commentObj.te;
@@ -113,6 +118,12 @@ function addCommentToList(commentObj) {
   document.getElementById("comment-list").appendChild(commentElement);
 }
 
+/**
+ * addOrChangeParticipant - Function that adds a participant to the dashboard list or changes it if it exists.
+ *
+ * @param  {string} participantElement HTML Element with participant info.
+ * @param  {int} id ID (participantId) of the participant.
+ */
 function addOrChangeParticipant(participantElement, id) {
   if (document.getElementById(id)) {
     document.getElementById(id).innerHTML = participantElement;
@@ -122,8 +133,14 @@ function addOrChangeParticipant(participantElement, id) {
     newTr.setAttribute('class', 'participant');
     document.getElementById("participant-list").appendChild(newTr);
   }
-}
 
+/**
+ * createWebSocket - Function that creates a WebSocket and connects to the server.
+ *
+ * @param  {string} sessionKey Unique session identifier that was generated on session creation.
+ * @param  {string} secret     Secret that is used to authenticate the host.
+ * @return {object} WebSocket Object.
+ */
 function createWebSocket(sessionKey, secret) {
   const wl = window.location;
   const webSocketProtocol = (wl.protocol === "https:") ? "wss://" : "ws://";
@@ -137,6 +154,11 @@ function createWebSocket(sessionKey, secret) {
   return new WebSocket(webSocketURL, "echo-protocol");
 }
 
+/**
+ * downloadJSONFile - Function that initiates the download for a text file.
+ *
+ * @param  {object} object The JSON Object returned by the server for export.
+ */
 function downloadJSONFile(object) {
   const downloadElement = document.createElement("a");
   const date = new Date();
@@ -145,6 +167,17 @@ function downloadJSONFile(object) {
   downloadElement.click();
 }
 
+
+/**
+ * generateParticipantElement - Function that generates an HTML Element with all participant info (for the participant list)
+ *
+ * @param  {string} name Name of the participant.
+ * @param  {string} emotion Emotion of the participant.
+ * @param  {array} objects Object detected in participant's video.
+ * @param  {boolean} looks Boolean if the participant looks into the camera.
+ * @param  {int} concentrationScore Concentration score of the participant.
+ * @return {string} HTML participant element.
+ */
 function generateParticipantElement(name, emotion, objects, looks, concentrationScore) {
   const participantElement = `
     <td>` + name + `</td>
@@ -160,6 +193,11 @@ function generateParticipantElement(name, emotion, objects, looks, concentration
   return participantElement;
 }
 
+/**
+ * getCookieValues - Function that reads cookies.
+ *
+ * @return {array} Array containing sessionKey and secret for the session as saved in cookies.
+ */
 function getCookieValues() {
   const cookieValues = document.cookie.split('; ');
   const sessionKey = cookieValues.find(row => row.startsWith('sessionKey=')).split('=')[1];
@@ -167,11 +205,24 @@ function getCookieValues() {
   return [sessionKey, secret];
 }
 
+
+/**
+ * getDirectLink - Function that generates the direct link to join the session.
+ *
+ * @return {string} Direct link to the session.
+ */
 function getDirectLink() {
   const wl = window.location;
   return wl.protocol + "//" + wl.host + "/join/" + sessionKey;
 }
 
+
+/**
+ * getFullEmotionName - Function that tranlates the emotion abbreviation into the full emotion name.
+ *
+ * @param  {string} emotion Emotion abbreviation.
+ * @return {string} Full emotion text.
+ */
 function getFullEmotionName(emotion) {
   switch (emotion) {
     case "ha":
@@ -201,6 +252,12 @@ function getFullEmotionName(emotion) {
   }
 }
 
+
+/**
+ * refreshDashboard - Function that refreshes the Dashboard.
+ *
+ * @param  {array} participantsList List with all participants and their statuses as sent by server via WebSocket.
+ */
 function refreshDashboard(participantsList) {
   // variables: apc - active pariticpants, lacc - looking at camera, ec - emotions,
   // mcs - mean concentration score, ha - happy sa - sad, ne - neutral, di - disgusted,
@@ -254,6 +311,11 @@ function refreshDashboard(participantsList) {
   setCounterElements(counterElements);
 }
 
+/**
+ * updateConcentrationPlot - Function that updates the concentration plot of the dashboard.
+ *
+ * @param  {int} concentrationScore Mean concentration score as calculated by refreshDashboard().
+ */
 function updateConcentrationPlot(concentrationScore) {
   (concentrationArray.length > concentrationTimeframe) ? concentrationArray.shift(): "";
   concentrationArray.push([0, concentrationScore]);
@@ -267,6 +329,12 @@ function updateConcentrationPlot(concentrationScore) {
   });
 }
 
+
+/**
+ * changeConcentrationTimeframe - Function that allows to change the timeframe displayed in the concentration plot.
+ *
+ * @param  {int} seconds New number of seconds for the plot.
+ */
 function changeConcentrationTimeframe(seconds) {
   const concentrationPlotOptions = {
     series: {
@@ -316,6 +384,12 @@ function changeConcentrationTimeframe(seconds) {
   concentrationPlot.draw();
 }
 
+
+/**
+ * updateEmotionPie - Function that updates the emotion pie chart of the dashboard.
+ *
+ * @param  {object} emotionCounters Object with emotion counts, manipulated by refreshDashboard().
+ */
 function updateEmotionPie(emotionCounters) {
   const data = [{
       label: "Happy",
@@ -357,12 +431,24 @@ function updateEmotionPie(emotionCounters) {
   emotionPie.draw();
 }
 
+
+/**
+ * removeParticipant - Function that removes a participant with a given id from the participant list on the dashboard.
+ *
+ * @param  {int} id ID (participantId) of the participant.
+ */
 function removeParticipant(id) {
   if (document.getElementById(id)) {
     document.getElementById(id).remove();
   };
 }
 
+
+/**
+ * setCounterElements - Function that displays the counters in the info tiles.
+ *
+ * @param  {object} counterElements Object with counters, manipulated by refreshDashboard().
+ */
 function setCounterElements(counterElements) {
   // apc = activeParticipantCounter, ec = emotionCounter, lacc = lookingAtCameraCounter, mcs = mean concentration score
   const {
@@ -386,6 +472,12 @@ function setCounterElements(counterElements) {
   document.getElementById("nr-looking-at-camera").innerHTML = lookingPercentage + "% (" + lacc + ")";
 }
 
+
+/**
+ * initializeCharts - Function that initializes the concentration plot and emotion pie chart.
+ *
+ * @return {array}  Concentration plot and pie chart references. 
+ */
 function initializeCharts() {
   const concentrationPlotOptions = {
     series: {
