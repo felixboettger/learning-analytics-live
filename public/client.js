@@ -237,7 +237,6 @@ function generateDetectedObjectsArray(objectDetections){
  * @return {array} Returns array with two values: [0]: Name of the most prominent emotion, [1]: Model's confidence for this emotion.
  */
 async function getEmotion(blazefacePredictions) {
-  const image = document.getElementById('image-input');
   const bfp = await blazefacePredictions;
   if (bfp[0] != undefined) {
     const p1 = bfp[0];
@@ -248,20 +247,17 @@ async function getEmotion(blazefacePredictions) {
     const width = p1BR[0] - dx;
     const height = p1BR[1] - dy;
     const fullFaceInPicture = (dx > 0) && (dy > 0) && (dx + width < canvasInput.height) && (dy + height < canvasInput.height);
-    console.log(fullFaceInPicture);
     if (fullFaceInPicture){
-      ctx1.strokeStyle = "red";
-      ctx1.strokeRect(dx, dy, width, height);
-      image.src = canvasInput.toDataURL("image/png");
-      ctx2.drawImage(image, dx, dy, width - 1, height - 1, 0, 0, 48, 48);
+      // ctx1.strokeStyle = "red";
+      // ctx1.strokeRect(dx, dy, width, height);
+      ctx2.drawImage(canvasInput, dx + 1, dy + 1, width - 1, height - 1, 0, 0, 48, 48);
       var inputImage = tf.browser.fromPixels(canvasCropped)
           .mean(2)
           .toFloat()
           .expandDims(0)
           .expandDims(-1);
       inputImage = tf.image.resizeBilinear(inputImage, [48, 48]).div(tf.scalar(255));
-      const predictions = emotionModel.predict(inputImage).arraySync()[0];
-      console.log(predictions);
+      const predictions = await emotionModel.predict(inputImage).arraySync()[0];
       const emotionArray = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
       const emotionIndex = predictions.indexOf(Math.max.apply(null, predictions));
       return [emotionArray[emotionIndex], predictions[emotionIndex]];
