@@ -11,11 +11,11 @@ fetch("/participant", {
     const cookieValues = document.cookie.split('; ');
     console.log(res);
     const secret = cookieValues.find(row => row.startsWith('psecret=')).split('=')[1];
-    const userId = cookieValues.find(row => row.startsWith('participantId=')).split('=')[1];
+    const participantId = cookieValues.find(row => row.startsWith('participantId=')).split('=')[1];
     const userName = cookieValues.find(row => row.startsWith('participantName=')).split('=')[1];
 
     const webSocketProtocol = (window.location.protocol === "https:") ? "wss://" : "ws://";
-    const webSocket = new WebSocket(webSocketProtocol + document.domain + ":" + location.port + "/?sessionKey=" + sessionKey + "&userId=" + userId + "&psecret=" + secret + "&type=client", "echo-protocol");
+    const webSocket = new WebSocket(webSocketProtocol + document.domain + ":" + location.port + "/?sessionKey=" + sessionKey + "&participantId=" + participantId + "&psecret=" + secret + "&type=client", "echo-protocol");
 
     webSocket.onopen = function() {
       console.log("WebSocket connection to server established!");
