@@ -20,6 +20,11 @@ const laDB = require("./src/la-database")
 
 // --- Configs ---
 
+// Check if all environment variables are sets
+if (!(laHelp.checkEnvironmentVariables(process.env))){
+  throw ".env configuration faulty";
+};
+
 const updateInterval = process.env.UPDATE_INTERVAL;
 const portNr = process.env.PORT;
 const localEnv = ("true" === process.env.LOCAL_ENV) ? true : false;

@@ -93,9 +93,23 @@ function generateSessionKey() {
   return newKey;
 }
 
+function checkEnvironmentVariables(environmentVariables){
+  let correct = true;
+  const environmentVariablesNeeded = ["DB_HOST", "SSL_CERT", "SSL_CHAIN", "SSL_KEY",
+  "PORT", "LOCAL_ENV", "UPDATE_INTERVAL", "SECRET", "TESTING"];
+  environmentVariablesNeeded.forEach((variable) => {
+    if (!(variable in environmentVariables)){
+      console.log(variable + " not set! Check the .env file");
+      correct = false;
+    }
+  });
+  return correct;
+}
+
 // --- Definition of module exports ---
 
 module.exports = {
+  checkEnvironmentVariables,
   checkParticipant,
   checkSession,
   checkSocketConnect,

@@ -37,7 +37,6 @@ document.getElementById("send-comment-btn").addEventListener("click", function()
 
 // --- Function Definitions ---
 
-
 /**
  * main - Main function (needed because await is not supported outside a function)
  *
@@ -47,7 +46,7 @@ async function main(){
   cocoSsdModel = await cocoSsd.load();
   emotionModel = await tf.loadLayersModel("/models/Ufuk/model.json");
   webSocket = createWebSocket(sessionKey, id, secret);
-
+  document.getElementById("status-message").innerHTML = "ms";
   // --- WebSocket Event Listeners ---
 
   webSocket.onopen = function() {
@@ -72,7 +71,6 @@ async function main(){
     const url = window.location;
     url.replace(url.protocol + "//" + url.host + "/");
   };
-
 
   /**
    * sendStatus - Generates a status, then sends it to server via WebSocket.
