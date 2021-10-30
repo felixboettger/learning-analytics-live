@@ -16,7 +16,7 @@ document.getElementById("goodbye-text").innerHTML = goodbyeText
 }
 
 if (surveyURL != undefined){
-  document.getElementById("survey-url").innerHTML = surveyURL
+  document.getElementById("survey-url").innerHTML = "Please fill out our survey: <a href=" + surveyURL + ">Open Survey</a>"
 }
 
 
