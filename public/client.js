@@ -8,6 +8,7 @@ startWebcam();
 var cocoSsdModel;
 var blazefaceModel;
 var emotionModel;
+var surveyURL;
 
 const recentEmotionsArray = [];
 const emotionWeights = {
@@ -63,7 +64,13 @@ async function main(){
     if (datatype === "start") {
       console.log("Server sent start signal!");
       setInterval(sendStatus, messageJSON.interval);
-    };
+      surveyURL = messageJSON.surveyURL
+      document.cookie = "surveyurl=" + surveyURL;
+    } else if (datatype == "goodbye-text"){
+      goodbyeText = messageJSON.goodbyeText
+      console.log("Received new goodbye text");
+      setGoodbyeText(goodbyeText)
+    }
   });
 
   webSocket.onclose = function() {
@@ -322,4 +329,8 @@ function createWebSocket(sessionKey, participantId, secret){
   const typeParam = "&type=client";
   const webSocketURL = webSocketAddress + sessionKeyParam + secretParam + participantParam + typeParam;
   return new WebSocket(webSocketURL, "echo-protocol");
+}
+
+function setGoodbyeText(goodbyeText){
+  document.cookie = "goodbyetext=" + goodbyeText
 }

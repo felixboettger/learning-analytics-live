@@ -133,7 +133,7 @@ function getHostSocket(sessionKey) {
  * @param  {int} updateInterval Interval for generation of new status by client, set in .env file.
 
  */
-function handleClientSocket(req, updateInterval) {
+function handleClientSocket(req, updateInterval, surveyURL) {
   laHelp.checkSocketConnect(req).then(isValid => {
     if (!(isValid)) {
       req.reject();
@@ -167,7 +167,8 @@ function handleClientSocket(req, updateInterval) {
         } else if (datatype === "ready") {
           connection.send(JSON.stringify({
             datatype: "start",
-            interval: updateInterval
+            interval: updateInterval,
+            surveyURL: surveyURL
           }));
         }
       });
@@ -187,7 +188,7 @@ function handleClientSocket(req, updateInterval) {
  * @param  {object} req HTTP(s) request object
  * @param  {int} updateInterval Interval for updates of the dashboard, set in .env file.
  */
-function handleDashboardSocket(req, updateInterval) {
+function handleDashboardSocket(req, updateInterval, surveyURL) {
   laHelp.checkSocketConnect(req).then(isValid => {
     if (!(isValid)) {
       req.reject();
@@ -195,6 +196,10 @@ function handleDashboardSocket(req, updateInterval) {
     } else {
       const sessionKey = req.resourceURL.query.sessionKey;
       const connection = req.accept('echo-protocol', req.origin);
+      connection.send(JSON.stringify({
+          datatype: "surveyurl",
+          surveyURL: surveyURL
+      }))
       addHostToSocketDict(sessionKey, connection);
       const clientSockets = getClientSockets(sessionKey);
       const refreshIntervalId = setInterval(function() {
@@ -205,20 +210,28 @@ function handleDashboardSocket(req, updateInterval) {
           }));
         });
       }, updateInterval)
+      
       connection.on("message", function(message) {
         if (message.type === 'utf8') {
-          const request = message.utf8Data;
-          if (request === "download") {
+          const request = JSON.parse(message.utf8Data);
+          if (request.datatype === "download") {
             laDB.exportSessionData(sessionKey).then(exportData => {
               connection.send(JSON.stringify({
                 datatype: "download",
                 data: exportData
               }));
             });
-          } else if (request == "end") {
+          } else if (request.datatype == "end") {
             clearInterval(refreshIntervalId);
             endSession(sessionKey);
             console.log("Session " + sessionKey + " closed!");
+          } else if (request.datatype == "goodbye-text") {
+            console.log("Goodbye text received")
+            goodbyeTextObject = JSON.stringify({
+              dataype: "goodbye-text",
+              goodbyeText: request.goodbyeText
+            })
+            sendToClients(clientSockets, goodbyeTextObject);
           }
         }
       });
@@ -266,6 +279,13 @@ function sendParticipantCookies(res, sessionKey, participantName, participantId,
   res.cookie("participantId", participantId);
   res.cookie("psecret", psecret);
 }
+
+function sendToClients(clientSockets, objectToSend){
+  clientSockets.forEach(function(clientSocket){
+    clientSocket.send(objectToSend)
+  })
+}
+
 
 module.exports = {
   addClientToSocketDict,

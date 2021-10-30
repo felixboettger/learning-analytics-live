@@ -4,6 +4,7 @@ const [sessionKey, secret] = getCookieValues();
 const directLink = getDirectLink();
 const webSocket = createWebSocket(sessionKey, secret);
 var [concentrationPlot, emotionPie] = initializeCharts();
+var surveyURL;
 
 let concentrationTimeframe = 100;
 let concentrationArray = Array(100);
@@ -20,6 +21,9 @@ webSocket.addEventListener("message", function(event) {
   const datatype = messageJSON.datatype;
   if (datatype === "participants") {
     refreshDashboard(messageJSON.data);
+  } else if (datatype == "surveyurl") {
+    surveyURL = messageJSON.surveyURL
+    document.getElementById("survey-url").innerHTML = surveyURL
   } else if (datatype === "download") {
     downloadJSONFile(messageJSON.data);
   } else if (datatype === "comment") {
@@ -35,6 +39,12 @@ webSocket.onclose = function() {
 
 // Buttons
 
+document.getElementById("change-goodbye-text").addEventListener("click", function(){
+  newGoodbyeText = prompt("Please enter new goodbye text:");
+  sendGoodbyeText(newGoodbyeText);
+  console.log("Sending new goodbye text: " + newGoodbyeText)
+})
+
 document.getElementById("comment-list").addEventListener("click", function(evt) {
   const t = evt.target;
   if (t.tagName.toUpperCase() == "TD") {
@@ -45,13 +55,17 @@ document.getElementById("comment-list").addEventListener("click", function(evt) 
 
 document.getElementById("download-btn").addEventListener("click", function() {
   document.getElementById("download-btn").classList.toggle("blinking");
-  webSocket.send("download");
+  webSocket.send(JSON.stringify({
+    datatype: "download"
+  }))
 });
 
 document.getElementById("end-btn").addEventListener("click", function() {
   document.getElementById("end-btn").classList.toggle("blinking");
   if (confirm("Click ok to end this session. All session data will be deleted from the server.")) {
-    webSocket.send("end");
+    webSocket.send(JSON.stringify({
+      datatype: "end"
+    }))
     const url = window.location;
     url.replace(url.protocol + "//" + url.host + "/");
   }
@@ -471,6 +485,14 @@ function setCounterElements(counterElements) {
   document.getElementById("emotion-other-participants").innerHTML = otherPercentage + "% (" + otherEmotionCounter + ")";
   document.getElementById("nr-participants").innerHTML = apc;
   document.getElementById("nr-looking-at-camera").innerHTML = lookingPercentage + "% (" + lacc + ")";
+}
+
+function sendGoodbyeText(newGoodbyeText){
+  webSocket.send(JSON.stringify({
+    datatype: "goodbye-text",
+    goodbyeText: newGoodbyeText
+  }))
+
 }
 
 

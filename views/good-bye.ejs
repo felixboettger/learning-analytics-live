@@ -1,0 +1,24 @@
+<head>
+    <meta charset="utf-8">
+    <title>Thank You!</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+    <link rel="stylesheet" href="/css/app-styles.css">
+    <link rel="stylesheet" href="/css/materialize.css">
+    <link rel="stylesheet" href="/css/styles.css">
+    <%- include("partials/navbar") -%>
+</head>
+
+<p id="goodbye-text">Thank you for your participation!</p>
+
+<p id=survey-url>Survey URL: </p>
+
+
+<iframe id="iframe-survey" src="https://www.example.com" style="width: 100%; height:100%;" sandbox="allow-scripts allow-forms">
+</iframe>
+
+
+<script type="text/javascript" src="/good-bye.js" charset="utf-8"></script>
+
+<%- include("partials/footer") -%>

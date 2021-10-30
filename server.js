@@ -30,6 +30,8 @@ const portNr = process.env.PORT;
 const localEnv = ("true" === process.env.LOCAL_ENV) ? true : false;
 const testing = ("true" === process.env.TESTING) ? true : false;
 
+const limeSurveyURL = process.env.LIMESURVEY_URL
+
 // --- Express Setup ---
 
 const app = express();
@@ -107,6 +109,12 @@ app.get("/client", function(req, res) {
   res.render("client");
 });
 
+app.get("/thank-you", function(req, res){
+  // res.setHeader("Access-Control-Allow-Origin", "*")
+  res.render("good-bye")
+  
+})
+
 if (testing){
   app.get("/load-simulation/:sessionKey", function(req, res) {
     laMain.createParticipant(randomName(), req.params.sessionKey).then(testParticipant => {
@@ -180,8 +188,8 @@ webSocketServer = new WebSocketServer({
 webSocketServer.on("request", function(req){
   const type = req.resourceURL.query.type;
   if (type === "dashboard") {
-    laMain.handleDashboardSocket(req, updateInterval);
+    laMain.handleDashboardSocket(req, updateInterval, limeSurveyURL);
   } else if (type === "client") {
-    laMain.handleClientSocket(req, updateInterval);
+    laMain.handleClientSocket(req, updateInterval, limeSurveyURL);
   }
 });
