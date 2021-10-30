@@ -192,7 +192,6 @@ function getCookieValues() {
 };
 
 
-
 /**
  * getStatus - Function that generates the statusVector object.
  *
@@ -206,10 +205,10 @@ async function getStatus(){
   const lookingAtCamera = checkIfLookingAtCamera(blazefacePredictions);
   const emotion = (emotionDetection === undefined) ? "none" : emotionDetection[0];
   addToRecentEmotionsArray(emotionDetection);
-  setInfoTiles(emotion, lookingAtCamera, detectedObjectsArray);
   const statusVector = {
     e: emotion.substring(0, 2), // emotion
     cs: getConcentrationIndex(), // happiness score
+    t: new Date(),
     l: lookingAtCamera, // looking bool
     o: detectedObjectsArray // objects
   };
@@ -274,20 +273,6 @@ function addToRecentEmotionsArray(emotionDetection){
     recentEmotionsArray.push(emotionDetection);
   };
 }
-
-/**
- * setInfoTiles - Function that displays current status info in the info tiles.
- *
- * @param  {string} emotion Most prominent emotion as detected by getEmotion()
- * @param  {boolean} lookingAtCamera Boolean if participant is looking into the camera.
- * @param  {array} detectedObjectsArray Array with names of all detected objects.
- */
-function setInfoTiles(emotion, lookingAtCamera, detectedObjectsArray) {
-  document.getElementById("current-emotion").innerHTML = emotion;
-  document.getElementById("looking-at-camera").innerHTML = lookingAtCamera;
-  document.getElementById("detected-objects").innerHTML = detectedObjectsArray;
-};
-
 
 /**
  * setPerformanceTile - Function that set's the performance tile (that displays status generation time)
