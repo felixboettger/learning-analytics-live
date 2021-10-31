@@ -136,7 +136,7 @@ function getHostSocket(sessionKey) {
  * @param  {int} updateInterval Interval for generation of new status by client, set in .env file.
 
  */
-function handleClientSocket(req, updateInterval, surveyURL) {
+function handleClientSocket(req, updateInterval) {
   laHelp.checkSocketConnect(req).then(isValid => {
     if (!(isValid)) {
       req.reject();
@@ -171,7 +171,6 @@ function handleClientSocket(req, updateInterval, surveyURL) {
           connection.send(JSON.stringify({
             datatype: "start",
             interval: updateInterval,
-            surveyURL: surveyURL
           }));
         }
       });
@@ -191,7 +190,7 @@ function handleClientSocket(req, updateInterval, surveyURL) {
  * @param  {object} req HTTP(s) request object
  * @param  {int} updateInterval Interval for updates of the dashboard, set in .env file.
  */
-function handleDashboardSocket(req, updateInterval, surveyURL) {
+function handleDashboardSocket(req, updateInterval) {
   laHelp.checkSocketConnect(req).then(isValid => {
     if (!(isValid)) {
       req.reject();
