@@ -101,9 +101,12 @@ function createSession() {
  * @param  {type} sessionKey Unique session identifier that was generated on session creation.
  */
 function endSession(sessionKey) {
-  closeClientSockets(sessionKey);
-  delete socketDict[sessionKey];
-  laDB.deleteSession(sessionKey);
+  setTimeout(function(){
+    closeClientSockets(sessionKey);
+    delete socketDict[sessionKey];
+    laDB.deleteSession(sessionKey);
+  }, 10000)
+  
 }
 
 /**
@@ -196,10 +199,6 @@ function handleDashboardSocket(req, updateInterval, surveyURL) {
     } else {
       const sessionKey = req.resourceURL.query.sessionKey;
       const connection = req.accept('echo-protocol', req.origin);
-      connection.send(JSON.stringify({
-          datatype: "surveyurl",
-          surveyURL: surveyURL
-      }))
       addHostToSocketDict(sessionKey, connection);
       const clientSockets = getClientSockets(sessionKey);
       const refreshIntervalId = setInterval(function() {
@@ -222,16 +221,21 @@ function handleDashboardSocket(req, updateInterval, surveyURL) {
               }));
             });
           } else if (request.datatype == "end") {
+            laDB.getSessionData(sessionKey, false).then(sessionData => {
+              endObject = JSON.stringify({
+                datatype: "end",
+                goodbyeText: sessionData.goodbyeMessage,
+                surveyURL: sessionData.surveyURL
+              })
+              sendToClients(clientSockets, endObject)
+            })
             clearInterval(refreshIntervalId);
             endSession(sessionKey);
             console.log("Session " + sessionKey + " closed!");
           } else if (request.datatype == "goodbye-text") {
-            console.log("Goodbye text received")
-            goodbyeTextObject = JSON.stringify({
-              dataype: "goodbye-text",
-              goodbyeText: request.goodbyeText
-            })
-            sendToClients(clientSockets, goodbyeTextObject);
+            laDB.setGoodbyeMessage(sessionKey, request.goodbyeText)
+          } else if (request.datatype == "survey-url") {
+            laDB.setSurveyURL(sessionKey, request.surveyURL)
           }
         }
       });

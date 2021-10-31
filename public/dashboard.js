@@ -21,9 +21,6 @@ webSocket.addEventListener("message", function(event) {
   const datatype = messageJSON.datatype;
   if (datatype === "participants") {
     refreshDashboard(messageJSON.data);
-  } else if (datatype == "surveyurl") {
-    surveyURL = messageJSON.surveyURL
-    document.getElementById("survey-url").innerHTML = surveyURL
   } else if (datatype === "download") {
     downloadJSONFile(messageJSON.data);
   } else if (datatype === "comment") {
@@ -42,7 +39,13 @@ webSocket.onclose = function() {
 document.getElementById("change-goodbye-text").addEventListener("click", function(){
   newGoodbyeText = prompt("Please enter new goodbye text:");
   sendGoodbyeText(newGoodbyeText);
-  console.log("Sending new goodbye text: " + newGoodbyeText)
+  document.getElementById("goodbye-text").innerHTML = "Goodbye Text: " + newGoodbyeText
+})
+
+document.getElementById("change-survey-url").addEventListener("click", function(){
+  newSurveyURL = prompt("Please enter survey url:");
+  sendSurveyURL(newSurveyURL);
+  document.getElementById("survey-url").innerHTML = "Survey URL: " + newSurveyURL
 })
 
 document.getElementById("comment-list").addEventListener("click", function(evt) {
@@ -492,7 +495,13 @@ function sendGoodbyeText(newGoodbyeText){
     datatype: "goodbye-text",
     goodbyeText: newGoodbyeText
   }))
+}
 
+function sendSurveyURL(newSurveyURL){
+  webSocket.send(JSON.stringify({
+    datatype: "survey-url",
+    surveyURL: newSurveyURL
+  }))
 }
 
 

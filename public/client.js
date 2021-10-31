@@ -64,17 +64,18 @@ async function main(){
     if (datatype === "start") {
       console.log("Server sent start signal!");
       setInterval(sendStatus, messageJSON.interval);
-      surveyURL = messageJSON.surveyURL
-      document.cookie = "surveyurl=" + surveyURL;
-    } else if (datatype == "goodbye-text"){
-      goodbyeText = messageJSON.goodbyeText
-      console.log("Received new goodbye text");
-      setGoodbyeText(goodbyeText)
+    } else if (datatype === "end"){
+      console.log("End cmd reveiced")
+      goodbyeText = messageJSON.goodbyeText;
+      surveyURL = messageJSON.surveyURL;
+      setEndParams(goodbyeText, surveyURL)
+      const url = window.location
+      url.replace(url.protocol + "//" + url.host + "/thank-you")
     }
   });
 
   webSocket.onclose = function() {
-    alert("Session has ended. Click ok to go back to the homepage.");
+    alert("Session has ended unexpectedly. Click ok to go back to the homepage.");
     const url = window.location;
     url.replace(url.protocol + "//" + url.host + "/");
   };
@@ -331,6 +332,7 @@ function createWebSocket(sessionKey, participantId, secret){
   return new WebSocket(webSocketURL, "echo-protocol");
 }
 
-function setGoodbyeText(goodbyeText){
+function setEndParams(goodbyeText, surveyURL){
   document.cookie = "goodbyetext=" + goodbyeText
+  document.cookie = "surveyurl=" + surveyURL
 }

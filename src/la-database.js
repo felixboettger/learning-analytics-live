@@ -64,6 +64,8 @@ const sessionSchema = {
   lastDashboardAccess: Number,
   sessionKey: String,
   secret: String,
+  goodbyeMessage: String,
+  surveyURL: String,
   comments: [commentSchema],
   participants: [participantSchema]
 };
@@ -292,6 +294,23 @@ async function getSessionData(sessionKey, forDashboard) {
   }
 }
 
+async function setGoodbyeMessage(sessionKey, goodbyeMessage){
+  console.log("Set goodbye message:", goodbyeMessage, sessionKey)
+  await Session.updateOne(
+    {sessionKey: sessionKey},
+    {$set: {goodbyeMessage: goodbyeMessage}
+  });
+}
+
+async function setSurveyURL(sessionKey, surveyURL){
+  console.log("Set survey URL:", surveyURL, sessionKey)
+  await Session.updateOne(
+    {sessionKey: sessionKey},
+    {$set: {surveyURL: surveyURL}}
+  )
+}
+
+
 /**
  * getSessionStartTime - Function that returns the start time of a given session.
  *
@@ -367,5 +386,7 @@ module.exports = {
   getParticipantData,
   getSessionData,
   getSessionStartTime,
+  setGoodbyeMessage,
+  setSurveyURL,
   updateParticipantStatus
 };

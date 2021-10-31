@@ -31,19 +31,6 @@
         <!-- Widgets -->
 
         <div class="row">
-          <div class="col-lg-12 col-md-12 col-sm-12">
-            <div class="info-box bg-pink hover-expand-effect" style="margin-bottom: 0.4em;">
-              <div class="icon">
-                <i class="material-icons">poll</i>
-              </div>
-              <div class="content">
-                <div class="text">Survey URL</div>
-                <div id="survey-url" class="number count-to" data-from="0" data-to="125" data-speed="15" data-fresh-interval="20">0</div>
-              </div>
-            </div>
-          </div>
-
-        <div class="row">
           <div class="col-lg-6 col-md-6 col-sm-6">
             <div class="info-box bg-pink hover-expand-effect" style="margin-bottom: 0.4em;">
               <div class="icon">
@@ -288,6 +275,8 @@
         <h2>Settings</h2>
       </div>
       <div class="body">
+        <p id="goodbye-text">Goodbye Text: not set</p>
+        <p id="survey-url">Survey URL: not set</p>
         <button type="button" id="link-btn" class="btn btn-secondary">
           <i class="material-icons">link</i>
           <span>Copy direct link</span>
@@ -321,6 +310,10 @@
         <button type="button" id="change-goodbye-text" class="btn btn-danger">
           <i class="material-icons">edit</i>
           <span>Set goodbye text</span>
+        </button>
+        <button type="button" id="change-survey-url" class="btn">
+          <i class="material-icons">edit</i>
+          <span>Set survey url</span>
         </button>
         <button type="button" id="end-btn" class="btn btn-danger">
           <i class="material-icons">close</i>
