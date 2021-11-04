@@ -12,17 +12,15 @@ function getCookieValues() {
   return [surveyURL, id, goodbyeText];
 };
 
-if (goodbyeText != undefined){
+if (goodbyeText != "undefined"){
 document.getElementById("goodbye-text").innerHTML = goodbyeText
 }
 
-if (surveyURL != undefined){
+if (surveyURL != "undefined"){
   document.getElementById("survey-url").innerHTML = "Please fill out our survey: <a href=" + surveyURL + ">Open Survey</a>"
+  iframe = document.getElementById("iframe-survey")
+  iframe.setAttribute("src", surveyURL)
+} else {
+  document.getElementById("survey-url").remove()
+  document.getElementById("iframe-survey").remove()
 }
-
-
-iframe = document.getElementById("iframe-survey")
-
-iframe.setAttribute("src", surveyURL)
-
-console.log(surveyURL)
