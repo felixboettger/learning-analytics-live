@@ -30,8 +30,6 @@ const portNr = process.env.PORT;
 const localEnv = ("true" === process.env.LOCAL_ENV) ? true : false;
 const testing = ("true" === process.env.TESTING) ? true : false;
 
-const limeSurveyURL = process.env.LIMESURVEY_URL
-
 // --- Express Setup ---
 
 const app = express();
@@ -188,8 +186,8 @@ webSocketServer = new WebSocketServer({
 webSocketServer.on("request", function(req){
   const type = req.resourceURL.query.type;
   if (type === "dashboard") {
-    laMain.handleDashboardSocket(req, updateInterval, limeSurveyURL);
+    laMain.handleDashboardSocket(req, updateInterval);
   } else if (type === "client") {
-    laMain.handleClientSocket(req, updateInterval, limeSurveyURL);
+    laMain.handleClientSocket(req, updateInterval);
   }
 });
