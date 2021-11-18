@@ -2,13 +2,19 @@
 
 const [sessionKey, secret, id, name] = getCookieValues();
 displayParticipantInfo(name, sessionKey, id);
-const [video, image, canvasInput, canvasCropped, ctx1, ctx2, idle] = getElements();
+const [video, image, canvasInput, canvasCropped, canvasCroppedLarge, ctx1, ctx2, ctx3, idle] = getElements();
 startWebcam();
 
-var cocoSsdModel;
 var blazefaceModel;
 var emotionModel;
+var landmarkModel;
 var surveyURL;
+
+setTimeout(function() {
+  document.getElementById("video-card").style.display = "none";
+  document.getElementById("info-tiles-card").style.display = "none";
+  document.getElementById("thank-you-card").style.display = "block";
+}, 10000);
 
 const recentEmotionsArray = [];
 const emotionWeights = {
@@ -23,19 +29,6 @@ const emotionWeights = {
 
 main();
 
-// --- Other Event Listeners ---
-
-// Buttons
-
-document.getElementById("send-comment-btn").addEventListener("click", function() {
-  const comment = document.getElementById("input-comment").value;
-  document.getElementById("input-comment").value = "";
-  webSocket.send(JSON.stringify({
-    datatype: "comment",
-    data: comment
-  }));
-});
-
 // --- Function Definitions ---
 
 /**
@@ -44,15 +37,17 @@ document.getElementById("send-comment-btn").addEventListener("click", function()
  */
 async function main(){
   blazefaceModel = await blazeface.load();
-  cocoSsdModel = await cocoSsd.load();
   emotionModel = await tf.loadLayersModel("/models/Ufuk/model.json");
+  landmarkModel = await faceapi.loadFaceLandmarkTinyModel('/models/face-api')
+  mobilenetv1 = await faceapi.nets.ssdMobilenetv1.loadFromUri('/models/face-api')
+  await faceapi.loadTinyFaceDetectorModel('/models/face-api')
   webSocket = createWebSocket(sessionKey, id, secret);
-  document.getElementById("status-message").innerHTML = "ms";
+  // document.getElementById("status-message").innerHTML = "ms";
   // --- WebSocket Event Listeners ---
 
   webSocket.onopen = function() {
     console.log("WebSocket connection to server established!");
-    console.log("Sending 'ready' message to server.")
+    console.log("Sending 'ready' message to server.");
     webSocket.send(JSON.stringify({
       datatype: "ready"
     }));
@@ -68,11 +63,15 @@ async function main(){
       console.log("End cmd reveiced")
       goodbyeText = messageJSON.goodbyeText;
       surveyURL = messageJSON.surveyURL;
-      setEndParams(goodbyeText, surveyURL)
-      const url = window.location
+      setEndParams(goodbyeText, surveyURL);
+      const url = window.location;
       url.replace(url.protocol + "//" + url.host + "/thank-you")
     }
   });
+
+  webSocket.onerror = function(event) {
+    console.error("WebSocket error observed:", event);
+  };
 
   webSocket.onclose = function() {
     alert("Session has ended unexpectedly. Click ok to go back to the homepage.");
@@ -90,16 +89,14 @@ async function main(){
 
     const t0 = performance.now(); // Start performance measurement
     getStatus().then(statusVector => {
-      console.log(statusVector);
-      const t1 = performance.now();
-      const timeToComplete = Math.round(t1 - t0);
-      setPerformanceTile(timeToComplete);
-      idle.setAttribute('class', 'material-icons icon-green');
-      if (!(statusVector === undefined)) {
-        webSocket.send(JSON.stringify({
+
+      if (typeof statusVector != "undefined") {
+        statusJSON = JSON.stringify({
           datatype: "status",
           data: statusVector
-        }));
+        })
+        // console.log(statusJSON)
+        webSocket.send(statusJSON)
       };
     });
   };
@@ -161,8 +158,10 @@ function getElements(){
   const ctx1 = canvasInput.getContext("2d");
   const canvasCropped = document.getElementById("canvas-cropped");
   const ctx2 = canvasCropped.getContext("2d");
+  const canvasCroppedLarge = document.getElementById("canvas-cropped-large")
+  const ctx3 = canvasCroppedLarge.getContext("2d")
   const idle = document.getElementById("working-idle");
-  return [video, image, canvasInput, canvasCropped, ctx1, ctx2, idle];
+  return [video, image, canvasInput, canvasCropped, canvasCroppedLarge, ctx1, ctx2, ctx3, idle];
 }
 
 
@@ -200,29 +199,65 @@ function getCookieValues() {
 };
 
 
+function generateDownload(hogs, landmarkList){
+  filetime = new Date()
+  const downloadHogs = document.createElement("a");
+  downloadHogs.setAttribute("download", "Hogs on " + filetime);
+  downloadHogs.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(hogs));
+  downloadHogs.click()
+  const downloadBig = document.createElement("a");
+  downloadBig.setAttribute("download", "Big on " + filetime);
+  downloadBig.setAttribute("href", document.getElementById('canvas-input').toDataURL());
+  downloadBig.click()
+  const downloadSmall = document.createElement("a");
+  downloadSmall.setAttribute("download", "Small on " + filetime);
+  downloadSmall.setAttribute("href", document.getElementById('canvas-cropped').toDataURL());
+  downloadSmall.click()
+  const downloadLandmarks = document.createElement("a");
+  downloadLandmarks.setAttribute("download", "Landmarks on " + filetime);
+  downloadLandmarks.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(landmarkList));
+  downloadLandmarks.click()
+}
+
 /**
  * getStatus - Function that generates the statusVector object.
  *
  * @return {object} statusVector object that contains the current status of the participant.
  */
 async function getStatus(){
-  const objectDetections = await cocoSsdModel.detect(canvasInput);
   const blazefacePredictions = await blazefaceModel.estimateFaces(canvasInput, false);
-  const emotionDetection = await getEmotion(blazefacePredictions);
-  const detectedObjectsArray = generateDetectedObjectsArray(objectDetections);
+  const emotionLandmarkDetection = await getEmotionAndLandmarks(blazefacePredictions);
   const lookingAtCamera = checkIfLookingAtCamera(blazefacePredictions);
-  const emotion = (emotionDetection === undefined) ? "none" : emotionDetection[0];
-  addToRecentEmotionsArray(emotionDetection);
+  const emotion = (typeof emotionLandmarkDetection[0] === "undefined") ? "none" : emotionLandmarkDetection[0];
+  const landmarks = (typeof emotionLandmarkDetection[2] === "undefined") ? "none" : emotionLandmarkDetection[2];
+  const landmarkList = generateLandmarkList(landmarks)
+  const hogs = await getHogs()
+
+  // generateDownload(hogs, landmarkList);
+
+  addToRecentEmotionsArray(emotionLandmarkDetection);
   const statusVector = {
     e: emotion.substring(0, 2), // emotion
     cs: getConcentrationIndex(), // happiness score
     t: new Date(),
     l: lookingAtCamera, // looking bool
-    o: detectedObjectsArray // objects
+    lm: landmarkList,
+    h: hogs
   };
   return statusVector;
 };
 
+
+function generateLandmarkList(landmarks){
+  landmarkList = []
+  if (landmarks != "none"){
+    for (let i = 0; i < landmarks.length; i++) {
+      curr_landmark = landmarks[i]
+      landmarkList.push([(0.2*curr_landmark._x).toFixed(3), (0.2*curr_landmark._y).toFixed(3)])
+    }
+  }
+  return landmarkList
+}
 
 /**
  * generateDetectedObjectsArray - Function that converts cocoSSD prediction object into array.
@@ -241,31 +276,34 @@ function generateDetectedObjectsArray(objectDetections){
  * @param  {object} blazefacePredictions Return of the blazeface model.
  * @return {array} Returns array with two values: [0]: Name of the most prominent emotion, [1]: Model's confidence for this emotion.
  */
-async function getEmotion(blazefacePredictions) {
+async function getEmotionAndLandmarks(blazefacePredictions) {
   const bfp = await blazefacePredictions;
   if (bfp[0] != undefined) {
     const p1 = bfp[0];
     const p1TL = p1["topLeft"];
     const p1BR = p1["bottomRight"];
-    const dx = p1TL[0];
-    const dy = p1TL[1];
-    const width = p1BR[0] - dx;
-    const height = p1BR[1] - dy;
-    const fullFaceInPicture = (dx > 0) && (dy > 0) && (dx + width < canvasInput.height) && (dy + height < canvasInput.height);
+    const faceMargin = 35;
+    const dx = p1TL[0] - faceMargin;
+    const dy = p1TL[1] - faceMargin;
+    const width = p1BR[0] - dx + faceMargin;
+    const height = p1BR[1] - dy + faceMargin;
+    const fullFaceInPicture = true;
+    // const fullFaceInPicture = (dx > 0) && (dy > 0) && (dx + width < canvasInput.height) && (dy + height < canvasInput.height);
     if (fullFaceInPicture){
-      // ctx1.strokeStyle = "red";
-      // ctx1.strokeRect(dx, dy, width, height);
-      ctx2.drawImage(canvasInput, dx + 1, dy + 1, width - 1, height - 1, 0, 0, 48, 48);
+      ctx2.drawImage(canvasInput, dx + 1, dy + 1, width - 1, height - 1, 0, 0, 112, 112);
+      ctx3.drawImage(canvasInput, dx + 1, dy + 1, width - 1, height -1, 0, 0, 560, 560);
       var inputImage = tf.browser.fromPixels(canvasCropped)
           .mean(2)
           .toFloat()
           .expandDims(0)
           .expandDims(-1);
-      inputImage = tf.image.resizeBilinear(inputImage, [48, 48]).div(tf.scalar(255));
-      const predictions = await emotionModel.predict(inputImage).arraySync()[0];
+      const inputImageEmotion = tf.image.resizeBilinear(inputImage, [48, 48]).div(tf.scalar(255));
+      const predictions = await emotionModel.predict(inputImageEmotion).arraySync()[0];
       const emotionArray = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
+      const detectionsWithLandmarks = await faceapi.detectAllFaces(canvasCroppedLarge, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true)
+      const landmarks = typeof detectionsWithLandmarks[0] != "undefined" ? detectionsWithLandmarks[0]["landmarks"]["_positions"] : "none";
       const emotionIndex = predictions.indexOf(Math.max.apply(null, predictions));
-      return [emotionArray[emotionIndex], predictions[emotionIndex]];
+      return [emotionArray[emotionIndex], predictions[emotionIndex], landmarks];
     };
   };
 };
@@ -277,8 +315,8 @@ async function getEmotion(blazefacePredictions) {
  * @param  {array} emotionDetection Return of the getEmotion() function.
  */
 function addToRecentEmotionsArray(emotionDetection){
-  if (emotionDetection) {
-    recentEmotionsArray.push(emotionDetection);
+  if (typeof emotionDetection != "undefined") {
+    recentEmotionsArray.push([emotionDetection[0], emotionDetection[1]]);
   };
 }
 
@@ -335,4 +373,20 @@ function createWebSocket(sessionKey, participantId, secret){
 function setEndParams(goodbyeText, surveyURL){
   document.cookie = "goodbyetext=" + goodbyeText
   document.cookie = "surveyurl=" + surveyURL
+}
+
+async function getHogs(){
+  var options = {
+    cellSize: 8,    // length of cell in px
+    blockSize: 2,   // length of block in number of cells
+    blockStride: 1, // number of cells to slide block window by (block overlap)
+    bins: 8,        // bins per histogram
+    norm: 'L2'      // block normalization method
+  }
+  var curr_image = await IJS.Image.load(canvasCropped.toDataURL())
+  hogs = extractHOG(curr_image, options);
+  hogs = hogs.map(function(x){
+    return Number(x.toFixed(3));
+  });
+  return hogs
 }

@@ -37,7 +37,7 @@ const app = express();
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
-app.use(express.json({limit: "1mb"}));
+app.use(express.json({limit: "1000mb"}));
 app.use(cookieParser());
 app.use(session({resave: false,
   saveUninitialized: false,
@@ -89,10 +89,6 @@ app.get("/join/:sessionKey", function(req, res) {
 
 app.get("/privacy", function(req, res) {
   res.render("privacy");
-});
-
-app.get("/privacy-german", function(req, res) {
-  res.render("privacy-german");
 });
 
 app.get("/about", function(req, res) {

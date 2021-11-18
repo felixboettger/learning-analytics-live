@@ -17,7 +17,7 @@
 </head>
 
 <body>
-  <div class="card">
+  <div id="info-tiles-card" class="card">
     <div class="header">
       <i class="material-icons">person</i>
       <h2>Client</h2>
@@ -60,7 +60,7 @@
       </div>
     </div>
   </div>
-  <div class="card">
+  <div id="video-card" class="card">
     <div class="header">
       <i class="material-icons">videocam</i>
       <h2>Video</h2>
@@ -70,26 +70,31 @@
         <video id="video-input" autoplay playsinline width="480px" height="360px"></video>
         <image id="image-input" hidden width="400px" height="360px"/>
           <canvas id="canvas-input" hidden width="400px" height="360px"></canvas>
-          <canvas id="canvas-cropped" hidden width="48px" height="48px"></canvas>
+          <canvas id="canvas-cropped" hidden width="112px" height="112px"></canvas>
+          <canvas id="canvas-cropped-large" hidden width="560px" height="560px"></canvas>
       </div>
     </div>
   </div>
-  <div class="card">
+  <div id="thank-you-card" class="card" style="display: none">
     <div class="header">
-      <i class="material-icons">note</i>
-      <h2>Send Comment</h2>
+      <i class="material-icons">celebration</i>
     </div>
-    <div class="input-group mb-3">
-      <input type="text" id="input-comment" class="form-control" placeholder="Write your comment here" aria-label="Write your comment here">
-      <span class="input-group-append">
-        <button id="send-comment-btn" style="font-size: 17px;" class="btn btn-outline-secondary" type="button">Send</button>
-      </span>
+    <div class="container-fluid">
+      <div class="row">
+        <h2 class="text-center" style="color: rgb(49, 49, 49)">Thank you for contributing to science!</h2>
+        <p class="text-center" style="color: rgb(49, 49, 49)">Please do not close this window or open other tabs in this browser window.</p>
+      </div>
     </div>
   </div>
+
 </body>
+<!-- Experimental ONNX.js -->
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+<script src="https://www.lactame.com/lib/image-js/0.21.2/image.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.8.0/dist/tf.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
+<script type="text/javascript" src="/simple-hog.js"></script>
 <script type="text/javascript" src="/client.js" charset="utf-8"></script>
 
 </html>

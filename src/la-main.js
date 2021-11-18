@@ -92,7 +92,7 @@ function createSession() {
   const sessionKey = laHelp.generateSessionKey();
   const secret = laHelp.generateSecret(8);
   laDB.addSessionToDatabase(secret, sessionKey);
-  return [secret, sessionKey]
+  return [secret, sessionKey];
 }
 
 /**
@@ -154,6 +154,7 @@ function handleClientSocket(req, updateInterval) {
         if (datatype === "status") {
           sessionStartTime.then(sessionStartTime => {
             const statusVector = messageJSON.data;
+            // console.log(statusVector)
             const time = Math.floor(new Date().getTime() / 1000) - sessionStartTime;
             laDB.updateParticipantStatus(sessionKey, participantId, statusVector, time);
           });
