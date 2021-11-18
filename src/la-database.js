@@ -153,7 +153,7 @@ function addSessionToDatabase(secret, sessionKey) {
     lastDashboardAccess: Math.floor(new Date().getTime() / 1000)
   });
   Session.insertMany([newSession], function(err) {
-    if (errobject) {
+    if (err) {
       console.log(err);
     } else {
       console.log("New Session " + newSession.sessionKey + " was successfully created.");
