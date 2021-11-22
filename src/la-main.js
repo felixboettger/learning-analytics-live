@@ -96,20 +96,6 @@ function createSession() {
 }
 
 /**
- * endSession - Function that ends a session (closes all connections and deletes it from database.)
- *
- * @param  {type} sessionKey Unique session identifier that was generated on session creation.
- */
-function endSession(sessionKey) {
-  setTimeout(function(){
-    closeClientSockets(sessionKey);
-    delete socketDict[sessionKey];
-    laDB.deleteSession(sessionKey);
-  }, 10000)
-  
-}
-
-/**
  * getClientSockets - Function that returns all sockets for active clients in the session.
  *
  * @param  {string} sessionKey Unique session identifier that was generated on session creation.
@@ -158,16 +144,6 @@ function handleClientSocket(req, updateInterval) {
             const time = Math.floor(new Date().getTime() / 1000) - sessionStartTime;
             laDB.updateParticipantStatus(sessionKey, participantId, statusVector, time);
           });
-        } else if (datatype === "comment") {
-          const [comment, time] = [messageJSON.data, new Date().getTime()];
-          sendToHostSocket(sessionKey, JSON.stringify({
-            datatype: "comment",
-            data: {
-              te: comment,
-              ti: time
-            }
-          }));
-          laDB.addCommentToSession(comment, Math.floor(new Date().getTime() / 1000) - sessionStartTime, sessionKey);
         } else if (datatype === "ready") {
           connection.send(JSON.stringify({
             datatype: "start",
@@ -290,6 +266,18 @@ function sendToClients(clientSockets, objectToSend){
   })
 }
 
+/**
+ * endSession - Function that ends a session (closes all connections and deletes it from database.)
+ *
+ * @param  {type} sessionKey Unique session identifier that was generated on session creation.
+ */
+ function endSession(sessionKey) {
+  setTimeout(function(){
+    closeClientSockets(sessionKey);
+    delete socketDict[sessionKey];
+  }, 10000)
+  
+}
 
 module.exports = {
   addClientToSocketDict,
@@ -297,7 +285,6 @@ module.exports = {
   checkActiveSession,
   createParticipant,
   createSession,
-  endSession,
   getClientSockets,
   getHostSocket,
   handleClientSocket,

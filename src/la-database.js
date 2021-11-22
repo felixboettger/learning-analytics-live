@@ -37,6 +37,8 @@ mongoose.connect(mongodbURL, mongooseConnectOptions).then(function() {
 // --- MongoDB Schemas ---
 
 const statusSchema = {
+  sessionKey: String,
+  participantId: Number,
   emotion: String,
   looks: Boolean,
   time: Number,
@@ -51,14 +53,8 @@ const participantSchema = {
   name: String,
   secret: String,
   inactive: Boolean,
-  currentStatus: statusSchema,
-  statuses: [statusSchema]
+  currentStatus: statusSchema
 };
-
-const commentSchema = {
-  text: String,
-  time: Number
-}
 
 const sessionSchema = {
   start: Number,
@@ -67,7 +63,6 @@ const sessionSchema = {
   secret: String,
   goodbyeMessage: String,
   surveyURL: String,
-  comments: [commentSchema],
   participants: [participantSchema]
 };
 
@@ -75,7 +70,7 @@ const sessionSchema = {
 const Session = mongoose.model("Session", sessionSchema);
 const Participant = mongoose.model("Participant", participantSchema);
 const Status = mongoose.model("Status", statusSchema);
-const Comment = mongoose.model("Comment", commentSchema);
+
 
 // --- Starting functions ---
 
@@ -86,29 +81,6 @@ const Comment = mongoose.model("Comment", commentSchema);
 markAllAsInactive();
 
 // --- Function Definitions ---
-
-/**
- * addCommentToSession - Function that adds a new comment to the session.
- *
- * @param  {string} comment Text of the received comment.
- * @param  {int} time Time of the comment (in seconds since session start).
- * @param  {string} sessionKey Unique session identifier that was generated on session creation.
- */
-async function addCommentToSession(comment, time, sessionKey) {
-  const newComment = new Comment({
-    text: comment,
-    time: time
-  });
-  Session.updateOne({
-    sessionKey: sessionKey
-  }, {
-    $addToSet: {
-      comments: newComment
-    }
-  }, {
-    new: true
-  }).then(info => {});
-}
 
 /**
  * addParticipantToSession - Function that adds a newly joined participant to the session.
@@ -124,7 +96,6 @@ function addParticipantToSession(participantId, name, secret, sessionKey) {
     name: name,
     secret: secret,
     inactive: true,
-    statuses: []
   });
   Session.updateOne({
     sessionKey: sessionKey
@@ -148,7 +119,6 @@ function addSessionToDatabase(secret, sessionKey) {
     start: Math.floor(new Date().getTime() / 1000),
     sessionKey: sessionKey,
     secret: secret,
-    comments: [],
     participants: [],
     lastDashboardAccess: Math.floor(new Date().getTime() / 1000)
   });
@@ -213,41 +183,6 @@ function cleaningRoutine(keepInactiveFor) {
 }
 
 /**
- * deleteSession - Deletes the session and participants for the specified session key.
- *
- * @param  {string} sessionKey Unique session identifier that was generated on session creation.
- */
-function deleteSession(sessionKey) {
-  Session.deleteOne({
-    sessionKey: sessionKey
-  }).then((deletedSession, err) => {
-    err ? console.log(err) :
-      console.log(
-        "Session " + sessionKey + " has been deleted as host closed the session."
-      );
-  });
-}
-
-/**
- * exportSessionData - Returns session data for export.
- *
- * @param  {string} sessionKey Unique session identifier that was generated on session creation.
- * @return {object} Returns object for the session, but without unnecessary details.
- */
-async function exportSessionData(sessionKey) {
-  return await Session.findOne({
-    sessionKey: sessionKey
-  }, {
-    '_id': false,
-    'secret': false,
-    '__v': false,
-    'participants._id': false,
-    'participants.secret': false,
-    'participants.statuses._id': false
-  });
-}
-
-/**
  * getParticipantData - Requesting data for dashboard data generation.
  *
  * @param  {string} sessionKey Unique session identifier that was generated on session creation.
@@ -304,7 +239,6 @@ async function setSurveyURL(sessionKey, surveyURL){
   )
 }
 
-
 /**
  * getSessionStartTime - Function that returns the start time of a given session.
  *
@@ -345,6 +279,8 @@ async function markAllAsInactive() {
  */
 function updateParticipantStatus(sessionKey, participantId, statusVector, relativeTime) {
   const newStatus = new Status({
+    sessionKey: sessionKey,
+    participantId: participantId,
     emotion: statusVector.e,
     concentrationScore: statusVector.cs,
     time: relativeTime,
@@ -357,27 +293,29 @@ function updateParticipantStatus(sessionKey, participantId, statusVector, relati
       sessionKey: sessionKey,
       "participants.id": participantId
     },
-    // {$addToSet: {"participants.$.statuses": newStatus}},
     {
-
-      $addToSet: {"participants.$.statuses": newStatus},
       "participants.$.currentStatus": newStatus
     }, {
       new: true
     }
   ).then(info => {});
+  Status.insertMany([newStatus], function(err) {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log("New Status was successfully saved.");
+    }
+  });
+
 }
 
 // --- Definition of module exports ---
 
 module.exports = {
-  addCommentToSession,
   addParticipantToSession,
   addSessionToDatabase,
   changeParticipantInactive,
   checkSessionExists,
-  deleteSession,
-  exportSessionData,
   getParticipantData,
   getSessionData,
   getSessionStartTime,

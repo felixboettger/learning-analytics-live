@@ -23,9 +23,7 @@ webSocket.addEventListener("message", function(event) {
     refreshDashboard(messageJSON.data);
   } else if (datatype === "download") {
     downloadJSONFile(messageJSON.data);
-  } else if (datatype === "comment") {
-    addCommentToList(messageJSON.data);
-  }
+  } 
 });
 
 webSocket.onclose = function() {
@@ -48,24 +46,9 @@ document.getElementById("change-survey-url").addEventListener("click", function(
   document.getElementById("survey-url").innerHTML = "Survey URL: " + newSurveyURL
 })
 
-document.getElementById("comment-list").addEventListener("click", function(evt) {
-  const t = evt.target;
-  if (t.tagName.toUpperCase() == "TD") {
-    const tr = t.parentNode;
-    tr.parentNode.removeChild(tr);
-  }
-});
-
-document.getElementById("download-btn").addEventListener("click", function() {
-  document.getElementById("download-btn").classList.toggle("blinking");
-  webSocket.send(JSON.stringify({
-    datatype: "download"
-  }))
-});
-
 document.getElementById("end-btn").addEventListener("click", function() {
   document.getElementById("end-btn").classList.toggle("blinking");
-  if (confirm("Click ok to end this session. All session data will be deleted from the server.")) {
+  if (confirm("Click ok to end this session. All clients will automatically leave the session and the goodbye message will be displayed.")) {
     webSocket.send(JSON.stringify({
       datatype: "end"
     }))
@@ -119,21 +102,6 @@ const timeframeButtons = document.getElementsByClassName("timeframe-set");
 });
 
 // --- Function Definitions ---
-
-/**
- * addCommentToList - Function that adds a comment to the comment list on the dashboard.
- *
- * @param  {object} commentObj Object containing comment text and timestamp.
- */
-function addCommentToList(commentObj) {
-  document.getElementById("nr-comments").innerHTML++;
-  const newComment = commentObj.te;
-  const dateObj = new Date(commentObj.ti);
-  const timeStr = dateObj.getHours() + ":" + dateObj.getMinutes() + ":" + dateObj.getSeconds()
-  const commentElement = document.createElement("tr");
-  commentElement.innerHTML = `<td>` + newComment + `</td><td>` + timeStr + `</td>`;
-  document.getElementById("comment-list").appendChild(commentElement);
-}
 
 /**
  * addOrChangeParticipant - Function that adds a participant to the dashboard list or changes it if it exists.
