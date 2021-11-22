@@ -106,7 +106,6 @@ app.get("/client", function(req, res) {
 app.get("/thank-you", function(req, res){
   // res.setHeader("Access-Control-Allow-Origin", "*")
   res.render("good-bye")
-  
 })
 
 if (testing){

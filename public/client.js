@@ -233,7 +233,6 @@ async function getStatus(){
   const landmarkList = generateLandmarkList(landmarks)
   const hogs = await getHogs()
 
-  // generateDownload(hogs, landmarkList);
 
   addToRecentEmotionsArray(emotionLandmarkDetection);
   const statusVector = {

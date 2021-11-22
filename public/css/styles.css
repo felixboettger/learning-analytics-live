@@ -51,6 +51,10 @@
   border-top-right-radius: 0;
 }
 
+.informed-consent{
+  margin-top: 20px;
+}
+
 html{
   position: relative;
   min-height: 100%;

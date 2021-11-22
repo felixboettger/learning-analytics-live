@@ -4,6 +4,7 @@
     <h1 class="h3 mb-3 font-weight-normal">Participant Login</h1>
     <input type="text" id="inputSessionKey" class="form-control form-top text-center" value="" placeholder="Session Key" name="sessionKey" required pattern="[A-Z]{4}-[A-Z]{4}-[A-Z]{4}" title="Session Key format is: ABCD-EFGH-JKLM">
     <input type="text" id="inputParticipantName" class="form-control form-bottom text-center" placeholder="Your Name" name="participantName"> <!-- required for now, anonym should be possible in the future -->
+    <p class="informed-consent">By pressing this button, you confirm that you have read the <a href="/information_letter.pdf">information letter</a> and agreed to the <a href="/informed_consent.pdf">informed consent</a>.</p>
     <button class="btn btn-lg btn-primary btn-block" type="submit">Login</button>
     <p class="cookie-warning">By pressing this button, you confirm that we may store the following data as a cookie: Session Key, name, Participant ID, link to the final survey, goodbye message and a secret for authorization.<a href="/privacy"> Learn more</a></p>
   </form>
