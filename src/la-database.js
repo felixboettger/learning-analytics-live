@@ -303,7 +303,7 @@ function updateParticipantStatus(sessionKey, participantId, statusVector, relati
     if (err) {
       console.log(err);
     } else {
-      console.log("New Status was successfully saved.");
+      // console.log("New Status was successfully saved.");
     }
   });
 

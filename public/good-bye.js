@@ -1,5 +1,4 @@
 [surveyURL, id, goodbyeText] = getCookieValues()
-surveyURL += id
 surveyURL = surveyURL.slice(10)
 // Investigate where trailing 0 comes from!
 surveyURL = surveyURL.substring(0, surveyURL.length -1)
@@ -13,7 +12,7 @@ function getCookieValues() {
 };
 
 if (goodbyeText != "undefined"){
-document.getElementById("goodbye-text").innerHTML = goodbyeText
+document.getElementById("goodbye-text").innerHTML = goodbyeText + " Your participant id was: " + id;
 }
 
 if (surveyURL != "undefined"){
