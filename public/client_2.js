@@ -38,9 +38,8 @@ main();
 async function main(){
   blazefaceModel = await blazeface.load();
   emotionModel = await tf.loadLayersModel("/models/Ufuk/model.json");
-  await faceapi.nets.faceLandmark68Net.loadFromUri('/models/face-api')
-  // mobilenetv1 = await faceapi.nets.ssdMobilenetv1.loadFromUri('/models/face-api')
-  // landmarkModel = await faceapi.loadFaceLandmarkTinyModel('/models/face-api')
+  landmarkModel = await faceapi.loadFaceLandmarkTinyModel('/models/face-api')
+  mobilenetv1 = await faceapi.nets.ssdMobilenetv1.loadFromUri('/models/face-api')
   await faceapi.loadTinyFaceDetectorModel('/models/face-api')
   webSocket = createWebSocket(sessionKey, id, secret);
   // document.getElementById("status-message").innerHTML = "ms";
@@ -201,7 +200,7 @@ function getCookieValues() {
 };
 
 
-function generateDownload(hogs, landmarkList, landmarkListUncropped){
+function generateDownload(hogs, landmarkList){
   filetime = new Date()
   const downloadHogs = document.createElement("a");
   downloadHogs.setAttribute("download", "Hogs on " + filetime);
@@ -219,11 +218,6 @@ function generateDownload(hogs, landmarkList, landmarkListUncropped){
   downloadLandmarks.setAttribute("download", "Landmarks on " + filetime);
   downloadLandmarks.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(landmarkList));
   downloadLandmarks.click()
-  const downloadLandmarksUncropped = document.createElement("a");
-  downloadLandmarksUncropped.setAttribute("download", "Uncropped Landmarks on " + filetime);
-  downloadLandmarksUncropped.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(landmarkListUncropped));
-  downloadLandmarksUncropped.click()
-
 }
 
 /**
@@ -236,12 +230,11 @@ async function getStatus(){
   const emotionLandmarkDetection = await getEmotionAndLandmarks(blazefacePredictions);
   const lookingAtCamera = checkIfLookingAtCamera(blazefacePredictions);
   const emotion = (typeof emotionLandmarkDetection[0] === "undefined") ? "none" : emotionLandmarkDetection[0];
-  const landmarkList = (typeof emotionLandmarkDetection[2] === "undefined") ? [] : emotionLandmarkDetection[2];
-  console.log("LANDMARKS LEN", landmarkList.length);
-  const hogs = (landmarkList.length === 0) ? [] : await getHogs();
-  const landmarkListUncropped = emotionLandmarkDetection[3];
+  const landmarks = (typeof emotionLandmarkDetection[2] === "undefined") ? [] : emotionLandmarkDetection[2];
+  const landmarkList = generateLandmarkList(landmarks)
+  console.log("LANDMARKS LEN", landmarks.length);
+  const hogs = (landmarks.length === 0) ? [] : await getHogs();
 
-  // generateDownload(hogs, landmarkList, landmarkListUncropped);
 
   addToRecentEmotionsArray(emotionLandmarkDetection);
   const statusVector = {
@@ -256,22 +249,15 @@ async function getStatus(){
 };
 
 
-function generateLandmarkList(landmarks, upperLeftX, upperLeftY, lowerRightX, lowerRightY){
+function generateLandmarkList(landmarks){
   landmarkList = []
+  if (landmarks != "none"){
     for (let i = 0; i < landmarks.length; i++) {
       curr_landmark = landmarks[i]
-      landmarkList.push(getNewCoords(curr_landmark._x, curr_landmark._y, upperLeftX, upperLeftY, lowerRightX, lowerRightY));
+      landmarkList.push([(0.2*curr_landmark._x).toFixed(3), (0.2*curr_landmark._y).toFixed(3)])
     }
-  return landmarkList;
-}
-
-function generateLandmarkListNoCrop(landmarks){
-  landmarkList = [];
-  for (let i = 0; i < landmarks.length; i++){
-    curr_landmark = landmarks[i];
-    landmarkList.push([curr_landmark._x, curr_landmark._y]);
   }
-  return landmarkList;
+  return landmarkList
 }
 
 /**
@@ -315,29 +301,13 @@ async function getEmotionAndLandmarks(blazefacePredictions) {
       const inputImageEmotion = tf.image.resizeBilinear(inputImage, [48, 48]).div(tf.scalar(255));
       const predictions = await emotionModel.predict(inputImageEmotion).arraySync()[0];
       const emotionArray = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
-const detectionsWithLandmarks = await faceapi.detectAllFaces(canvasInput, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks()
+      const detectionsWithLandmarks = await faceapi.detectAllFaces(canvasInput, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true)
       const landmarks = typeof detectionsWithLandmarks[0] != "undefined" ? detectionsWithLandmarks[0]["landmarks"]["_positions"] : [];
-      const landmarkList = generateLandmarkList(landmarks, dx, dy, p1BR[0] + faceMargin, p1BR[1] + faceMargin);
-      const landmarkListUncropped = generateLandmarkListNoCrop(landmarks);
-
-      plotFace(landmarkList);
-
       const emotionIndex = predictions.indexOf(Math.max.apply(null, predictions));
-      return [emotionArray[emotionIndex], predictions[emotionIndex], landmarkList, landmarkListUncropped];
+      return [emotionArray[emotionIndex], predictions[emotionIndex], landmarks];
     };
   };
 };
-
-function plotFace(landmarkList){
-  for (let i = 0; i < landmarkList.length; i++){
-    x = landmarkList[i][0];
-    y = landmarkList[i][1];
-
-    ctx2.strokeRect(x,y,1,1);
-
-    ctx2.fillRect(x,y,1,1);
-  }
-}
 
 
 /**
@@ -437,6 +407,6 @@ function getNewCoords(x, y, upperLeftX, upperLeftY, lowerRightX, lowerRightY){
   x = x * 112/sizeMax - offsetX;
   y = y * 112/sizeMax - offsetY;
 
-  return [x.toFixed(3), y.toFixed(3)];
+  return [x, y]
 }
 
