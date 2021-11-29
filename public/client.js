@@ -2,7 +2,7 @@
 
 const [sessionKey, secret, id, name] = getCookieValues();
 displayParticipantInfo(name, sessionKey, id);
-const [video, image, canvasInput, canvasCropped, canvasCroppedLarge, ctx1, ctx2, ctx3, idle] = getElements();
+const [video, image, canvasInput, canvasCropped, ctx1, ctx2, idle] = getElements();
 startWebcam();
 
 var blazefaceModel;
@@ -11,7 +11,7 @@ var landmarkModel;
 var surveyURL;
 
 setTimeout(function() {
-  // document.getElementById("video-card").style.display = "none";
+  document.getElementById("video-card").style.display = "none";
   document.getElementById("info-tiles-card").style.display = "none";
   document.getElementById("thank-you-card").style.display = "block";
 }, 10000);
@@ -90,7 +90,7 @@ async function main(){
 
     const t0 = performance.now(); // Start performance measurement
     getStatus().then(statusVector => {
-      console.log(statusVector.lm.length, statusVector.h.length)
+      // console.log(statusVector.lm.length, statusVector.h.length)
 
       if (typeof statusVector != "undefined") {
         statusJSON = JSON.stringify({
@@ -160,10 +160,8 @@ function getElements(){
   const ctx1 = canvasInput.getContext("2d");
   const canvasCropped = document.getElementById("canvas-cropped");
   const ctx2 = canvasCropped.getContext("2d");
-  const canvasCroppedLarge = document.getElementById("canvas-cropped-large")
-  const ctx3 = canvasCroppedLarge.getContext("2d")
   const idle = document.getElementById("working-idle");
-  return [video, image, canvasInput, canvasCropped, canvasCroppedLarge, ctx1, ctx2, ctx3, idle];
+  return [video, image, canvasInput, canvasCropped, ctx1, ctx2, idle];
 }
 
 
@@ -237,7 +235,6 @@ async function getStatus(){
   const lookingAtCamera = checkIfLookingAtCamera(blazefacePredictions);
   const emotion = (typeof emotionLandmarkDetection[0] === "undefined") ? "none" : emotionLandmarkDetection[0];
   const landmarkList = (typeof emotionLandmarkDetection[2] === "undefined") ? [] : emotionLandmarkDetection[2];
-  console.log("LANDMARKS LEN", landmarkList.length);
   const hogs = (landmarkList.length === 0) ? [] : await getHogs();
   const landmarkListUncropped = emotionLandmarkDetection[3];
 
@@ -306,7 +303,6 @@ async function getEmotionAndLandmarks(blazefacePredictions) {
     // const fullFaceInPicture = (dx > 0) && (dy > 0) && (dx + width < canvasInput.height) && (dy + height < canvasInput.height);
     if (fullFaceInPicture){
       ctx2.drawImage(canvasInput, dx + 1, dy + 1, width - 1, height - 1, 0, 0, 112, 112);
-      ctx3.drawImage(canvasInput, dx + 1, dy + 1, width - 1, height -1, 0, 0, 560, 560);
       var inputImage = tf.browser.fromPixels(canvasCropped)
           .mean(2)
           .toFloat()
@@ -315,12 +311,13 @@ async function getEmotionAndLandmarks(blazefacePredictions) {
       const inputImageEmotion = tf.image.resizeBilinear(inputImage, [48, 48]).div(tf.scalar(255));
       const predictions = await emotionModel.predict(inputImageEmotion).arraySync()[0];
       const emotionArray = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
-const detectionsWithLandmarks = await faceapi.detectAllFaces(canvasInput, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks()
+      const detectionsWithLandmarks = await faceapi.detectAllFaces(canvasInput, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks()
+      // console.log(detectionsWithLandmarks);
       const landmarks = typeof detectionsWithLandmarks[0] != "undefined" ? detectionsWithLandmarks[0]["landmarks"]["_positions"] : [];
       const landmarkList = generateLandmarkList(landmarks, dx, dy, p1BR[0] + faceMargin, p1BR[1] + faceMargin);
       const landmarkListUncropped = generateLandmarkListNoCrop(landmarks);
 
-      plotFace(landmarkList);
+      // plotFace(landmarkList);
 
       const emotionIndex = predictions.indexOf(Math.max.apply(null, predictions));
       return [emotionArray[emotionIndex], predictions[emotionIndex], landmarkList, landmarkListUncropped];
