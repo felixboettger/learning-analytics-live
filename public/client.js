@@ -54,6 +54,21 @@ async function main(){
     }));
   };
 
+  window.addEventListener("beforeunload", function (e) {
+    const confirmationMessage = "Do you really want to leave the session? The experiment is not over yet.";
+  
+    const Http = new XMLHttpRequest();
+    const url = window.location.origin + "/register_close/" + id;
+    Http.open("GET", url);
+    Http.send();
+
+    (e || window.event).returnValue = confirmationMessage; 
+
+
+
+    return confirmationMessage;                            
+  });
+
   webSocket.addEventListener("message", function(event) {
     const messageJSON = JSON.parse(event.data);
     const datatype = messageJSON.datatype;

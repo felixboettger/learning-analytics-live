@@ -91,6 +91,10 @@ app.get("/privacy", function(req, res) {
   res.render("privacy");
 });
 
+app.get("/register_close/:id", function(req, res){
+  console.log("Tab close", new Date(), req.params.id);
+})
+
 app.get("/about", function(req, res) {
   res.render("about");
 });
@@ -106,7 +110,7 @@ app.get("/client", function(req, res) {
 app.get("/thank-you", function(req, res){
   // res.setHeader("Access-Control-Allow-Origin", "*")
   res.render("good-bye")
-})
+}) 
 
 if (testing){
   app.get("/load-simulation/:sessionKey", function(req, res) {
