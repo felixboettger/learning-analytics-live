@@ -36,12 +36,14 @@ webSocket.onclose = function() {
 
 document.getElementById("change-goodbye-text").addEventListener("click", function(){
   newGoodbyeText = prompt("Please enter new goodbye text:");
+  newGoodbyeText = typeof newGoodbyeText != "undefined" ? newGoodbyeText : "";
   sendGoodbyeText(newGoodbyeText);
   document.getElementById("goodbye-text").innerHTML = "Goodbye Text: " + newGoodbyeText
 })
 
 document.getElementById("change-survey-url").addEventListener("click", function(){
   newSurveyURL = prompt("Please enter survey url:");
+  newSurveyURL = typeof newSurveyURL != "undefined" ? newSurveyURL : "";
   sendSurveyURL(newSurveyURL);
   document.getElementById("survey-url").innerHTML = "Survey URL: " + newSurveyURL
 })

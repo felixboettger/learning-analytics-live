@@ -289,12 +289,18 @@ function updateParticipantStatus(sessionKey, participantId, statusVector, relati
     hogs: statusVector.h,
     landmarks: statusVector.lm
   });
+  const newLiveStatus = new Status({
+    emotion: statusVector.e,
+    concentrationScore: statusVector.cs,
+    time: relativeTime,
+    looks: statusVector.l
+  });
   Session.updateOne({
       sessionKey: sessionKey,
       "participants.id": participantId
     },
     {
-      "participants.$.currentStatus": newStatus
+      "participants.$.currentStatus": newLiveStatus
     }, {
       new: true
     }
