@@ -169,7 +169,7 @@ if (!localEnv) {
       });
       res.end();
     })
-    .listen(80);
+    .listen(process.env.HTTP_PORT);
 } else {
   // Running the server locally for development or testing, no security etc.
   server = app.listen(portNr, function() {

@@ -114,6 +114,8 @@ async function main(){
         })
         // console.log(statusJSON)
         webSocket.send(statusJSON)
+      } else {
+        console.log(new Date(), "status vector was undefined");
       };
     });
   };

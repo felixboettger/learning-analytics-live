@@ -19,5 +19,4 @@ if (surveyURL != "undefined"){
   document.getElementById("survey-url").innerHTML = "Please fill out our survey: <a href=" + surveyURL + ">Open Survey</a>"
 } else {
   document.getElementById("survey-url").remove()
-  document.getElementById("iframe-survey").remove()
 }
