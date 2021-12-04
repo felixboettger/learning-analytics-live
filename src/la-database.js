@@ -40,10 +40,9 @@ const statusSchema = {
   sessionKey: String,
   participantId: Number,
   emotion: String,
-  looks: Boolean,
   time: Number,
-  utcTime: Date,
-  concentrationScore: Number,
+  utcTimeClient: Date,
+  utcTimeServer: Date,
   hogs: [Number],
   landmarks: Array
 };
@@ -282,18 +281,15 @@ function updateParticipantStatus(sessionKey, participantId, statusVector, relati
     sessionKey: sessionKey,
     participantId: participantId,
     emotion: statusVector.e,
-    concentrationScore: statusVector.cs,
     time: relativeTime,
-    utcTime: statusVector.t,
-    looks: statusVector.l,
+    utcTimeClient: statusVector.t,
+    utcTimeServer: new Date().getTime(),
     hogs: statusVector.h,
     landmarks: statusVector.lm
   });
   const newLiveStatus = new Status({
     emotion: statusVector.e,
-    concentrationScore: statusVector.cs,
-    time: relativeTime,
-    looks: statusVector.l
+    time: relativeTime
   });
   Session.updateOne({
       sessionKey: sessionKey,

@@ -22,43 +22,6 @@
       <i class="material-icons">person</i>
       <h2>Client</h2>
     </div>
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-lg-4 col-sm-6">
-          <div class="info-box bg-blue hover-expand-effect" style="margin-bottom: 0.4em;">
-            <div class="icon">
-              <i class="material-icons">vpn_key</i>
-            </div>
-            <div class="content">
-              <div class="text">Session Key</div>
-              <div id="session-key" class="number count-to" data-from="0" data-to="125" data-speed="15" data-fresh-interval="20"><span class="session-key"></span></div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-4 col-sm-6">
-          <div class="info-box bg-blue hover-expand-effect" style="margin-bottom: 0.4em;">
-            <div class="icon">
-              <i class="material-icons">badge</i>
-            </div>
-            <div class="content">
-              <div class="text">ID: Name</div>
-              <div class="number count-to" data-from="0" data-to="125" data-speed="15" data-fresh-interval="20"><span id="participant-id-name"></span></div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-4 col-sm-6">
-          <div class="info-box bg-blue hover-expand-effect" style="margin-bottom: 0.4em;">
-            <div class="icon">
-              <i id="working-idle" class="material-icons">loop</i>
-            </div>
-            <div class="content">
-              <div class="text">Program Status</div>
-              <div class="number count-to" data-from="0" data-to="125" data-speed="15" data-fresh-interval="20"><span id="request-completion-time"></span><span id="status-message">loading...</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
   <div id="video-card" class="card">
     <div class="header">
@@ -68,11 +31,14 @@
     <div class="container-fluid">
       <div class="row">
         <video id="video-input" autoplay playsinline width="480px" height="360px"></video>
-        <image id="image-input" hidden width="400px" height="360px"/>
-          <canvas id="canvas-input" hidden width="400px" height="360px"></canvas>
-          <canvas id="canvas-cropped" hidden width="112px" height="112px"></canvas>
+        <img id="image-input" hidden width="480px" height="360px"/>
+          <canvas id="canvas-input" width="400px" height="360px"></canvas>
+          <canvas id="canvas-cropped" width="112px" height="112px"></canvas>
       </div>
     </div>
+    <select id="camera-select-box" name="camera_select_box">
+        <option value="" disabled selected></option>
+    </select>
   </div>
   <div id="thank-you-card" class="card" style="display: none">
     <div class="header">
@@ -86,13 +52,11 @@
     </div>
   </div>
 
+</html>
 </body>
-<!-- Experimental ONNX.js -->
+
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
 <script src="https://www.lactame.com/lib/image-js/0.21.2/image.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.8.0/dist/tf.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
 <script type="text/javascript" src="/simple-hog.js"></script>
 <script type="text/javascript" src="/client.js" charset="utf-8"></script>
 
