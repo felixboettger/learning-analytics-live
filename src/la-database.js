@@ -44,7 +44,8 @@ const statusSchema = {
   utcTimeClient: Date,
   utcTimeServer: Date,
   hogs: [Number],
-  landmarks: Array
+  landmarks: Array,
+  err: String
 };
 
 const participantSchema = {
@@ -285,7 +286,8 @@ function updateParticipantStatus(sessionKey, participantId, statusVector, relati
     utcTimeClient: statusVector.t,
     utcTimeServer: new Date().getTime(),
     hogs: statusVector.h,
-    landmarks: statusVector.lm
+    landmarks: statusVector.lm,
+    err: statusVector.err
   });
   const newLiveStatus = new Status({
     emotion: statusVector.e,

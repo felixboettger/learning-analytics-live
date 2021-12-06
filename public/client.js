@@ -123,34 +123,57 @@ async function generateStatus(){
     // console.log(resizedDetections.angle.roll);
     // plotFace(resizedDetections.unshiftedLandmarks._positions, det._x,det._y,det._width,det._height);
 
-    if (typeof resizedDetections.unshiftedLandmarks != "undefined"){
-      statusVector.lm = resizeLandmarks(resizedDetections.unshiftedLandmarks._positions, det._x,det._y,det._width,det._height);
-    } else {
-      console.log("Landmarks not detected, returning without landmarks.");
-    }
-    if (typeof resizedDetections.expressions != "undefined"){
-      statusVector.e = Object.keys(resizedDetections.expressions).reduce((a, b) => resizedDetections.expressions[a] > resizedDetections.expressions[b] ? a : b);
-    } else {
-      console.log("Emotion not detected, returning without emotion.");
-    }
-    if (statusVector.lm.length === 68){
-      // canvasWidth = canvasInput.width;
-      // canvasHeight = canvasInput.height;
-      // ctx1.translate(canvasWidth/2, canvasWidth/2);
-      // ctx1.rotate(resizedDetections.angle.roll);
-      // ctx1.translate(-canvasWidth/2, -canvasWidth/2);
-      ctx2.drawImage(canvasInput, det._x,det._y,det._width,det._height, 0, 0, 112, 112);
-      // ctx1.clearRect(0, 0, canvasInput.width, canvasInput.height); // clear canvas
-      statusVector.h = await getHogs()
-      //ctx2.clearRect(0, 0, canvasInput.width, canvasInput.height); // clear canvas
-    } else {
-      console.log("No hogs were calculated as landmarks are missing.")
-    } 
-  } else {
-      console.log("Face not detected, returning statusVector with just the time")
+    if (typeof det != "undefined"){
+      if (checkFullFaceInPicture(det._x,det._y,det._width,det._height)){
+        if (typeof resizedDetections.unshiftedLandmarks != "undefined"){
+          statusVector.lm = resizeLandmarks(resizedDetections.unshiftedLandmarks._positions, det._x,det._y,det._width,det._height);
+        } else {
+          console.log("Landmarks not detected, returning without landmarks.");
+        }
+        if (typeof resizedDetections.expressions != "undefined"){
+          statusVector.e = Object.keys(resizedDetections.expressions).reduce((a, b) => resizedDetections.expressions[a] > resizedDetections.expressions[b] ? a : b);
+        } else {
+          console.log("Emotion not detected, returning without emotion.");
+        }
+        if (statusVector.lm.length === 68){
+          // canvasWidth = canvasInput.width;
+          // canvasHeight = canvasInput.height;
+          // ctx1.translate(canvasWidth/2, canvasWidth/2);
+          // ctx1.rotate(resizedDetections.angle.roll);
+          // ctx1.translate(-canvasWidth/2, -canvasWidth/2);
+          
+    
+          ctx2.drawImage(canvasInput, det._x,det._y,det._width,det._height, 0, 0, 112, 112);
+          // ctx1.clearRect(0, 0, canvasInput.width, canvasInput.height); // clear canvas
+          statusVector.h = await getHogs()
+          //ctx2.clearRect(0, 0, canvasInput.width, canvasInput.height); // clear canvas
+        } else {
+          console.log("No hogs were calculated as landmarks are missing.")
+        } 
+      } else {
+          console.log("Face not completely in picture");
+          statusVector.err += "face not in picture"
+      }
+
+      } else {
+        console.log("Face was not detected");
+      }
+      } else {
+        console.log("Face was not detected");
+      }
+      return statusVector;
   }
-  return statusVector;
-};
+
+}
+
+
+function checkFullFaceInPicture(x, y, faceWidth, faceHeight){
+  if ((x < 0) || (y < 0) || (x + faceWidth > canvasInput.width) || (y + faceHeight > canvasInput.height)){
+    return false;
+  } else {
+    return true;
+  }
+}
 
 async function getHogs(){
   var options = {
@@ -165,7 +188,7 @@ async function getHogs(){
   hogs = hogs.map(function(x){
     return Number(x.toFixed(3));
   });
-  return hogs
+  return hogs;
 }
 
 function resizeLandmarks(landmarks, x, y, width, height){
@@ -185,10 +208,6 @@ function resizeLandmarks(landmarks, x, y, width, height){
     landmarkList.push([x, y]);
   }
   return landmarkList;
-}
-
-
-
 }
 
 /**
