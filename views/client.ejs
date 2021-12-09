@@ -32,13 +32,39 @@
       
         <video id="video-input" autoplay playsinline width="480px" height="360px" style="transform: scaleX(-1)"></video>
         <img id="image-input" hidden width="480px" height="360px"/>
-        <canvas id="canvas-input" hidden width="480px" height="360px"></canvas>
+        <canvas id="canvas-combined-plot" style="display: none" width="480px" height="360px"></canvas>
+        <canvas id="canvas-input" style="display: none" width="480px" height="360px"></canvas>
         <canvas id="canvas-cropped" style="display: none" width="112px" height="112px"></canvas>
         <canvas id="canvas-landmark-plot" style="display: none" width="112px" height="112px"></canvas>
     </div>
     <select id="camera-select-box" name="camera_select_box">
         <option value="" disabled selected></option>
     </select>
+  </div>
+  <div id="secret-menu-card" class="card" style="display: none">
+    <div class="header">
+      <i class="material-icons">key</i>
+      <h2>Secret Menu</h2>
+      <div>
+        <input type="checkbox" id="debug-combined-plot" name="debugCombinedPlot">
+        <label for="debug-combined-plot">Combined Plot</label>
+        <input type="checkbox" id="debug-emotion" name="debugEmotion">
+        <label for="debug-emotion">Emotion</label>
+        <input type="checkbox" id="debug-status-vector" name="debugStatusVector">
+        <label for="debug-status-vector">Status Vector</label>
+        <input type="checkbox" id="debug-rotation-angle" name="debugRotationAngle">
+        <label for="debug-rotation-angle">Rotation Angle</label>
+        <input type="checkbox" id="debug-nr-hogs" name="debugNrHogs">
+        <label for="debug-nr-hogs">Number of Hogs</label>
+        <input type="checkbox" id="debug-landmark-plot" name="debugLandmarkPlot">
+        <label for="debug-landmark-plot">Landmark Plot</label>
+        <input type="checkbox" id="debug-canvas-cropped" name="debugCanvasCropped">
+        <label for="debug-canvas-cropped">Canvas Cropped</label>
+      </div>
+    </div>
+    <div class="container-fluid">
+      
+    </div>
   </div>
   <div id="thank-you-card" class="card" style="display: none">
     <div class="header">

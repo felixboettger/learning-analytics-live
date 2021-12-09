@@ -1,13 +1,13 @@
 //jshint esversion:6
 
 const [sessionKey, secret, id, participantName] = getCookieValues();
-const [video, image, canvasInput, canvasCropped, canvasLandmarkPlot, ctx1, ctx2, ctx3, cameraSelectBox] = getElements();
+const [video, image, canvasInput, canvasCropped, canvasLandmarkPlot, canvasCombinedPlot, ctx1, ctx2, ctx3, ctxc, cameraSelectBox] = getElements();
 let debugging = false;
 let showDetectedEmotion = false;
 let showStatusVector = false;
 let showRotationAngle = false;
 let showNumberOfDetectedHogs = false;
-let debuggingOptions = [showRotationAngle]
+let combinedPlot = false;
 
 let currentTime = new Date().getSeconds(); // to check if new second elapsed
 
@@ -96,6 +96,13 @@ async function generateStatus() {
     const resizedDetections = faceapi.resizeResults(detections, displaySize);
     const det = resizedDetections.detection._box;
 
+    if (debugging && combinedPlot){
+      const canvasCombinedPlot = document.getElementById("canvas-combined-plot");
+      faceapi.draw.drawFaceLandmarks(canvasCombinedPlot, resizedDetections);
+      faceapi.draw.drawDetections(canvasCombinedPlot, resizedDetections);
+      faceapi.draw.drawFaceExpressions(canvasCombinedPlot, resizedDetections);
+    }
+
     if (typeof det != "undefined") {
       if (checkFullFaceInPicture(det._x, det._y, det._width, det._height)) {
         if (typeof resizedDetections.unshiftedLandmarks != "undefined") {
@@ -117,6 +124,15 @@ async function generateStatus() {
 
           statusVector.h = await getHogs();
           debugging && showNumberOfDetectedHogs ? console.log("# Detected Hogs: ", statusVector.h.length) : "";
+          if (debugging && combinedPlot){
+            const box = { x: 0, y: 0, width: 0, height: 0 }
+            const drawOptions = {
+              label: '# Landmarks: ' + statusVector.lm.length + ", # Hogs: " + statusVector.h.length,
+              lineWidth: 0
+            }
+            const drawBox = new faceapi.draw.DrawBox(box, drawOptions)
+            drawBox.draw(document.getElementById('canvas-combined-plot'));
+          } 
         } else {
           debugging ? console.log("No hogs were calculated as landmarks are missing.") : "";
         }
@@ -141,6 +157,8 @@ function sendStatus() {
 
   ctx1.clearRect(0, 0, canvasInput.width, canvasInput.height); // clear canvas
   ctx1.drawImage(video, 0, 0, video.width, video.height); // capturing still image from video feed and saving it to canvasInput
+
+  debugging && combinedPlot ? ctxc.drawImage(video, 0, 0, video.width, video.height) : "";
 
   generateStatus().then(statusVector => {
 
@@ -247,8 +265,10 @@ function getElements() {
   const ctx2 = canvasCropped.getContext("2d");
   const cameraSelectBox = document.getElementById("camera-select-box");
   const canvasLandmarkPlot = document.getElementById("canvas-landmark-plot");
+  const canvasCombinedPlot = document.getElementById("canvas-combined-plot");
   const ctx3 = canvasLandmarkPlot.getContext("2d");
-  return [video, image, canvasInput, canvasCropped, canvasLandmarkPlot, ctx1, ctx2, ctx3, cameraSelectBox];
+  const ctxc = canvasCombinedPlot.getContext("2d");
+  return [video, image, canvasInput, canvasCropped, canvasLandmarkPlot, canvasCombinedPlot, ctx1, ctx2, ctx3, ctxc, cameraSelectBox];
 }
 
 function plotFace(landmarkList) {
@@ -412,53 +432,14 @@ function maskFace(faceLandmarks) {
 function debug() {
   debugging = true;
   clearTimeout(hideVideo);
+
   document.getElementById("video-card").style.display = "block";
   document.getElementById("info-tiles-card").style.display = "block";
+  document.getElementById('secret-menu-card').style.display = "block";
+  
+  secretMenu();
 
-  const showAll = prompt("Show all infos (Y) or specify infos to show (N)?");
-  if (showAll === "Y" || showAll === "y") {
-    showRotationAngle = true;
-    showDetectedEmotion = true;
-    showNumberOfDetectedHogs = true;
-    showStatusVector = true;
-    showLandmarkPlot();
-    showCanvasCropped();
-  } else {
-    console.log("Manual Debug Options");
-    const showRotationAngleAnswer = prompt("Show rotation angle (Y/N)?");
-    const showDectectedEmotionAnswer = prompt("Show emotion (Y/N)?");
-    const showNumberOfDetectedHogsAnswer = prompt("Show number of detected hogs (Y/N)?");
-    const showLandmarkPlotAnswer = prompt("Show plot of landmarks (Y/N)?");
-    const showCanvasCroppedAnswer = prompt("Show cropped and aligned face (Y/N)?");
-    const showStatusVectorAnswer = prompt("Show full status vector (Y/N)?");
-
-    if (showRotationAngleAnswer.toLowerCase() == "y") {
-      showRotationAngle = true;
-    }
-    if (showDectectedEmotionAnswer.toLowerCase() == "y") {
-      showDetectedEmotion = true;
-    }
-    if (showNumberOfDetectedHogsAnswer.toLowerCase() == "y") {
-      showNumberOfDetectedHogs = true;
-    }
-    if (showLandmarkPlotAnswer.toLowerCase() == "y") {
-      showLandmarkPlot();
-    }
-    if (showCanvasCroppedAnswer.toLowerCase() == "y") {
-      showCanvasCropped();
-    }
-    if (showStatusVectorAnswer.toLowerCase() == "y") {
-      showStatusVector = true;
-    }
-  }
-
-  function showLandmarkPlot() {
-    document.getElementById('canvas-cropped').style.display = "inline-block";
-  }
-
-  function showCanvasCropped() {
-    document.getElementById('canvas-landmark-plot').style.display = "inline-block";
-  }
+  return "Debugging enabled";
 }
 
 function sendIfSecondElapsed() {
@@ -468,6 +449,52 @@ function sendIfSecondElapsed() {
     currentTime = new Date().getSeconds();
     sendStatus();
   }
+}
+
+function secretMenu(){
+
+  document.getElementById("debug-combined-plot").addEventListener("change", function(){
+    combinedPlot = this.checked;
+    if (this.checked){
+      document.getElementById("video-input").style.display = "none";
+      document.getElementById("canvas-combined-plot").style.display = "block";
+    } else {
+      document.getElementById("video-input").style.display = "block";
+      document.getElementById("canvas-combined-plot").style.display = "none";
+    }
+  })
+
+  document.getElementById("debug-emotion").addEventListener("change", function(){
+    showDetectedEmotion = this.checked;
+  })
+
+  document.getElementById("debug-status-vector").addEventListener("change", function(){
+    showStatusVector = this.checked;
+  })
+
+  document.getElementById("debug-rotation-angle").addEventListener("change", function(){
+    showRotationAngle = this.checked;
+  })
+
+  document.getElementById("debug-nr-hogs").addEventListener("change", function(){
+    showNumberOfDetectedHogs = this.checked;
+  })
+
+  document.getElementById("debug-canvas-cropped").addEventListener("change", function(){
+    if (this.checked){
+      document.getElementById("canvas-cropped").style.display = "inline-block";
+    } else {
+      document.getElementById("canvas-cropped").style.display = "none";
+    }
+  })
+
+  document.getElementById("debug-landmark-plot").addEventListener("change", function(){
+    if (this.checked){
+      document.getElementById("canvas-landmark-plot").style.display = "inline-block";
+    } else {
+      document.getElementById("canvas-landmark-plot").style.display = "none";
+    }
+  })
 }
 
 cameraSelectBox.click()
