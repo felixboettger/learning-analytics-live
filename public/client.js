@@ -28,8 +28,8 @@ main()
 async function main() {
   // Load face-api neural networks
   await faceapi.nets.faceLandmark68Net.loadFromUri('/models/face-api');
-  await faceapi.nets.tinyFaceDetector.loadFromUri('/models/face-api'); // TODO: check if non-tiny model performs better
-  await faceapi.nets.faceExpressionNet.loadFromUri('/models/face-api')
+  await faceapi.nets.ssdMobilenetv1.loadFromUri('/models/face-api');
+  await faceapi.nets.faceExpressionNet.loadFromUri('/models/face-api');
 
   // create websocket connection
   webSocket = createWebSocket(sessionKey, id, secret);
@@ -70,11 +70,6 @@ async function main() {
     const url = window.location;
     url.replace(url.protocol + "//" + url.host + "/");
   };
-
-
-
-
-
 }
 
 /**
@@ -95,7 +90,7 @@ async function generateStatus() {
   const displaySize = { width: canvasInput.width, height: canvasInput.height }
   // still image is in canvasInput
 
-  const detections = await faceapi.detectSingleFace(canvasInput, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceExpressions(); // check without tinyfacedetector
+  const detections = await faceapi.detectSingleFace(canvasInput).withFaceLandmarks().withFaceExpressions(); // check without tinyfacedetector
 
   if (typeof detections != "undefined") {
     const resizedDetections = faceapi.resizeResults(detections, displaySize);
@@ -129,7 +124,6 @@ async function generateStatus() {
         debugging ? console.log("Face not completely in picture") : "";
         statusVector.err += "face not in picture"
       }
-
     } else {
       debugging ? console.log("Face was not detected") : "";
     }
@@ -225,7 +219,6 @@ function createWebSocket(sessionKey, id, secret) {
   return new WebSocket(webSocketURL, "echo-protocol");
 }
 
-
 /**
  * getCookieValues - Function that reads cookies.
  *
@@ -260,10 +253,7 @@ function getElements() {
 
 function plotFace(landmarkList) {
 
-
-
   ctx3.clearRect(0, 0, 112, 112);
-
   ctx3.strokeStyle = "orange";
 
   for (let i = 0; i < landmarkList.length; i++) {
@@ -367,7 +357,6 @@ function rotateLandmarks(landmarks, angle) {
   cosAlpha = Math.cos(angle);
   sinAlpha = Math.sin(angle);
 
-
   for (let i = 0; i < landmarks.length; i++) {
     currentX = landmarks[i][0] - 56;
     currentY = landmarks[i][1] - 56;
@@ -461,9 +450,7 @@ function debug() {
     if (showStatusVectorAnswer.toLowerCase() == "y") {
       showStatusVector = true;
     }
-
   }
-
 
   function showLandmarkPlot() {
     document.getElementById('canvas-cropped').style.display = "inline-block";
@@ -472,7 +459,6 @@ function debug() {
   function showCanvasCropped() {
     document.getElementById('canvas-landmark-plot').style.display = "inline-block";
   }
-
 }
 
 function sendIfSecondElapsed() {
