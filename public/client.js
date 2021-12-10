@@ -186,7 +186,7 @@ async function getHogs() {
     blockSize: 2,   // length of block in number of cells
     blockStride: 1, // number of cells to slide block window by (block overlap)
     bins: 8,        // bins per histogram
-    norm: 'L2'      // block normalization method
+    norm: 'L2-hys'      // block normalization method
   }
   var curr_image = await IJS.Image.load(canvasCropped.toDataURL())
   hogs = extractHOG(curr_image, options);
@@ -390,13 +390,16 @@ function rotateLandmarks(landmarks, angle) {
 }
 
 function maskFace(faceLandmarks) {
+  const margin = 8;
   ctx2.beginPath();
   const fistCoordinateX = faceLandmarks[0][0];
+  const fistCoordinateX = faceLandmarks[0][0] - margin;
   const fistCoordinateY = faceLandmarks[0][1];
   ctx2.moveTo(fistCoordinateX, fistCoordinateY);
   for (let i = 1; i < 17; i++) {
     currentCoordinate = faceLandmarks[i];
     currentX = currentCoordinate[0];
+    currentX = i < 8 ? currentX - margin : currentX + margin;
     currentY = currentCoordinate[1];
     ctx2.lineTo(currentX, currentY);
   }
@@ -461,24 +464,24 @@ function secretMenu(){
     } else {
       document.getElementById("video-input").style.display = "block";
       document.getElementById("canvas-combined-plot").style.display = "none";
-    }
-  })
+    };
+  });
 
   document.getElementById("debug-emotion").addEventListener("change", function(){
     showDetectedEmotion = this.checked;
-  })
+  });
 
   document.getElementById("debug-status-vector").addEventListener("change", function(){
     showStatusVector = this.checked;
-  })
+  });
 
   document.getElementById("debug-rotation-angle").addEventListener("change", function(){
     showRotationAngle = this.checked;
-  })
+  });
 
   document.getElementById("debug-nr-hogs").addEventListener("change", function(){
     showNumberOfDetectedHogs = this.checked;
-  })
+  });
 
   document.getElementById("debug-canvas-cropped").addEventListener("change", function(){
     if (this.checked){
