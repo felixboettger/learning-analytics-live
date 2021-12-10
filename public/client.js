@@ -390,9 +390,8 @@ function rotateLandmarks(landmarks, angle) {
 }
 
 function maskFace(faceLandmarks) {
-  const margin = 8;
+  const margin = 4;
   ctx2.beginPath();
-  const fistCoordinateX = faceLandmarks[0][0];
   const fistCoordinateX = faceLandmarks[0][0] - margin;
   const fistCoordinateY = faceLandmarks[0][1];
   ctx2.moveTo(fistCoordinateX, fistCoordinateY);
@@ -406,7 +405,7 @@ function maskFace(faceLandmarks) {
 
   const rightBrowRightX = faceLandmarks[26][0];
   const rightBrowRightY = faceLandmarks[26][1];
-  ctx2.lineTo(rightBrowRightX + 10, rightBrowRightY - 10);
+  ctx2.lineTo(rightBrowRightX + 10, rightBrowRightY - 20);
 
   const rightBrowMiddleX = faceLandmarks[20][0];
   const rightBrowMiddleY = faceLandmarks[20][1] - 8;
@@ -418,7 +417,7 @@ function maskFace(faceLandmarks) {
 
   const leftBrowLeftX = faceLandmarks[18][0];
   const leftBrowLeftY = faceLandmarks[18][1];
-  ctx2.lineTo(leftBrowLeftX - 10, leftBrowLeftY - 10);
+  ctx2.lineTo(leftBrowLeftX - 10, leftBrowLeftY - 20);
 
   ctx2.lineTo(fistCoordinateX, fistCoordinateY);
   ctx2.lineTo(0, fistCoordinateY)
@@ -498,7 +497,34 @@ function secretMenu(){
       document.getElementById("canvas-landmark-plot").style.display = "none";
     }
   })
+
+  document.getElementById("download-sample-btn").addEventListener("click", function(){
+    downloadSample();
+  })
 }
+
+function downloadSample(){
+  filename = prompt("Filename: ");
+  generateStatus().then(statusVector => {
+    const downloadHogs = document.createElement("a");
+    downloadHogs.setAttribute("download", filename + "_hogs");
+    downloadHogs.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(statusVector.h));
+    downloadHogs.click()
+    const downloadBig = document.createElement("a");
+    downloadBig.setAttribute("download", filename + "_big");
+    downloadBig.setAttribute("href", document.getElementById('canvas-input').toDataURL());
+    downloadBig.click()
+    const downloadSmall = document.createElement("a");
+    downloadSmall.setAttribute("download", filename + "_small");
+    downloadSmall.setAttribute("href", document.getElementById('canvas-cropped').toDataURL());
+    downloadSmall.click()
+    const downloadLandmarks = document.createElement("a");
+    downloadLandmarks.setAttribute("download", filename +"_landmarks");
+    downloadLandmarks.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(statusVector.lm));
+    downloadLandmarks.click()
+  });
+}
+
 
 cameraSelectBox.click()
 

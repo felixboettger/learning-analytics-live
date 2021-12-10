@@ -93,12 +93,25 @@ function normalize(vector, norm) {
   } else if (norm === "L2-hys") {
     sum = 0;
     for (i = 0; i < vector.length; i++) {
-      sum += vector[i] > 0.2 ? 0.04 : vector[i] * vector[i];
+      sum += vector[i] * vector[i];
     }
     denom = Math.sqrt(sum + epsilon);
     for (i = 0; i < vector.length; i++) {
       vector[i] /= denom;
     }
+    for (i = 0; i < vector.length; i++) {
+      if (vector[i] > 0.2){
+        vector[i] = 0.2;
+      }
+    }
+    sum = 0;
+    for (i = 0; i < vector.length; i++) {
+      sum += vector[i] * vector[i];
+    }
+    denom = Math.sqrt(sum + epsilon);
+    for (i = 0; i < vector.length; i++) {
+      vector[i] /= denom;
+    } 
   }
 }
 
