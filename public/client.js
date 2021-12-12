@@ -96,7 +96,11 @@ async function generateStatus() {
 
   if (typeof detections != "undefined") {
     const resizedDetections = faceapi.resizeResults(detections, displaySize);
-    const det = resizedDetections.detection._box;
+    const alr = resizedDetections.alignedRect._box;
+
+    ctx3.strokeRect(resizedDetections.alignedRect._box._x, resizedDetections.alignedRect._box._y, 1, 1);
+    ctx3.fillRect(resizedDetections.alignedRect._box._x, resizedDetections.alignedRect._box._y, 1, 1);
+
 
     if (debugging && combinedPlot){
       ctxc.clearRect(0, 0, canvasCombinedPlot.width, canvasCombinedPlot.height);
@@ -106,12 +110,12 @@ async function generateStatus() {
       faceapi.draw.drawFaceExpressions(canvasCombinedPlot, resizedDetections);
     }
 
-    if (typeof det != "undefined") {
-      if (checkFullFaceInPicture(det._x, det._y, det._width, det._height)) {
+    if (typeof alr != "undefined") {
+      if (checkFullFaceInPicture(alr._x, alr._y, alr._width, alr._height)) {
         if (typeof resizedDetections.unshiftedLandmarks != "undefined") {
-          const resizedLandmarks = resizeLandmarks(resizedDetections.unshiftedLandmarks._positions, det._x, det._y, det._width, det._height);
+          console.log(resizedDetections);
+          const resizedLandmarks = resizeLandmarks(resizedDetections.landmarks._positions, alr._width, alr._height, alr);
           statusVector.lm = rotateLandmarks(resizedLandmarks, resizedDetections.angle.roll);
-          plotFace(statusVector.lm);
         } else {
           console.log("Landmarks not detected, returning without landmarks.");
         }
@@ -122,9 +126,9 @@ async function generateStatus() {
           console.log("Emotion not detected, returning without emotion.");
         }
         if (statusVector.lm.length === 68) {
-          cropRotateFace(det._x, det._y, det._width, det._height, resizedDetections.angle.roll);
+          cropRotateFace(alr._x, alr._y, alr._width, alr._height, resizedDetections.angle.roll);
           maskFace(statusVector.lm);
-
+          plotFace(statusVector.lm);
           statusVector.h = await getHogs();
           debugging && showNumberOfDetectedHogs ? console.log("# Detected Hogs: ", statusVector.h.length) : "";
           if (debugging && combinedPlot){
@@ -197,24 +201,32 @@ async function getHogs() {
   return hogs;
 }
 
-function resizeLandmarks(landmarks, x, y, width, height) {
-  landmarkList = [];
-  sizeMax = Math.max(width, height)
-  centerX = width / 2;
-  centerY = height / 2;
-  offsetX = (centerX - sizeMax / 2) * 112 / sizeMax;
-  offsetY = (centerY - sizeMax / 2) * 112 / sizeMax;
+function resizeLandmarks(landmarks, width, height, alr) {
+
+  const landmarkList = [];
 
   for (let i = 0; i < landmarks.length; i++) {
-    x = landmarks[i]._x;
-    y = landmarks[i]._y;
-    x = x * 112 / sizeMax - offsetX;
-    y = y * 112 / sizeMax - offsetY;
-
-    landmarkList.push([x, y]);
+    landmarkList.push(getNewCoords(landmarks[i]._x, landmarks[i]._y, alr._x, alr._y, alr._x + alr._width, alr._y + alr._height));
   }
   return landmarkList;
 }
+
+function getNewCoords(x, y, upperLeftX, upperLeftY, lowerRightX, lowerRightY){
+  sizeX = lowerRightX - upperLeftX;
+  sizeY = lowerRightY - upperLeftY;
+
+  centerX = (lowerRightX + upperLeftX)/2;
+  centerY = (lowerRightY + upperLeftY)/2;
+
+  offsetX = (centerX-sizeX/2)*112/sizeX;
+  offsetY = (centerY-sizeY/2)*112/sizeY;
+
+  x = x * 112/sizeX - offsetX;
+  y = y * 112/sizeY - offsetY;
+
+  return [x.toFixed(3), y.toFixed(3)];
+}
+
 
 /**
  * createWebSocket - Function that creates a WebSocket and connects to the server.
@@ -275,6 +287,7 @@ function getElements() {
 function plotFace(landmarkList) {
 
   ctx3.clearRect(0, 0, 112, 112);
+  ctx3.drawImage(canvasCropped, 0, 0);
   ctx3.strokeStyle = "orange";
 
   for (let i = 0; i < landmarkList.length; i++) {
@@ -391,7 +404,7 @@ function rotateLandmarks(landmarks, angle) {
 }
 
 function maskFace(faceLandmarks) {
-  const margin = 7;
+  const margin = 0;
   ctx2.beginPath();
   const fistCoordinateX = faceLandmarks[0][0] - margin;
   const fistCoordinateY = faceLandmarks[0][1];
