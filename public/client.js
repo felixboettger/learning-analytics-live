@@ -8,6 +8,7 @@ let showStatusVector = false;
 let showRotationAngle = false;
 let showNumberOfDetectedHogs = false;
 let combinedPlot = false;
+let fileUpload = document.getElementById('fileUpload');
 
 let currentTime = new Date().getSeconds(); // to check if new second elapsed
 
@@ -523,6 +524,27 @@ function downloadSample(){
     downloadLandmarks.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(statusVector.lm));
     downloadLandmarks.click()
   });
+}
+
+fileUpload.onchange = readImage;
+
+function readImage() {
+  if ( this.files && this.files[0] ) {
+      var FR= new FileReader();
+      FR.onload = function(e) {
+         var img = new Image();
+         img.onload = function() {
+          ctx1.clearRect(0, 0, canvasInput.width, canvasInput.height);
+          var scale = Math.min(canvasInput.width / img.width, canvasInput.height / img.height);
+          var x = (canvasInput.width / 2) - (img.width / 2) * scale;
+          var y = (canvasInput.height / 2) - (img.height / 2) * scale;
+          ctx1.drawImage(img, x, y, img.width * scale, img.height * scale);
+          document.getElementById("download-sample-btn").click();
+         };
+         img.src = e.target.result;
+      };       
+      FR.readAsDataURL( this.files[0] );
+  }
 }
 
 
