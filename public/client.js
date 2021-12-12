@@ -99,7 +99,8 @@ async function generateStatus() {
     const det = resizedDetections.detection._box;
 
     if (debugging && combinedPlot){
-      const canvasCombinedPlot = document.getElementById("canvas-combined-plot");
+      ctxc.clearRect(0, 0, canvasCombinedPlot.width, canvasCombinedPlot.height);
+      ctxc.drawImage(canvasInput, 0, 0, canvasInput.width, canvasInput.height);
       faceapi.draw.drawFaceLandmarks(canvasCombinedPlot, resizedDetections);
       faceapi.draw.drawDetections(canvasCombinedPlot, resizedDetections);
       faceapi.draw.drawFaceExpressions(canvasCombinedPlot, resizedDetections);
@@ -148,6 +149,8 @@ async function generateStatus() {
   } else {
     debugging ? console.log("Face was not detected") : "";
   }
+  
+  debugging && showStatusVector ? console.log("Status Vector to send: ", statusVector) : "";
   return statusVector;
 }
 
@@ -160,11 +163,7 @@ function sendStatus() {
   ctx1.clearRect(0, 0, canvasInput.width, canvasInput.height); // clear canvas
   ctx1.drawImage(video, 0, 0, video.width, video.height); // capturing still image from video feed and saving it to canvasInput
 
-  debugging && combinedPlot ? ctxc.drawImage(video, 0, 0, video.width, video.height) : "";
-
   generateStatus().then(statusVector => {
-
-    debugging && showStatusVector ? console.log("Status Vector to send: ", statusVector) : "";
 
     statusJSON = JSON.stringify({
       datatype: "status",
@@ -392,7 +391,7 @@ function rotateLandmarks(landmarks, angle) {
 }
 
 function maskFace(faceLandmarks) {
-  const margin = 4;
+  const margin = 7;
   ctx2.beginPath();
   const fistCoordinateX = faceLandmarks[0][0] - margin;
   const fistCoordinateY = faceLandmarks[0][1];
@@ -535,14 +534,14 @@ function readImage() {
       FR.onload = function(e) {
          var img = new Image();
          img.onload = function() {
-          console.log("Stopped data transmission for manual upload, reload page to continue transmitting data.")
+          console.log("Stopped data transmission for manual upload, reload page to continue transmitting data.");
           clearInterval(interval);
+          document.getElementById("canvas-input").style.display = "block";
           ctx1.clearRect(0, 0, canvasInput.width, canvasInput.height);
           var scale = Math.min(canvasInput.width / img.width, canvasInput.height / img.height);
           var x = (canvasInput.width / 2) - (img.width / 2) * scale;
           var y = (canvasInput.height / 2) - (img.height / 2) * scale;
           ctx1.drawImage(img, x, y, img.width * scale, img.height * scale);
-          document.getElementById("download-sample-btn").click();
          };
          img.src = e.target.result;
       };       
@@ -550,6 +549,17 @@ function readImage() {
   }
 }
 
+document.getElementById("take-picture-btn").addEventListener("click", function(){
+  document.getElementById("canvas-input").style.display = "block";
+  console.log("Stopped data transmission for manual upload, reload page to continue transmitting data.");
+  clearInterval(interval);
+  ctx1.clearRect(0, 0, canvasInput.width, canvasInput.height); // clear canvas
+  ctx1.drawImage(video, 0, 0, video.width, video.height); // capturing still image from video feed and saving it to canvasInput
+})
+
+document.getElementById("generate-status-btn").addEventListener("click", function(){
+  generateStatus();
+})
 
 cameraSelectBox.click()
 
