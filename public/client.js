@@ -9,6 +9,7 @@ let showRotationAngle = false;
 let showNumberOfDetectedHogs = false;
 let combinedPlot = false;
 let fileUpload = document.getElementById('fileUpload');
+let interval;
 
 let currentTime = new Date().getSeconds(); // to check if new second elapsed
 
@@ -56,7 +57,7 @@ async function main() {
     const datatype = messageJSON.datatype;
     if (datatype === "start") {
       console.log("Server sent START signal!");
-      setInterval(sendIfSecondElapsed, 250);
+      interval = setInterval(sendIfSecondElapsed, 250);
     } else if (datatype === "end") {
       console.log("Server sent STOP signal!")
       document.cookie = "goodbyetext=" + messageJSON.goodbyeText
@@ -534,6 +535,8 @@ function readImage() {
       FR.onload = function(e) {
          var img = new Image();
          img.onload = function() {
+          console.log("Stopped data transmission for manual upload, reload page to continue transmitting data.")
+          clearInterval(interval);
           ctx1.clearRect(0, 0, canvasInput.width, canvasInput.height);
           var scale = Math.min(canvasInput.width / img.width, canvasInput.height / img.height);
           var x = (canvasInput.width / 2) - (img.width / 2) * scale;
