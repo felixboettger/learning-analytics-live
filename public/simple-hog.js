@@ -9,7 +9,7 @@ function extractHOG(image, options = {}) {
       blockStride = blockSize / 2,
       norm = 'L2'
     } = options;
-  
+
     var histograms = extractHistograms(image, options);
   
     var blocks = [];
@@ -100,7 +100,7 @@ function normalize(vector, norm) {
       vector[i] /= denom;
     }
     for (i = 0; i < vector.length; i++) {
-      if (vector[i] > 0.2){
+      if (vector[i] > 0.2 || vector[i] < -0.2){
         vector[i] = 0.2;
       }
     }
@@ -164,7 +164,8 @@ function intensities(image) {
   if (image.components === 1) {
     return image;
   } else {
-    return image.grey({ algorithm: 'luma601' });
+    return image.grey({ algorithm: 'luma601' }); old
+    // return image.grey({ algorithm: 'luminosity' });
   }
 }
 
@@ -180,6 +181,4 @@ function binFor(radians, bins) {
 
   return Math.floor(angle / 180 * bins);
 }
-
-
 

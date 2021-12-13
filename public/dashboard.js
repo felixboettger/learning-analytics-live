@@ -166,17 +166,10 @@ function downloadJSONFile(object) {
  * @param  {int} concentrationScore Concentration score of the participant.
  * @return {string} HTML participant element.
  */
-function generateParticipantElement(name, emotion, objects, looks, concentrationScore) {
+function generateParticipantElement(name, emotion) {
   const participantElement = `
     <td>` + name + `</td>
     <td>` + emotion + `</td>
-    <td>` + objects + `</td>
-    <td>` + looks + `</td>
-    <td>
-      <div class="progress">
-        <div class="progress-bar bg-green" role="progressbar" aria-valuenow="` + concentrationScore + `" aria-valuemin="0" aria-valuemax="100" style="width: ` + concentrationScore + `%"></div>
-      </div>
-    </td>
   `;
   return participantElement;
 }
@@ -203,43 +196,6 @@ function getDirectLink() {
   const wl = window.location;
   return wl.protocol + "//" + wl.host + "/join/" + sessionKey;
 }
-
-
-/**
- * getFullEmotionName - Function that tranlates the emotion abbreviation into the full emotion name.
- *
- * @param  {string} emotion Emotion abbreviation.
- * @return {string} Full emotion text.
- */
-function getFullEmotionName(emotion) {
-  switch (emotion) {
-    case "ha":
-      return "happy";
-      break;
-    case "ne":
-      return "neutral";
-      break;
-    case "sa":
-      return "sad";
-      break;
-    case "fe":
-      return "fearful";
-      break;
-    case "di":
-      return "disgusted";
-      break;
-    case "an":
-      return "angry";
-      break;
-    case "su":
-      return "surprised";
-      break;
-    default:
-      return ""
-      break;
-  }
-}
-
 
 /**
  * refreshDashboard - Function that refreshes the Dashboard.
@@ -282,10 +238,7 @@ function refreshDashboard(participantsList) {
         counterElements.ec[emotion.substr(0, 2)] += 1;
       }
       counterElements.apc += 1;
-      counterElements.lacc += (currentStatus.looks) ? 1 : 0;
-      counterElements.mcs += currentStatus.concentrationScore || 0;
-      const fullEmotion = getFullEmotionName(emotion);
-      participantElement = generateParticipantElement(name, fullEmotion, objects, looks, concentrationScore);
+      participantElement = generateParticipantElement(name, emotion);
       addOrChangeParticipant(participantElement, id);
     } else {
       removeParticipant(id);
@@ -294,7 +247,6 @@ function refreshDashboard(participantsList) {
   if (counterElements.apc > 0) {
     counterElements.mcs = Math.round(counterElements.mcs / counterElements.apc);
   }
-  updateConcentrationPlot(counterElements.mcs);
   updateEmotionPie(counterElements.ec);
   setCounterElements(counterElements);
 }

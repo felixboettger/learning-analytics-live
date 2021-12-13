@@ -11,6 +11,8 @@ let combinedPlot = false;
 let fileUpload = document.getElementById('fileUpload');
 let interval;
 
+const shiftDown = 15; // px to shift face image and landmarks down
+
 let currentTime = new Date().getSeconds(); // to check if new second elapsed
 
 startWebcam()
@@ -113,7 +115,6 @@ async function generateStatus() {
     if (typeof alr != "undefined") {
       if (checkFullFaceInPicture(alr._x, alr._y, alr._width, alr._height)) {
         if (typeof resizedDetections.unshiftedLandmarks != "undefined") {
-          console.log(resizedDetections);
           const resizedLandmarks = resizeLandmarks(resizedDetections.landmarks._positions, alr._width, alr._height, alr);
           statusVector.lm = rotateLandmarks(resizedLandmarks, resizedDetections.angle.roll);
         } else {
@@ -127,7 +128,7 @@ async function generateStatus() {
         }
         if (statusVector.lm.length === 68) {
           cropRotateFace(alr._x, alr._y, alr._width, alr._height, resizedDetections.angle.roll);
-          maskFace(statusVector.lm);
+          maskFaceNew(statusVector.lm);
           plotFace(statusVector.lm);
           statusVector.h = await getHogs();
           debugging && showNumberOfDetectedHogs ? console.log("# Detected Hogs: ", statusVector.h.length) : "";
@@ -190,8 +191,8 @@ async function getHogs() {
     cellSize: 8,    // length of cell in px
     blockSize: 2,   // length of block in number of cells
     blockStride: 1, // number of cells to slide block window by (block overlap)
-    bins: 8,        // bins per histogram
-    norm: 'L2-hys'      // block normalization method
+    bins: 8,        // bins per histogram (=orientations)
+    norm: 'L2-hys'      // block normalization method (=standard in hog())
   }
   var curr_image = await IJS.Image.load(canvasCropped.toDataURL())
   hogs = extractHOG(curr_image, options);
@@ -224,7 +225,8 @@ function getNewCoords(x, y, upperLeftX, upperLeftY, lowerRightX, lowerRightY){
   x = x * 112/sizeX - offsetX;
   y = y * 112/sizeY - offsetY;
 
-  return [x.toFixed(3), y.toFixed(3)];
+  
+  return [x.toFixed(3), (y + shiftDown).toFixed(3)];
 }
 
 
@@ -376,7 +378,7 @@ function cropRotateFace(x, y, width, height, angle) {
   tctx1.drawImage(canvasInput, x, y, width, height, 0, 0, 112, 112);
 
   ctx2.clearRect(0, 0, 112, 112);
-  ctx2.drawImage(tempCanvas1, 0, 0);
+  ctx2.drawImage(tempCanvas1, 0, shiftDown);
 }
 
 // Stop all camera feeds once camera selection changes
@@ -419,19 +421,19 @@ function maskFace(faceLandmarks) {
 
   const rightBrowRightX = faceLandmarks[26][0];
   const rightBrowRightY = faceLandmarks[26][1];
-  ctx2.lineTo(rightBrowRightX + 10, rightBrowRightY - 20);
+  ctx2.lineTo(rightBrowRightX + 10, rightBrowRightY - 3);
 
   const rightBrowMiddleX = faceLandmarks[20][0];
   const rightBrowMiddleY = faceLandmarks[20][1] - 8;
-  ctx2.lineTo(rightBrowMiddleX, rightBrowMiddleY - 10);
+  ctx2.lineTo(rightBrowMiddleX, rightBrowMiddleY - 3);
 
   const leftBrowMiddleX = faceLandmarks[25][0];
   const leftBrowMiddleY = faceLandmarks[25][1] - 8;
-  ctx2.lineTo(leftBrowMiddleX, leftBrowMiddleY - 10);
+  ctx2.lineTo(leftBrowMiddleX, leftBrowMiddleY - 3);
 
   const leftBrowLeftX = faceLandmarks[18][0];
   const leftBrowLeftY = faceLandmarks[18][1];
-  ctx2.lineTo(leftBrowLeftX - 10, leftBrowLeftY - 20);
+  ctx2.lineTo(leftBrowLeftX - 10, leftBrowLeftY - 3);
 
   ctx2.lineTo(fistCoordinateX, fistCoordinateY);
   ctx2.lineTo(0, fistCoordinateY)
@@ -444,6 +446,61 @@ function maskFace(faceLandmarks) {
   ctx2.closePath();
   ctx2.fill();
 }
+
+function maskFaceNew(faceLandmarks) {
+  const margin = 0;
+  ctx2.beginPath();
+  const fistCoordinateX = faceLandmarks[0][0] - margin;
+  const fistCoordinateY = faceLandmarks[0][1];
+  ctx2.moveTo(fistCoordinateX, fistCoordinateY);
+  for (let i = 1; i < 17; i++) {
+    currentCoordinate = faceLandmarks[i];
+    currentX = currentCoordinate[0];
+    currentX = i < 8 ? currentX - margin : currentX + margin;
+    currentY = currentCoordinate[1];
+    ctx2.lineTo(currentX, currentY);
+  }
+  for (let i = 26; i > 23; i--){
+    currentCoordinate = faceLandmarks[i];
+    currentX = currentCoordinate[0];
+    currentY = currentCoordinate[1];
+    ctx2.lineTo(currentX, currentY);
+  }
+  for (let i = 19; i > 16; i--){
+    currentCoordinate = faceLandmarks[i];
+    currentX = currentCoordinate[0];
+    currentY = currentCoordinate[1];
+    ctx2.lineTo(currentX, currentY);
+  }
+
+  // const rightBrowRightX = faceLandmarks[25][0];
+  // const rightBrowRightY = faceLandmarks[25][1];
+  // ctx2.lineTo(rightBrowRightX, rightBrowRightY);
+
+  // const rightBrowMiddleX = faceLandmarks[20][0];
+  // const rightBrowMiddleY = faceLandmarks[20][1];
+  // ctx2.lineTo(rightBrowMiddleX, rightBrowMiddleY);
+
+  // const leftBrowMiddleX = faceLandmarks[25][0];
+  // const leftBrowMiddleY = faceLandmarks[25][1];
+  // ctx2.lineTo(leftBrowMiddleX, leftBrowMiddleY);
+
+  // const leftBrowLeftX = faceLandmarks[18][0];
+  // const leftBrowLeftY = faceLandmarks[18][1];
+  // ctx2.lineTo(leftBrowLeftX, leftBrowLeftY);
+
+  ctx2.lineTo(fistCoordinateX, fistCoordinateY);
+  ctx2.lineTo(0, fistCoordinateY)
+  ctx2.lineTo(0, 0);
+  ctx2.lineTo(112, 0);
+  ctx2.lineTo(112, 112);
+  ctx2.lineTo(0, 112);
+  ctx2.lineTo(0, fistCoordinateY);
+
+  ctx2.closePath();
+  ctx2.fill();
+}
+
 
 function debug() {
   debugging = true;
