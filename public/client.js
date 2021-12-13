@@ -11,7 +11,7 @@ let combinedPlot = false;
 let fileUpload = document.getElementById('fileUpload');
 let interval;
 
-const shiftDown = 15; // px to shift face image and landmarks down
+const shiftDown = 0; // px to shift face image and landmarks down
 
 let currentTime = new Date().getSeconds(); // to check if new second elapsed
 
@@ -99,7 +99,10 @@ async function generateStatus() {
   if (typeof detections != "undefined") {
     const resizedDetections = faceapi.resizeResults(detections, displaySize);
     const alr = resizedDetections.alignedRect._box;
+    const det = resizedDetections.detection._box;
+    const use = det;
 
+    //console.log(resizedDetections);
     ctx3.strokeRect(resizedDetections.alignedRect._box._x, resizedDetections.alignedRect._box._y, 1, 1);
     ctx3.fillRect(resizedDetections.alignedRect._box._x, resizedDetections.alignedRect._box._y, 1, 1);
 
@@ -108,14 +111,20 @@ async function generateStatus() {
       ctxc.clearRect(0, 0, canvasCombinedPlot.width, canvasCombinedPlot.height);
       ctxc.drawImage(canvasInput, 0, 0, canvasInput.width, canvasInput.height);
       faceapi.draw.drawFaceLandmarks(canvasCombinedPlot, resizedDetections);
-      faceapi.draw.drawDetections(canvasCombinedPlot, resizedDetections);
+      // faceapi.draw.drawDetections(canvasCombinedPlot, resizedDetections);
       faceapi.draw.drawFaceExpressions(canvasCombinedPlot, resizedDetections);
+      ctxc.strokeStyle = "red";
+      ctxc.strokeRect(resizedDetections.detection._box._x, resizedDetections.detection._box._y, resizedDetections.detection._box._width, resizedDetections.detection._box._height);
+      ctxc.strokeStyle = "blue";
+      ctxc.strokeRect(alr._x, alr._y, alr._width, alr._height);
+      
     }
 
-    if (typeof alr != "undefined") {
-      if (checkFullFaceInPicture(alr._x, alr._y, alr._width, alr._height)) {
+    if (typeof use != "undefined") {
+      if (checkFullFaceInPicture(use._x, use._y, use._width, use._height)) {
         if (typeof resizedDetections.unshiftedLandmarks != "undefined") {
-          const resizedLandmarks = resizeLandmarks(resizedDetections.landmarks._positions, alr._width, alr._height, alr);
+          // const resizedLandmarks = resizeLandmarks(resizedDetections.landmarks._positions, alr._width, alr._height, alr);
+          const resizedLandmarks = resizeLandmarks(resizedDetections.landmarks._positions, use._width, use._height, use);
           statusVector.lm = rotateLandmarks(resizedLandmarks, resizedDetections.angle.roll);
         } else {
           console.log("Landmarks not detected, returning without landmarks.");
@@ -127,7 +136,7 @@ async function generateStatus() {
           console.log("Emotion not detected, returning without emotion.");
         }
         if (statusVector.lm.length === 68) {
-          cropRotateFace(alr._x, alr._y, alr._width, alr._height, resizedDetections.angle.roll);
+          cropRotateFace(use._x, use._y, use._width, use._height, resizedDetections.angle.roll);
           maskFaceNew(statusVector.lm);
           plotFace(statusVector.lm);
           statusVector.h = await getHogs();
@@ -202,12 +211,12 @@ async function getHogs() {
   return hogs;
 }
 
-function resizeLandmarks(landmarks, width, height, alr) {
+function resizeLandmarks(landmarks, width, height, use) {
 
   const landmarkList = [];
 
   for (let i = 0; i < landmarks.length; i++) {
-    landmarkList.push(getNewCoords(landmarks[i]._x, landmarks[i]._y, alr._x, alr._y, alr._x + alr._width, alr._y + alr._height));
+    landmarkList.push(getNewCoords(landmarks[i]._x, landmarks[i]._y, use._x, use._y, use._x + use._width, use._y + use._height));
   }
   return landmarkList;
 }
@@ -448,28 +457,34 @@ function maskFace(faceLandmarks) {
 }
 
 function maskFaceNew(faceLandmarks) {
-  const margin = 0;
+  const marginX = 0;
+  const marginY = 0;
   ctx2.beginPath();
-  const fistCoordinateX = faceLandmarks[0][0] - margin;
+  const fistCoordinateX = faceLandmarks[0][0] += marginX;
   const fistCoordinateY = faceLandmarks[0][1];
   ctx2.moveTo(fistCoordinateX, fistCoordinateY);
   for (let i = 1; i < 17; i++) {
     currentCoordinate = faceLandmarks[i];
     currentX = currentCoordinate[0];
-    currentX = i < 8 ? currentX - margin : currentX + margin;
+    if (i < 8){
+      currentX += marginX;
+    } else if (i > 19){
+      currentX -= marginX;
+    }
+    
     currentY = currentCoordinate[1];
     ctx2.lineTo(currentX, currentY);
   }
-  for (let i = 26; i > 23; i--){
+  for (let i = 26; i > 24; i--){
     currentCoordinate = faceLandmarks[i];
     currentX = currentCoordinate[0];
-    currentY = currentCoordinate[1];
+    currentY = currentCoordinate[1] - marginY;
     ctx2.lineTo(currentX, currentY);
   }
-  for (let i = 19; i > 16; i--){
+  for (let i = 18; i > 16; i--){
     currentCoordinate = faceLandmarks[i];
     currentX = currentCoordinate[0];
-    currentY = currentCoordinate[1];
+    currentY = currentCoordinate[1] - marginY;
     ctx2.lineTo(currentX, currentY);
   }
 
