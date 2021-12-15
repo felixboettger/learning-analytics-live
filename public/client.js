@@ -592,51 +592,59 @@ function secretMenu(){
 
 function downloadSample(){
   filename = prompt("Filename: ");
-  generateStatus().then(statusVector => dowloadStatusVector(statusVector, filename));  // excecute the function 
+  generateStatus().then(statusVector => downloadStatusVector(statusVector, filename));  // excecute the function 
 }
 
 //function to open a folder and load the image
 function generateSampleFolderData(){
+
   clearInterval(interval);
-  console.log(this.files);
   const files = this.files;
-  for (let i = 0; i < files.length; i++){
+  console.log("Files to load: " , files);
+
+  next(0);
+
+  function next(i){
+
     const file = files[i];
-    let FR = new FileReader();
-    FR.onload = function(e){             //e=event will contain the file itself
-      let img = new Image();
-      img.onload = function(){
-        ctx1.clearRect(0,0,canvasInput.width, canvasInput.height );
-        var scale = Math.min(canvasInput.width / img.width, canvasInput.height / img.height);
-        var x = (canvasInput.width / 2) - (img.width / 2) * scale;
-        var y = (canvasInput.height / 2) - (img.height / 2) * scale;
-        ctx1.drawImage(img, x, y, img.width * scale, img.height * scale);
-      };
-      img.src = e.target.result;
-
+    let img = new Image();
+    img.onload = function(){  
+      ctx1.clearRect(0,0,canvasInput.width, canvasInput.height );
+      var scale = Math.min(canvasInput.width / img.width, canvasInput.height / img.height);
+      var x = (canvasInput.width / 2) - (img.width / 2) * scale;
+      var y = (canvasInput.height / 2) - (img.height / 2) * scale;
+      ctx1.drawImage(img, x, y, img.width * scale, img.height * scale);
+      generateStatus().then(statusVector => {
+        downloadStatusVector(statusVector, file.name.split(".")[0]).then(() => {
+          if (i < files.length - 1){
+            next(i + 1)
+          }
+        });
+      });
     };
-    FR.readAsDataURL(file);
-    generateStatus().then(statusVector => dowloadStatusVector(statusVector, file.name.split(".")[0]));
-  } 
-}
+    img.src = URL.createObjectURL(file);
+  }
+} 
 
-function dowloadStatusVector(statusVector, filename){
+
+async function downloadStatusVector(statusVector, filename){
   const downloadHogs = document.createElement("a");
   downloadHogs.setAttribute("download", filename + "_hogs");
   downloadHogs.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(statusVector.h));
-  downloadHogs.click()
   const downloadBig = document.createElement("a");
   downloadBig.setAttribute("download", filename + "_big");
   downloadBig.setAttribute("href", document.getElementById('canvas-input').toDataURL());
-  downloadBig.click()
   const downloadSmall = document.createElement("a");
   downloadSmall.setAttribute("download", filename + "_small");
   downloadSmall.setAttribute("href", document.getElementById('canvas-cropped').toDataURL());
-  downloadSmall.click()
   const downloadLandmarks = document.createElement("a");
   downloadLandmarks.setAttribute("download", filename +"_landmarks");
   downloadLandmarks.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(statusVector.lm));
-  downloadLandmarks.click()
+  downloadHogs.click();
+  downloadBig.click();
+  downloadSmall.click();
+  downloadLandmarks.click();
+  return true;
 }
 
 fileUpload.onchange = readImage;
