@@ -12,6 +12,8 @@ let fileUpload = document.getElementById('fileUpload');
 let folderUpload = document.getElementById('folder-upload'); // we store the identifier that allowa us to access this element 
 let interval;
 
+
+
 const shiftDown = 0; // px to shift face image and landmarks down
 
 let currentTime = new Date().getSeconds(); // to check if new second elapsed
@@ -592,20 +594,17 @@ function secretMenu(){
 
 function downloadSample(){
   filename = prompt("Filename: ");
-  generateStatus().then(statusVector => downloadStatusVector(statusVector, filename));  // excecute the function 
+  generateStatus().then(statusVector => dowloadStatusVector(statusVector, filename));  // excecute the function 
 }
 
 //function to open a folder and load the image
 function generateSampleFolderData(){
-
+  let i = 0;
   clearInterval(interval);
+  const generatingInterval = setInterval(next, 1500);
   const files = this.files;
-  console.log("Files to load: " , files);
 
-  next(0);
-
-  function next(i){
-
+  function next(){
     const file = files[i];
     let img = new Image();
     img.onload = function(){  
@@ -615,11 +614,11 @@ function generateSampleFolderData(){
       var y = (canvasInput.height / 2) - (img.height / 2) * scale;
       ctx1.drawImage(img, x, y, img.width * scale, img.height * scale);
       generateStatus().then(statusVector => {
-        downloadStatusVector(statusVector, file.name.split(".")[0]).then(() => {
-          if (i < files.length - 1){
-            next(i + 1)
-          }
-        });
+        downloadStatusVector(statusVector, file.name.split(".")[0]);
+        i += 1;
+        if (i == files.length){
+          clearInterval(generatingInterval);
+        }
       });
     };
     img.src = URL.createObjectURL(file);
@@ -627,7 +626,8 @@ function generateSampleFolderData(){
 } 
 
 
-async function downloadStatusVector(statusVector, filename){
+function downloadStatusVector(statusVector, filename){
+  console.log("Downloading: ", filename);
   const downloadHogs = document.createElement("a");
   downloadHogs.setAttribute("download", filename + "_hogs");
   downloadHogs.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(statusVector.h));
@@ -640,11 +640,11 @@ async function downloadStatusVector(statusVector, filename){
   const downloadLandmarks = document.createElement("a");
   downloadLandmarks.setAttribute("download", filename +"_landmarks");
   downloadLandmarks.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(statusVector.lm));
+  console.log(downloadHogs, downloadBig, downloadSmall, downloadLandmarks);
   downloadHogs.click();
   downloadBig.click();
   downloadSmall.click();
   downloadLandmarks.click();
-  return true;
 }
 
 fileUpload.onchange = readImage;
