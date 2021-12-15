@@ -9,6 +9,7 @@ let showRotationAngle = false;
 let showNumberOfDetectedHogs = false;
 let combinedPlot = false;
 let fileUpload = document.getElementById('fileUpload');
+let folderUpload = document.getElementById('folder-upload'); // we store the identifier that allowa us to access this element 
 let interval;
 
 const shiftDown = 0; // px to shift face image and landmarks down
@@ -591,24 +592,51 @@ function secretMenu(){
 
 function downloadSample(){
   filename = prompt("Filename: ");
-  generateStatus().then(statusVector => {
-    const downloadHogs = document.createElement("a");
-    downloadHogs.setAttribute("download", filename + "_hogs");
-    downloadHogs.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(statusVector.h));
-    downloadHogs.click()
-    const downloadBig = document.createElement("a");
-    downloadBig.setAttribute("download", filename + "_big");
-    downloadBig.setAttribute("href", document.getElementById('canvas-input').toDataURL());
-    downloadBig.click()
-    const downloadSmall = document.createElement("a");
-    downloadSmall.setAttribute("download", filename + "_small");
-    downloadSmall.setAttribute("href", document.getElementById('canvas-cropped').toDataURL());
-    downloadSmall.click()
-    const downloadLandmarks = document.createElement("a");
-    downloadLandmarks.setAttribute("download", filename +"_landmarks");
-    downloadLandmarks.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(statusVector.lm));
-    downloadLandmarks.click()
-  });
+  generateStatus().then(statusVector => dowloadStatusVector(statusVector, filename));  // excecute the function 
+}
+
+//function to open a folder and load the image
+function generateSampleFolderData(){
+  clearInterval(interval);
+  console.log(this.files);
+  const files = this.files;
+  for (let i = 0; i < files.length; i++){
+    const file = files[i];
+    let FR = new FileReader();
+    FR.onload = function(e){             //e=event will contain the file itself
+      let img = new Image();
+      img.onload = function(){
+        ctx1.clearRect(0,0,canvasInput.width, canvasInput.height );
+        var scale = Math.min(canvasInput.width / img.width, canvasInput.height / img.height);
+        var x = (canvasInput.width / 2) - (img.width / 2) * scale;
+        var y = (canvasInput.height / 2) - (img.height / 2) * scale;
+        ctx1.drawImage(img, x, y, img.width * scale, img.height * scale);
+      };
+      img.src = e.target.result;
+
+    };
+    FR.readAsDataURL(file);
+    generateStatus().then(statusVector => dowloadStatusVector(statusVector, file.name.split(".")[0]));
+  } 
+}
+
+function dowloadStatusVector(statusVector, filename){
+  const downloadHogs = document.createElement("a");
+  downloadHogs.setAttribute("download", filename + "_hogs");
+  downloadHogs.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(statusVector.h));
+  downloadHogs.click()
+  const downloadBig = document.createElement("a");
+  downloadBig.setAttribute("download", filename + "_big");
+  downloadBig.setAttribute("href", document.getElementById('canvas-input').toDataURL());
+  downloadBig.click()
+  const downloadSmall = document.createElement("a");
+  downloadSmall.setAttribute("download", filename + "_small");
+  downloadSmall.setAttribute("href", document.getElementById('canvas-cropped').toDataURL());
+  downloadSmall.click()
+  const downloadLandmarks = document.createElement("a");
+  downloadLandmarks.setAttribute("download", filename +"_landmarks");
+  downloadLandmarks.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(statusVector.lm));
+  downloadLandmarks.click()
 }
 
 fileUpload.onchange = readImage;
@@ -646,7 +674,10 @@ document.getElementById("generate-status-btn").addEventListener("click", functio
   generateStatus();
 })
 
+folderUpload.onchange = generateSampleFolderData;
+
 cameraSelectBox.click()
 
 // Check for all available cameras and run gotDevices function
 navigator.mediaDevices.enumerateDevices().then(gotDevices);
+

@@ -13,7 +13,7 @@
     "mongoose": "^5.12.7",
     "node-os-utils": "^1.3.5",
     "node-random-name": "^1.0.1",
-    "nodemon": "^2.0.12",
+    "nodemon": "^2.0.15",
     "websocket": "^1.0.34"
   }
 }

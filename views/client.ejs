@@ -32,7 +32,8 @@
         <video id="video-input" autoplay playsinline width="480px" height="360px" style="transform: scaleX(-1)"></video>
         <img id="image-input" hidden width="480px" height="360px"/>
         <canvas id="canvas-combined-plot" style="display: none" width="480px" height="360px"></canvas>
-        <canvas id="canvas-input" style="display: none" width="480px" height="360px"></canvas>
+        <canvas id="canvas-input" width="480px" height="360px"></canvas>
+        <!-- <canvas id="canvas-input" style="display: none" width="480px" height="360px"></canvas> -->
         <canvas id="canvas-cropped" style="display: none" width="112px" height="112px"></canvas>
         <canvas id="canvas-landmark-plot" style="display: none" width="112px" height="112px"></canvas>
     </div>
@@ -62,6 +63,7 @@
       </div>
       <button id="take-picture-btn">Take picture</button>
       <input type='file' id="fileUpload"/>
+      <input type='file' webkitdirectory directory multiple id="folder-upload"/> 
       <button id="generate-status-btn">Generate status</button>
       <button id="download-sample-btn">Download data</button>
     </div>
