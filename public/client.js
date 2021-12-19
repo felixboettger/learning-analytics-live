@@ -468,7 +468,10 @@ function maskFace(faceLandmarks) {
 
 function maskFaceNew(faceLandmarks) {
   const marginX = 0;
-  const marginY = 0;
+  // c = sqrt((x_a - x_b)^2 + (y_a - y_b)^2)
+  const eyeEyeBrowDistance = Math.sqrt(Math.pow((faceLandmarks[37][0] - faceLandmarks[19][0]), 2) + Math.pow((faceLandmarks[37][1] - faceLandmarks[19][1]), 2));
+  // In pyfeat paper, 1.5 * eyeEyeBrowDistance was used, change rotation to not have white parts in special cases
+  const marginY = eyeEyeBrowDistance;
   ctx2.beginPath();
   const fistCoordinateX = faceLandmarks[0][0] += marginX;
   const fistCoordinateY = faceLandmarks[0][1];
@@ -499,22 +502,6 @@ function maskFaceNew(faceLandmarks) {
     currentY = currentCoordinate[1] - marginY;
     ctx2.lineTo(currentX, currentY);
   }
-
-  // const rightBrowRightX = faceLandmarks[25][0];
-  // const rightBrowRightY = faceLandmarks[25][1];
-  // ctx2.lineTo(rightBrowRightX, rightBrowRightY);
-
-  // const rightBrowMiddleX = faceLandmarks[20][0];
-  // const rightBrowMiddleY = faceLandmarks[20][1];
-  // ctx2.lineTo(rightBrowMiddleX, rightBrowMiddleY);
-
-  // const leftBrowMiddleX = faceLandmarks[25][0];
-  // const leftBrowMiddleY = faceLandmarks[25][1];
-  // ctx2.lineTo(leftBrowMiddleX, leftBrowMiddleY);
-
-  // const leftBrowLeftX = faceLandmarks[18][0];
-  // const leftBrowLeftY = faceLandmarks[18][1];
-  // ctx2.lineTo(leftBrowLeftX, leftBrowLeftY);
 
   ctx2.lineTo(fistCoordinateX, fistCoordinateY);
   ctx2.lineTo(0, fistCoordinateY)
@@ -603,7 +590,7 @@ function secretMenu(){
 
 function downloadSample(){
   filename = prompt("Filename: ");
-  generateStatus().then(statusVector => dowloadStatusVector(statusVector, filename));  // excecute the function 
+  generateStatus().then(statusVector => downloadStatusVector(statusVector, filename));  // excecute the function 
 }
 
 //function to open a folder and load the image
