@@ -13,7 +13,6 @@ let folderUpload = document.getElementById('folder-upload'); // we store the ide
 let interval;
 
 
-
 const shiftDown = 0; // px to shift face image and landmarks down
 
 let currentTime = new Date().getSeconds(); // to check if new second elapsed
@@ -103,13 +102,9 @@ async function generateStatus() {
     const resizedDetections = faceapi.resizeResults(detections, displaySize);
     const alr = resizedDetections.alignedRect._box;
     const det = resizedDetections.detection._box;
-    const use = det;
+    const use = alr;   // define here the bounding box that we are using
 
     //console.log(resizedDetections);
-    ctx3.strokeRect(resizedDetections.alignedRect._box._x, resizedDetections.alignedRect._box._y, 1, 1);
-    ctx3.fillRect(resizedDetections.alignedRect._box._x, resizedDetections.alignedRect._box._y, 1, 1);
-
-
     if (debugging && combinedPlot){
       ctxc.clearRect(0, 0, canvasCombinedPlot.width, canvasCombinedPlot.height);
       ctxc.drawImage(canvasInput, 0, 0, canvasInput.width, canvasInput.height);
@@ -117,7 +112,7 @@ async function generateStatus() {
       // faceapi.draw.drawDetections(canvasCombinedPlot, resizedDetections);
       faceapi.draw.drawFaceExpressions(canvasCombinedPlot, resizedDetections);
       ctxc.strokeStyle = "red";
-      ctxc.strokeRect(resizedDetections.detection._box._x, resizedDetections.detection._box._y, resizedDetections.detection._box._width, resizedDetections.detection._box._height);
+      ctxc.strokeRect(det._x, det._y, det._width, det._height);
       ctxc.strokeStyle = "blue";
       ctxc.strokeRect(alr._x, alr._y, alr._width, alr._height);
       
@@ -126,8 +121,7 @@ async function generateStatus() {
     if (typeof use != "undefined") {
       if (checkFullFaceInPicture(use._x, use._y, use._width, use._height)) {
         if (typeof resizedDetections.unshiftedLandmarks != "undefined") {
-          // const resizedLandmarks = resizeLandmarks(resizedDetections.landmarks._positions, alr._width, alr._height, alr);
-          const resizedLandmarks = resizeLandmarks(resizedDetections.landmarks._positions, use._width, use._height, use);
+          const resizedLandmarks = resizeLandmarks(resizedDetections.landmarks._positions, use);
           statusVector.lm = rotateLandmarks(resizedLandmarks, resizedDetections.angle.roll);
         } else {
           console.log("Landmarks not detected, returning without landmarks.");
@@ -214,31 +208,39 @@ async function getHogs() {
   return hogs;
 }
 
-function resizeLandmarks(landmarks, width, height, use) {
-
+function resizeLandmarks(landmarks,  use) {
   const landmarkList = [];
-
   for (let i = 0; i < landmarks.length; i++) {
-    landmarkList.push(getNewCoords(landmarks[i]._x, landmarks[i]._y, use._x, use._y, use._x + use._width, use._y + use._height));
+    landmarkList.push(getNewCoords(landmarks[i]._x, landmarks[i]._y, use._x, use._y, use._width, use._height));
   }
   return landmarkList;
 }
 
-function getNewCoords(x, y, upperLeftX, upperLeftY, lowerRightX, lowerRightY){
-  sizeX = lowerRightX - upperLeftX;
-  sizeY = lowerRightY - upperLeftY;
+// function getNewCoords(x, y, upperLeftX, upperLeftY, lowerRightX, lowerRightY){
+//   sizeX = lowerRightX - upperLeftX;
+//   sizeY = lowerRightY - upperLeftY;
 
-  centerX = (lowerRightX + upperLeftX)/2;
-  centerY = (lowerRightY + upperLeftY)/2;
+//   centerX = (lowerRightX + upperLeftX)/2;
+//   centerY = (lowerRightY + upperLeftY)/2;
+  
+//   offsetX = (centerX-sizeX/2)*112/sizeX;
+//   offsetY = (centerY-sizeY/2)*112/sizeY;
 
-  offsetX = (centerX-sizeX/2)*112/sizeX;
-  offsetY = (centerY-sizeY/2)*112/sizeY;
-
-  x = x * 112/sizeX - offsetX;
-  y = y * 112/sizeY - offsetY;
+//   x = x * 112/sizeX - offsetX;
+//   y = y * 112/sizeY - offsetY;
 
   
-  return [x.toFixed(3), (y + shiftDown).toFixed(3)];
+//   return [x.toFixed(3), (y + shiftDown).toFixed(3)];
+// }
+
+function getNewCoords(x, y, boundingBoxUpperLeftX, boundingBoxUpperLeftY, width, height){
+  x = x - boundingBoxUpperLeftX;
+  y = y - boundingBoxUpperLeftY;
+  const smallSide = Math.min(width, height);
+  const ratio = (112/smallSide);
+  const newX = x * ratio;
+  const newY = y * ratio;
+  return [newX.toFixed(3), newY.toFixed(3)];
 }
 
 
@@ -363,31 +365,36 @@ function gotDevices(mediaDevices) {
   });
 }
 
-function newSize(width, height, angle) {
-  w = width;
-  h = height;
-  a = angle;
-  var rads = a * Math.PI / 180;
-  var c = Math.cos(rads);
-  var s = Math.sin(rads);
-  if (s < 0) { s = -s; }
-  if (c < 0) { c = -c; }
-  newWidth = h * s + w * c;
-  newHeight = h * c + w * s;
-  return [newWidth, newHeight]
-}
+// function newSize(width, height, angle) {
+//   w = width;
+//   h = height;
+//   a = angle;
+//   var rads = a * Math.PI / 180;
+//   var c = Math.cos(rads);
+//   var s = Math.sin(rads);
+//   if (s < 0) { s = -s; }
+//   if (c < 0) { c = -c; }
+//   newWidth = h * s + w * c;
+//   newHeight = h * c + w * s;
+//   return [newWidth, newHeight]
+// }
 
-function cropRotateFace(x, y, width, height, angle) {
+function cropRotateFace(x, y, width, height, angle) {  // x,y = topleft x,y
   debugging && showRotationAngle ? console.log("Rotation angle:", angle.toFixed(3), "rad") : "";
   const tempCanvas1 = document.createElement("canvas");
   const tctx1 = tempCanvas1.getContext("2d");
   tempCanvas1.height = tempCanvas1.width = 112;
   tctx1.strokeStyle = "orange";
-  tctx1.strokeRect(tempCanvas1.width / 2, tempCanvas1.height / 2, 1, 1);
+  //tctx1.strokeRect(tempCanvas1.width / 2, tempCanvas1.height / 2, 1, 1); //center of rotation
   tctx1.translate(tempCanvas1.width / 2, tempCanvas1.height / 2);
   tctx1.rotate(angle);
   tctx1.translate(-tempCanvas1.width / 2, -tempCanvas1.height / 2);
-  tctx1.drawImage(canvasInput, x, y, width, height, 0, 0, 112, 112);
+  let scale = Math.max(tempCanvas1.width / width, tempCanvas1.height / height);
+  //let new_x = (tempCanvas1.width / 2) - (width / 2) * scale;
+  //let new_y = (tempCanvas1.height / 2) - (height / 2) * scale;
+  tctx1.drawImage(canvasInput, x, y, width, height, 0,0, width*scale, height*scale);
+  //tctx1.drawImage(canvasInput, x, y, width, height, 0, 0, 112, 112);
+  
 
   ctx2.clearRect(0, 0, 112, 112);
   ctx2.drawImage(tempCanvas1, 0, shiftDown);
@@ -478,12 +485,14 @@ function maskFaceNew(faceLandmarks) {
     currentY = currentCoordinate[1];
     ctx2.lineTo(currentX, currentY);
   }
+  // Brows Right
   for (let i = 26; i > 24; i--){
     currentCoordinate = faceLandmarks[i];
     currentX = currentCoordinate[0];
     currentY = currentCoordinate[1] - marginY;
     ctx2.lineTo(currentX, currentY);
   }
+  // Brows Left
   for (let i = 18; i > 16; i--){
     currentCoordinate = faceLandmarks[i];
     currentX = currentCoordinate[0];
