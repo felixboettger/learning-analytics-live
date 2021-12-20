@@ -102,8 +102,10 @@ async function generateStatus() {
     const resizedDetections = faceapi.resizeResults(detections, displaySize);
     const alr = resizedDetections.alignedRect._box;
     const det = resizedDetections.detection._box;
-    const use = alr;   // define here the bounding box that we are using
-    const useSide = "short"; // long: resize to fit bigger side in canvasCropped, short: resize to let smaller side fill canvasCropped
+    const use = det;   // define here the bounding box that we are using
+
+
+    const useSide = "long"; // long: resize to fit bigger side in canvasCropped, short: resize to let smaller side fill canvasCropped
 
 
     //console.log(resizedDetections);
@@ -117,7 +119,8 @@ async function generateStatus() {
       ctxc.strokeRect(det._x, det._y, det._width, det._height);
       ctxc.strokeStyle = "blue";
       ctxc.strokeRect(alr._x, alr._y, alr._width, alr._height);
-      
+      ctxc.strokeStyle = "green";
+      ctxc.strokeRect(use._x, use._y, use._width, use._height);
     }
 
     if (typeof use != "undefined") {
@@ -369,38 +372,21 @@ function gotDevices(mediaDevices) {
   });
 }
 
-// function newSize(width, height, angle) {
-//   w = width;
-//   h = height;
-//   a = angle;
-//   var rads = a * Math.PI / 180;
-//   var c = Math.cos(rads);
-//   var s = Math.sin(rads);
-//   if (s < 0) { s = -s; }
-//   if (c < 0) { c = -c; }
-//   newWidth = h * s + w * c;
-//   newHeight = h * c + w * s;
-//   return [newWidth, newHeight]
-// }
-
 function cropRotateFace(x, y, width, height, angle, useSide) {  // x,y = topleft x,y
   debugging && showRotationAngle ? console.log("Rotation angle:", angle.toFixed(3), "rad") : "";
   const tempCanvas1 = document.createElement("canvas");
   const tctx1 = tempCanvas1.getContext("2d");
   tempCanvas1.height = tempCanvas1.width = 112;
-  tctx1.strokeStyle = "orange";
+  tctx1.fillRect(0, 0, tempCanvas1.width, tempCanvas1.height);
   //tctx1.strokeRect(tempCanvas1.width / 2, tempCanvas1.height / 2, 1, 1); //center of rotation
   tctx1.translate(tempCanvas1.width / 2, tempCanvas1.height / 2);
+  tctx1.strokeStyle = "orange";
   tctx1.rotate(angle);
   tctx1.translate(-tempCanvas1.width / 2, -tempCanvas1.height / 2);
   const longSideScale = Math.min(tempCanvas1.width / width, tempCanvas1.height / height);
   const shortSideScale = Math.max(tempCanvas1.width / width, tempCanvas1.height / height);
   let scale = (useSide === "long") ? longSideScale : shortSideScale;
-  //let new_x = (tempCanvas1.width / 2) - (width / 2) * scale;
-  //let new_y = (tempCanvas1.height / 2) - (height / 2) * scale;
   tctx1.drawImage(canvasInput, x, y, width, height, 0,0, width*scale, height*scale);
-  //tctx1.drawImage(canvasInput, x, y, width, height, 0, 0, 112, 112);
-  
 
   ctx2.clearRect(0, 0, 112, 112);
   ctx2.drawImage(tempCanvas1, 0, shiftDown);
@@ -642,7 +628,6 @@ function downloadStatusVector(statusVector, filename){
   const downloadLandmarks = document.createElement("a");
   downloadLandmarks.setAttribute("download", filename +"_landmarks");
   downloadLandmarks.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(statusVector.lm));
-  console.log(downloadHogs, downloadBig, downloadSmall, downloadLandmarks);
   downloadHogs.click();
   downloadBig.click();
   downloadSmall.click();
