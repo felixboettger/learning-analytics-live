@@ -103,6 +103,8 @@ async function generateStatus() {
     const alr = resizedDetections.alignedRect._box;
     const det = resizedDetections.detection._box;
     const use = alr;   // define here the bounding box that we are using
+    const useSide = "short"; // long: resize to fit bigger side in canvasCropped, short: resize to let smaller side fill canvasCropped
+
 
     //console.log(resizedDetections);
     if (debugging && combinedPlot){
@@ -121,7 +123,7 @@ async function generateStatus() {
     if (typeof use != "undefined") {
       if (checkFullFaceInPicture(use._x, use._y, use._width, use._height)) {
         if (typeof resizedDetections.unshiftedLandmarks != "undefined") {
-          const resizedLandmarks = resizeLandmarks(resizedDetections.landmarks._positions, use);
+          const resizedLandmarks = resizeLandmarks(resizedDetections.landmarks._positions, use, useSide);
           statusVector.lm = rotateLandmarks(resizedLandmarks, resizedDetections.angle.roll);
         } else {
           console.log("Landmarks not detected, returning without landmarks.");
@@ -133,7 +135,7 @@ async function generateStatus() {
           console.log("Emotion not detected, returning without emotion.");
         }
         if (statusVector.lm.length === 68) {
-          cropRotateFace(use._x, use._y, use._width, use._height, resizedDetections.angle.roll);
+          cropRotateFace(use._x, use._y, use._width, use._height, resizedDetections.angle.roll, useSide);
           maskFaceNew(statusVector.lm);
           plotFace(statusVector.lm);
           statusVector.h = await getHogs();
@@ -208,10 +210,10 @@ async function getHogs() {
   return hogs;
 }
 
-function resizeLandmarks(landmarks,  use) {
+function resizeLandmarks(landmarks,  use, useSide) {
   const landmarkList = [];
   for (let i = 0; i < landmarks.length; i++) {
-    landmarkList.push(getNewCoords(landmarks[i]._x, landmarks[i]._y, use._x, use._y, use._width, use._height));
+    landmarkList.push(getNewCoords(landmarks[i]._x, landmarks[i]._y, use._x, use._y, use._width, use._height, useSide));
   }
   return landmarkList;
 }
@@ -233,11 +235,13 @@ function resizeLandmarks(landmarks,  use) {
 //   return [x.toFixed(3), (y + shiftDown).toFixed(3)];
 // }
 
-function getNewCoords(x, y, boundingBoxUpperLeftX, boundingBoxUpperLeftY, width, height){
+function getNewCoords(x, y, boundingBoxUpperLeftX, boundingBoxUpperLeftY, width, height, useSide){
   x = x - boundingBoxUpperLeftX;
   y = y - boundingBoxUpperLeftY;
   const smallSide = Math.min(width, height);
-  const ratio = (112/smallSide);
+  const bigSide = Math.max(width, height);
+  const scaleSide = (useSide === "long") ? bigSide : smallSide;
+  const ratio = (112/scaleSide);
   const newX = x * ratio;
   const newY = y * ratio;
   return [newX.toFixed(3), newY.toFixed(3)];
@@ -379,7 +383,7 @@ function gotDevices(mediaDevices) {
 //   return [newWidth, newHeight]
 // }
 
-function cropRotateFace(x, y, width, height, angle) {  // x,y = topleft x,y
+function cropRotateFace(x, y, width, height, angle, useSide) {  // x,y = topleft x,y
   debugging && showRotationAngle ? console.log("Rotation angle:", angle.toFixed(3), "rad") : "";
   const tempCanvas1 = document.createElement("canvas");
   const tctx1 = tempCanvas1.getContext("2d");
@@ -389,7 +393,9 @@ function cropRotateFace(x, y, width, height, angle) {  // x,y = topleft x,y
   tctx1.translate(tempCanvas1.width / 2, tempCanvas1.height / 2);
   tctx1.rotate(angle);
   tctx1.translate(-tempCanvas1.width / 2, -tempCanvas1.height / 2);
-  let scale = Math.max(tempCanvas1.width / width, tempCanvas1.height / height);
+  const longSideScale = Math.min(tempCanvas1.width / width, tempCanvas1.height / height);
+  const shortSideScale = Math.max(tempCanvas1.width / width, tempCanvas1.height / height);
+  let scale = (useSide === "long") ? longSideScale : shortSideScale;
   //let new_x = (tempCanvas1.width / 2) - (width / 2) * scale;
   //let new_y = (tempCanvas1.height / 2) - (height / 2) * scale;
   tctx1.drawImage(canvasInput, x, y, width, height, 0,0, width*scale, height*scale);
