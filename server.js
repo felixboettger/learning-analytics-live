@@ -81,6 +81,10 @@ app.get("/participant", function(req, res) {
   });
 });
 
+app.get("/performance-test", function(req, res) {
+  res.render("performance-test");
+})
+
 // Join with direct link
 app.get("/join/:sessionKey", function(req, res) {
   res.cookie("sessionKey", req.params.sessionKey);

@@ -66,6 +66,16 @@ img{
     height: auto;
 }
 
+label{
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+button{
+  margin-top: 50px;
+  color: green;
+}
+
 /* Footer */
 
 .footer {

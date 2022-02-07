@@ -164,8 +164,7 @@ function intensities(image) {
   if (image.components === 1) {
     return image;
   } else {
-    return image.grey({ algorithm: 'luma601' }); old
-    // return image.grey({ algorithm: 'luminosity' });
+    return image.grey({ algorithm: 'luma601' }); 
   }
 }
 
