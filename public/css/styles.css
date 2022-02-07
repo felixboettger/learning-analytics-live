@@ -73,7 +73,38 @@ label{
 
 button{
   margin-top: 50px;
-  color: green;
+  background-color: green;
+}
+
+progress {
+  height: 20px;
+  margin-bottom: 50px;
+}
+
+#instructions-heading{
+  margin-left: 30%;
+  margin-right: 30%;
+}
+
+#instructions{
+  margin-left: 30%;
+  margin-right: 30%;
+}
+
+#video-input{
+  width: 60%;
+  margin-left: auto;
+  margin-right: auto;
+  display: block
+}
+
+#progress-text{
+  margin-top: 50px;
+}
+
+.container-fluid{
+  padding-left: 20%;
+  padding-right: 20%;
 }
 
 /* Footer */

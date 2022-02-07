@@ -5,7 +5,8 @@
   <meta charset="utf-8">
   <title></title>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="/css/materialize.css">
   <link rel="stylesheet" href="/css/app-styles.css">
@@ -13,73 +14,86 @@
 </head>
 
 <body>
-  <div id="video-card" class="card">
-    <div class="header">
-      <h1>Please read carefully!</h1>
-      <p>
 
-        Test running time: approx. 17 minutes <br><br>
+  <h1 id="instructions-heading">Please read carefully!</h1>
+  <p id="instructions">
 
-        Please make sure to fill out the form below. You can either fill it out before
-        clicking (Start Measurement), or while the measurement is running. <br><br>
+    Test running time: approx. 17 minutes <br><br>
 
-        Once finished, the results will automatically be downloaded as a text file. <br>
-        Please share this file with Ufuk Cetinkaya (cetinkaya@dipf.de) (Subject: Measurements) <br><br>
+    Please make sure to fill out the form below. You can either fill it out before
+    clicking (Start Measurement), or while the measurement is running. <br><br>
 
-        You can either use your own webcam (please remain seated in front of the computer
-        for the test, look into the direction of the camera). <br><br>
+    Once finished, the results will automatically be downloaded as a text file. <br>
+    Please share this file with Ufuk Cetinkaya (cetinkaya@dipf.de) (Subject: Measurements) <br><br>
 
-        Alternatively, we provide a video which can be used as input for a virtual webcam. Please
-        make sure to select the correct webcam / virtual webcam before running the test. <br><br>
+    You can either use your own webcam (please remain seated in front of the computer
+    for the test, look into the direction of the camera). <br><br>
 
-        If you don't know what a virtual webcam is / how it works, please read this: <a href="https://restream.io/integrations/obs-studio/how-to-use-obs-virtual-camera/">Virtual Webcam in OBS</a> 
-        <br><br>
+    Alternatively, we provide a <a href="/video.mp4" download>video</a> which can be used as input for a virtual webcam. Please
+    make sure to select the correct webcam / virtual webcam before running the test. <br><br>
 
-        Thank you for your participation! :) <br><br>
-      </p>
+    If you don't know what a virtual webcam is / how it works, please read this: <a
+      href="https://restream.io/integrations/obs-studio/how-to-use-obs-virtual-camera/">Virtual Webcam in OBS</a>
+    <br><br>
+
+    Thank you for your participation! :) <br><br>
+
+  </p>
+
+  <video id="video-input" autoplay playsinline width="480px" height="360px" style="transform: scaleX(-1)"></video>
+  <img id="image-input" hidden width="480px" height="360px" />
+  <canvas id="canvas-combined-plot" style="display: none" width="480px" height="360px"></canvas>
+  <canvas id="canvas-input" style="display: none" width="480px" height="360px"></canvas>
+  <canvas id="canvas-cropped" style="display: none" width="112px" height="112px"></canvas>
+  <canvas id="canvas-landmark-plot" style="display: none" width="112px" height="112px"></canvas>
+  <div class="container-fluid">
+    <div class="row-mb4">
+      <div class="form-group">
+        <select id="camera-select-box" name="camera_select_box" class="form-control">
+          <option value="" disabled selected></option>
+        </select>
+        <label for="username" class="form-label">Your Name:</label>
+        <input type="text" name="username" id="input-username" class="form-control">
+        <label for="laptop-desktop" class="form-label">Laptop/Desktop/Phone/Tablet?:</label>
+        <select name="laptop-desktop" id="input-laptop-desktop" class="form-control">
+          <option value="laptop">Laptop</option>
+          <option value="desktop">Desktop</option>
+          <option value="phone">Phone</option>
+          <option value="tablet">Tablet</option>
+        </select>
+        <label for="device-name" class="form-label">Device Name (e.g. ThinkPad T420):</label>
+        <input type="text" name="device-name" id="input-device-name" class="form-control">
+        <label for="os" class="form-label">Operating System (if possible provide version number):</label>
+        <input type="text" name="os" id="input-os" class="form-control">
+        <label for="cpu" class="form-label">CPU (e.g. Core i5 8550U):</label>
+        <input type="text" name="cpu" id="input-cpu" class="form-control">
+        <label for="gpu" class="form-label">GPU (if you have a discrete GPU):</label>
+        <input type="text" name="gpu" id="input-gpu" class="form-control">
+        <label for="ram" class="form-label">RAM:</label>
+        <input type="text" name="ram" id="input-ram" class="form-control">
+        <label for="browser" class="form-label">Browser:</label>
+        <input type="text" name="browser" id="input-browser" class="form-control">
+        <label for="webcam" class="form-label">Normal Webcam or Virtual Webcam:</label>
+        <select name="webcam" id="input-webcam" required class="form-control">
+          <option value="real">Real Webcam</option>
+          <option value="virtual">Virtual Webcam</option>
+        </select>
+        <label for="user-agent" class="form-label">User Agent:</label>
+        <input type="text" name="user-agent" id="user-agent" disabled class="form-control">
+        <button id="start-measurement" class="form-control btn btn-success">Start Measurement</button>
+
+        <p id="progress-text" class="form-control" style="display: none"></p>
+        <progress value=0 max=1000 id="progress" class="form-control" style="display: none"></p></progress>
+
+        <p id="landmarks-percentage" class="form-control" style="display: none"></p>
+        <p id="emotions-percentage" class="form-control" style="display: none"></p>
+        <p id="hogs-percentage" class="form-control" style="display: none"></p>
+
+      </div>
     </div>
-    <div class="container-fluid">
-        <video id="video-input" autoplay playsinline width="480px" height="360px" style="transform: scaleX(-1)"></video>
-        <img id="image-input" hidden width="480px" height="360px"/>
-        <canvas id="canvas-combined-plot" style="display: none" width="480px" height="360px"></canvas>
-        <canvas id="canvas-input" style="display: none" width="480px" height="360px"></canvas>
-        <canvas id="canvas-cropped" style="display: none" width="112px" height="112px"></canvas>
-        <canvas id="canvas-landmark-plot" style="display: none" width="112px" height="112px"></canvas>
-    </div>
-    <select id="camera-select-box" name="camera_select_box">
-        <option value="" disabled selected></option>
-    </select>
-    <label for="username">Your Name:</label>
-    <input type="text" name="username" id="input-username">
-    <label for="laptop-desktop">Laptop/Desktop/Phone/Tablet?:</label>
-    <select name="laptop-desktop" id="input-laptop-desktop">
-      <option value="laptop">Laptop</option>
-      <option value="desktop">Desktop</option>
-      <option value="phone">Phone</option>
-      <option value="tablet">Tablet</option>
-    </select>
-    <label for="device-name">Device Name (e.g. ThinkPad T420):</label>
-    <input type="text" name="device-name" id="input-device-name">
-    <label for="os">Operating System (if possible provide version number):</label>
-    <input type="text" name="os" id="input-os">
-    <label for="cpu">CPU (e.g. Core i5 8550U):</label>
-    <input type="text" name="cpu" id="input-cpu">
-    <label for="gpu">GPU (if you have a discrete GPU):</label>
-    <input type="text" name="gpu" id="input-gpu">
-    <label for="ram">RAM:</label>
-    <input type="text" name="ram" id="input-ram">
-    <label for="browser">Browser:</label>
-    <input type="text" name="browser" id="input-browser">
-    <label for="webcam">Normal Webcam or Virtual Webcam:</label>
-    <select name="webcam" id="input-webcam" required>
-      <option value="real">Real Webcam</option>
-      <option value="virtual">Virtual Webcam</option>
-    </select>
-
-    <button id="start-measurement">Start Measurement</button>
   </div>
+  </form>
 </body>
-</html>
 
 
 <script src="https://cdn.jsdelivr.net/npm/hacktimer@1.1.3/HackTimer.min.js"></script>

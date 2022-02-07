@@ -8,8 +8,12 @@ let combinedPlot = false;
 let interval;
 const shiftDown = 0; // px to shift face image and landmarks down
 let currentTime = new Date().getSeconds();
-let runs = 10;
+let runs = 1000;
 let timeList = [];
+let timeListStatusSuccessful = [];
+
+document.getElementById("user-agent").value = navigator.userAgent;
+document.getElementById("progress").max = runs;
 
 let counterObj = {
     runs: 0,
@@ -24,11 +28,17 @@ let resultsObj = {
     hogs: 0,
     emotions: 0,
     timeList: [],
+    timeListStatusSuccessful: [],
     minTime: 0,
     maxTime: 0,
     avgTime: 0,
     medianTime: 0,
     stdDev: 0,
+    succMinTime: 0,
+    succMaxTime: 0,
+    succAvgTime: 0,
+    succMedianTime: 0,
+    succStdDev: 0,
     username: "",
     computerType: "",
     deviceName: "",
@@ -38,10 +48,26 @@ let resultsObj = {
     ram: "",
     browser: "",
     webcam: "",
+    userAgent: "",
 }
 
 startWebcam()
 main()
+
+function setLiveStatus(){
+
+    const min = String(Math.floor((runs - counterObj.runs)/60)).padStart(2, '0');
+    const sek = String((runs - counterObj.runs) % 60).padStart(2, '0');
+
+    const remainingTime = `${min}:${sek}`
+
+    document.getElementById("progress").value = counterObj.runs;
+    document.getElementById("progress-text").innerHTML = `${counterObj.runs}/${runs} (Remaining Time: ${remainingTime})`
+
+    document.getElementById("landmarks-percentage").innerHTML = `${(100 * counterObj.landmarks/counterObj.runs).toFixed(2)}% with landmarks`
+    document.getElementById("hogs-percentage").innerHTML = `${(100 * counterObj.hogs/counterObj.runs).toFixed(2)}% with hogs`
+    document.getElementById("emotions-percentage").innerHTML = `${(100 * counterObj.emotions/counterObj.runs).toFixed(2)}% with emotions`
+}
 
 function mean(arr) {
     const n = arr.length;
@@ -75,13 +101,21 @@ function fillResultsObj() {
     resultsObj.hogs = counterObj.hogs;
     resultsObj.emotions = counterObj.emotions;
 
+
     // time and metrics for time
     resultsObj.timeList = timeList;
-    resultsObj.minTime = Math.min(...timeList)
-    resultsObj.maxTime = Math.max(...timeList)
-    resultsObj.avgTime = mean(timeList)
-    resultsObj.medianTime = median(timeList)
-    resultsObj.stdDev = standardDeviation(timeList)
+    resultsObj.timeListStatusSuccessful = timeListStatusSuccessful;
+    resultsObj.successfulTimeList = filterSuccessfulTimes(timeList, timeListStatusSuccessful)
+    resultsObj.minTime = Math.min(...timeList);
+    resultsObj.maxTime = Math.max(...timeList);
+    resultsObj.avgTime = mean(timeList);
+    resultsObj.medianTime = median(timeList);
+    resultsObj.stdDev = standardDeviation(timeList);
+    resultsObj.succMinTime = Math.min(...resultsObj.successfulTimeList);
+    resultsObj.succMaxTime = Math.max(...resultsObj.successfulTimeList);
+    resultsObj.succAvgTime = mean(resultsObj.successfulTimeList);
+    resultsObj.succMedianTime = median(resultsObj.successfulTimeList);
+    resultsObj.succStdDev = standardDeviation(resultsObj.successfulTimeList);
 
     // form data
     resultsObj.username = document.getElementById('input-username').value
@@ -93,6 +127,11 @@ function fillResultsObj() {
     resultsObj.ram = document.getElementById('input-ram').value
     resultsObj.browser = document.getElementById('input-browser').value
     resultsObj.webcam = document.getElementById('input-webcam').value
+
+    // automatic form data
+
+    resultsObj.userAgent = navigator.userAgent;
+
 }
 
 async function main() {
@@ -103,16 +142,34 @@ async function main() {
 
     document.getElementById("start-measurement").addEventListener("click", function () {
         interval = setInterval(triggerStatusGeneration, 250);
+        document.getElementById("progress-text").style.display = "block"
+        document.getElementById("progress").style.display = "block"
+        document.getElementById("hogs-percentage").style.display = "block"
+        document.getElementById("landmarks-percentage").style.display = "block"
+        document.getElementById("emotions-percentage").style.display = "block"
+        window.scrollTo(0,document.body.scrollHeight);
+        document.getElementById("start-measurement").innerHTML = "Measurement is running..."
+
     })
 };
 
+function filterSuccessfulTimes(timeList, timeListStatusSuccessful){
+    const successfulArray = [];
+    for (let i = 0; i < runs; i++){
+        if (timeListStatusSuccessful[i] == 1){
+            successfulArray.push(timeList[i])
+        }
+    }
+    return successfulArray
+}
+
 function triggerStatusGeneration() {
+    
+    setLiveStatus()
+
     if (counterObj.runs == runs) {
         clearInterval(interval);
-        console.log(`${counterObj.runs} runs finished.`)
-        console.log(timeList);
         fillResultsObj();
-        console.log(resultsObj);
         download(JSON.stringify(resultsObj), `results ${resultsObj.username} ${resultsObj.deviceName}.txt`, 'text/plain');
         document.getElementById("start-measurement").innerText = "Download again"
     } else {
@@ -123,11 +180,17 @@ function triggerStatusGeneration() {
             ctx1.drawImage(video, 0, 0, video.width, video.height); // capturing still image from video feed and saving it to canvasInput      
             const t0 = performance.now();
             generateStatus().then(statusVector => {
-                console.log(counterObj);
                 const t1 = performance.now();
                 const timeToComplete = t1 - t0;
-                console.log(`Time for status ${counterObj.runs}: ${timeToComplete}ms (Start: ${t0}, End: ${t1}`);
                 timeList.push(timeToComplete);
+                if (statusVector.e != "not detected" && statusVector.lm.length != 0 && statusVector.h.length !=0){
+                    timeListStatusSuccessful.push(1);
+                    console.log("1");
+                } else {
+                    timeListStatusSuccessful.push(0);
+                    console.log("0");
+                }
+                
             })
         }
     }
