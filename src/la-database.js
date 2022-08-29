@@ -43,8 +43,7 @@ const statusSchema = {
   time: Number,
   utcTimeClient: Date,
   utcTimeServer: Date,
-  hogs: [Number],
-  landmarks: Array,
+  aus: Array,
   err: String
 };
 
@@ -278,6 +277,7 @@ async function markAllAsInactive() {
  * @param  {int} time Time of the status (in seconds since session start).
  */
 function updateParticipantStatus(sessionKey, participantId, statusVector, relativeTime) {
+  console.log(statusVector);
   const newStatus = new Status({
     sessionKey: sessionKey,
     participantId: participantId,
@@ -285,13 +285,13 @@ function updateParticipantStatus(sessionKey, participantId, statusVector, relati
     time: relativeTime,
     utcTimeClient: statusVector.t,
     utcTimeServer: new Date().getTime(),
-    hogs: statusVector.h,
-    landmarks: statusVector.lm,
+    aus: statusVector.au,
     err: statusVector.err
   });
   const newLiveStatus = new Status({
     emotion: statusVector.e,
-    time: relativeTime
+    time: relativeTime,
+    aus: statusVector.au
   });
   Session.updateOne({
       sessionKey: sessionKey,

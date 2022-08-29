@@ -37,7 +37,7 @@ const app = express();
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
-app.use(express.json({limit: "1000mb"}));
+app.use(express.json({limit: "1mb"}));
 app.use(cookieParser());
 app.use(session({resave: false,
   saveUninitialized: false,

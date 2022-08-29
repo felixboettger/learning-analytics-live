@@ -165,7 +165,7 @@ function downloadJSONFile(object) {
  * @param  {int} concentrationScore Concentration score of the participant.
  * @return {string} HTML participant element.
  */
-function generateParticipantElement(name, emotion) {
+function generateParticipantElement(name, emotion, auList) {
   const iconDict = {
     "happy": "😀",
     "neutral": "😐",
@@ -177,6 +177,7 @@ function generateParticipantElement(name, emotion) {
   const participantElement = `
     <td>` + name + `</td>
     <td>` + emotion + " " + iconDict[emotion] + `</td>
+    <td>` + auList + `</td>
   `;
   return participantElement;
 }
@@ -241,13 +242,14 @@ function refreshDashboard(participantsList) {
         concentrationScore,
         emotion,
         looks,
-        objects
+        objects,
+        aus
       } = (currentStatus === undefined) ? "" : currentStatus;
       if (!(emotion === undefined)) {
         counterElements.ec[emotion.substr(0, 2)] += 1;
       }
       counterElements.apc += 1;
-      participantElement = generateParticipantElement(name, emotion);
+      participantElement = generateParticipantElement(name, emotion, aus);
       addOrChangeParticipant(participantElement, id);
     } else {
       removeParticipant(id);

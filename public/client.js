@@ -541,7 +541,7 @@ function sendIfSecondElapsed() {
     document.getElementById("error-card").style.display = "none";
   }
   // console.log("Check if elapsed");
-  currentTime = 0; // uncomment for status every 100ms
+  // currentTime = 0; // uncomment for status every 100ms
   if (currentTime != new Date().getSeconds()) {
     // console.log("Elapsed");
     currentTime = new Date().getSeconds();
