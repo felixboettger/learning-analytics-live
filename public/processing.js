@@ -1,7 +1,7 @@
-
+const imageDims = 96;
 
 async function newGenerateStatus(){
-    let startTime = new Date().getTime();
+    let processingStartTime = new Date().getTime();
 
     let statusVector = {
         err: "", // error string
@@ -11,7 +11,7 @@ async function newGenerateStatus(){
         au: [], // list of active AUs
     }
 
-    const imageDims = 256;
+    
     const displaySize = { width: canvasInput.width, height: canvasInput.height }
     const detections = await faceapi.detectSingleFace(canvasInput).withFaceLandmarks().withFaceExpressions();
 
@@ -30,30 +30,41 @@ async function newGenerateStatus(){
         // console.log(use, useSide, canvasInput, canvasCropped, rotatedLandmarks, rollAngle);
         cropMaskImage(use, useSide, canvasInput, canvasCropped, rotatedLandmarks, rollAngle); // canvasCropped now contains masked and cropped image
 
-        // var inputImage = tf.browser.fromPixels(canvasCropped)
-        //   .mean(2)
-        //   .toFloat()
-        //   .expandDims(0)
-        //   .expandDims(-1);
-        // const predictedAUs = await emotionModel.predict(inputImage).arraySync()[0];
-
+        var inputImage = faceapi.tf.browser.fromPixels(canvasCropped)
+          .mean(2)
+          .toFloat()
+          .expandDims(0)
+          .expandDims(-1);
+        const predictions = await auModel.predict(inputImage).arraySync()[0];
+        const predictedAUs = getActiveAUsFromPredictions(predictions);
+        debugging && showAUs ? document.getElementById("au-display").innerHTML = predictedAUs : "";
         statusVector.e = Object.keys(resizedDetections.expressions).reduce((a, b) => resizedDetections.expressions[a] > resizedDetections.expressions[b] ? a : b);
-        // statusVector.au = predictedAUs;
+        statusVector.au = predictedAUs;
         errorAmount = 0;
     } else {
         errorAmount += 1;
         console.log("No face recognized");
         statusVector.err = "No face in picture";
     }
-    currentTime = new Date().getTime();
-    let timePassed = currentTime - startTime;
+    let processingEndTime = new Date().getTime();
+    let timePassed = processingEndTime - processingStartTime;
     statusVector.pt = timePassed;
-    console.log("Time passed: " + statusVector.pt + "ms");
+    // console.log("Time passed: " + statusVector.pt + "ms");
+    debugging && showStatusVector ? console.log("Status Vector to send: ", statusVector) : "";
     return statusVector;
 
 }   
 
-
+function getActiveAUsFromPredictions(predictions){
+  const auMeanings = [1,2,4,5,6,9,12,15,17,20,25,26];
+  return predictions.map((current, index) => {
+    if (current == 1){
+      return auMeanings[index];
+    }
+  }).filter(function( element ) {
+    return element !== undefined;
+ });
+}
 
 function resizeLandmarks(landmarks,  use, useSide) {
     const landmarkList = [];
@@ -82,7 +93,7 @@ function rotateLandmarks(landmarks, angle) {
 
 function cropRotateFace(x, y, width, height, angle, useSide, canvasInput, canvasCropped) {  // x,y = topleft x,y
     const ctx2 = canvasCropped.getContext("2d");
-    const tempCanvas1 = canvas.createCanvas()
+    const tempCanvas1 = document.createElement('canvas');
     const tctx1 = tempCanvas1.getContext("2d");
     tempCanvas1.height = tempCanvas1.width = imageDims;
     tctx1.fillRect(0, 0, tempCanvas1.width, tempCanvas1.height);
@@ -165,5 +176,18 @@ function cropMaskImage(use, useSide, canvasInput, canvasCropped, rotatedLandmark
     cropRotateFace(use._x, use._y, use._width, use._height, rollAngle, useSide, canvasInput, canvasCropped);
     maskFaceNew(rotatedLandmarks, canvasCropped);
 
+}
+
+
+function getNewCoords(x, y, boundingBoxUpperLeftX, boundingBoxUpperLeftY, width, height, useSide){
+  x = x - boundingBoxUpperLeftX;
+  y = y - boundingBoxUpperLeftY;
+  const smallSide = Math.min(width, height);
+  const bigSide = Math.max(width, height);
+  const scaleSide = (useSide === "long") ? bigSide : smallSide;
+  const ratio = (imageDims/scaleSide);
+  const newX = x * ratio;
+  const newY = y * ratio;
+  return [newX.toFixed(3), newY.toFixed(3)];
 }
 

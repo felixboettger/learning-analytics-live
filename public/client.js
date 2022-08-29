@@ -1,5 +1,6 @@
 //jshint esversion:6
 
+
 const [sessionKey, secret, id, participantName] = getCookieValues();
 const [video, image, canvasInput, canvasCropped, canvasLandmarkPlot, canvasCombinedPlot, ctx1, ctx2, ctx3, ctxc, cameraSelectBox] = getElements();
 let debugging = false;
@@ -13,6 +14,7 @@ let folderUpload = document.getElementById('folder-upload'); // we store the ide
 let interval;
 let errorAmount = 0;
 let videoHideTimePassed = false;
+let showAUs = false;
 
 const shiftDown = 0; // px to shift face image and landmarks down
 
@@ -38,7 +40,7 @@ async function main() {
   await faceapi.nets.faceLandmark68Net.loadFromUri('/models/face-api');
   await faceapi.nets.ssdMobilenetv1.loadFromUri('/models/face-api');
   await faceapi.nets.faceExpressionNet.loadFromUri('/models/face-api');
-  // auModel = await tf.loadLayersModel("/models/Krist/model.json");
+  auModel = await faceapi.tf.loadLayersModel("/models/Krist/model.json");
 
   // create websocket connection
   webSocket = createWebSocket(sessionKey, id, secret);
@@ -64,7 +66,7 @@ async function main() {
     const datatype = messageJSON.datatype;
     if (datatype === "start") {
       console.log("Server sent START signal!");
-      interval = setInterval(sendIfSecondElapsed, 250);
+      interval = setInterval(sendIfSecondElapsed, 100);
     } else if (datatype === "end") {
       console.log("Server sent STOP signal!")
       document.cookie = "goodbyetext=" + messageJSON.goodbyeText
@@ -86,93 +88,93 @@ async function main() {
  *
  * @return {object} statusVector object that contains the current status of the participant.
  */
-async function generateStatus() {
+// async function generateStatus() {
 
-  let statusVector = {
-    err: "", // error string
-    e: "not detected", // emotion
-    t: new Date(),
-    lm: [], // list of lists of length 2 of length 68
-    h: [], // list of 5408 
-    au: [], // list of active AUs
-  };
+//   let statusVector = {
+//     err: "", // error string
+//     e: "not detected", // emotion
+//     t: new Date(),
+//     lm: [], // list of lists of length 2 of length 68
+//     h: [], // list of 5408 
+//     au: [], // list of active AUs
+//   };
 
-  const displaySize = { width: canvasInput.width, height: canvasInput.height }
-  // still image is in canvasInput
+//   const displaySize = { width: canvasInput.width, height: canvasInput.height }
+//   // still image is in canvasInput
 
-  const detections = await faceapi.detectSingleFace(canvasInput).withFaceLandmarks().withFaceExpressions(); // check without tinyfacedetector
+//   const detections = await faceapi.detectSingleFace(canvasInput).withFaceLandmarks().withFaceExpressions(); // check without tinyfacedetector
 
-  if (typeof detections != "undefined") {
-    const resizedDetections = faceapi.resizeResults(detections, displaySize);
-    const alr = resizedDetections.alignedRect._box;
-    const det = resizedDetections.detection._box;
-    const use = det;   // define here the bounding box that we are using
-
-
-    const useSide = "long"; // long: resize to fit bigger side in canvasCropped, short: resize to let smaller side fill canvasCropped
+//   if (typeof detections != "undefined") {
+//     const resizedDetections = faceapi.resizeResults(detections, displaySize);
+//     const alr = resizedDetections.alignedRect._box;
+//     const det = resizedDetections.detection._box;
+//     const use = det;   // define here the bounding box that we are using
 
 
-    //console.log(resizedDetections);
-    if (debugging && combinedPlot){
-      ctxc.clearRect(0, 0, canvasCombinedPlot.width, canvasCombinedPlot.height);
-      ctxc.drawImage(canvasInput, 0, 0, canvasInput.width, canvasInput.height);
-      faceapi.draw.drawFaceLandmarks(canvasCombinedPlot, resizedDetections);
-      // faceapi.draw.drawDetections(canvasCombinedPlot, resizedDetections);
-      faceapi.draw.drawFaceExpressions(canvasCombinedPlot, resizedDetections);
-      ctxc.strokeStyle = "red";
-      ctxc.strokeRect(det._x, det._y, det._width, det._height);
-      ctxc.strokeStyle = "blue";
-      ctxc.strokeRect(alr._x, alr._y, alr._width, alr._height);
-      ctxc.strokeStyle = "green";
-      ctxc.strokeRect(use._x, use._y, use._width, use._height);
-    }
+//     const useSide = "long"; // long: resize to fit bigger side in canvasCropped, short: resize to let smaller side fill canvasCropped
 
-    if (typeof use != "undefined") {
-      if (checkFullFaceInPicture(use._x, use._y, use._width, use._height)) {
-        if (typeof resizedDetections.unshiftedLandmarks != "undefined") {
-          const resizedLandmarks = resizeLandmarks(resizedDetections.landmarks._positions, use, useSide);
-          statusVector.lm = rotateLandmarks(resizedLandmarks, resizedDetections.angle.roll);
-        } else {
-          console.log("Landmarks not detected, returning without landmarks.");
-        }
-        if (typeof resizedDetections.expressions != "undefined") {
-          statusVector.e = Object.keys(resizedDetections.expressions).reduce((a, b) => resizedDetections.expressions[a] > resizedDetections.expressions[b] ? a : b);
-          debugging && showDetectedEmotion ? console.log("Emotion: ", statusVector.e) : "";
-        } else {
-          console.log("Emotion not detected, returning without emotion.");
-        }
-        if (statusVector.lm.length === 68) {
-          cropRotateFace(use._x, use._y, use._width, use._height, resizedDetections.angle.roll, useSide);
-          maskFaceNew(statusVector.lm);
-          plotFace(statusVector.lm);
-          statusVector.h = await getHogs();
-          debugging && showNumberOfDetectedHogs ? console.log("# Detected Hogs: ", statusVector.h.length) : "";
-          if (debugging && combinedPlot){
-            const box = { x: 0, y: 0, width: 0, height: 0 }
-            const drawOptions = {
-              label: '# Landmarks: ' + statusVector.lm.length + ", # Hogs: " + statusVector.h.length,
-              lineWidth: 0
-            }
-            const drawBox = new faceapi.draw.DrawBox(box, drawOptions)
-            drawBox.draw(document.getElementById('canvas-combined-plot'));
-          } 
-        } else {
-          debugging ? console.log("No hogs were calculated as landmarks are missing.") : "";
-        }
-      } else {
-        debugging ? console.log("Face not completely in picture") : "";
-        statusVector.err += "face not in picture"
-      }
-    } else {
-      debugging ? console.log("Face was not detected") : "";
-    }
-  } else {
-    debugging ? console.log("Face was not detected") : "";
-  }
+
+//     //console.log(resizedDetections);
+//     if (debugging && combinedPlot){
+//       ctxc.clearRect(0, 0, canvasCombinedPlot.width, canvasCombinedPlot.height);
+//       ctxc.drawImage(canvasInput, 0, 0, canvasInput.width, canvasInput.height);
+//       faceapi.draw.drawFaceLandmarks(canvasCombinedPlot, resizedDetections);
+//       // faceapi.draw.drawDetections(canvasCombinedPlot, resizedDetections);
+//       faceapi.draw.drawFaceExpressions(canvasCombinedPlot, resizedDetections);
+//       ctxc.strokeStyle = "red";
+//       ctxc.strokeRect(det._x, det._y, det._width, det._height);
+//       ctxc.strokeStyle = "blue";
+//       ctxc.strokeRect(alr._x, alr._y, alr._width, alr._height);
+//       ctxc.strokeStyle = "green";
+//       ctxc.strokeRect(use._x, use._y, use._width, use._height);
+//     }
+
+//     if (typeof use != "undefined") {
+//       if (checkFullFaceInPicture(use._x, use._y, use._width, use._height)) {
+//         if (typeof resizedDetections.unshiftedLandmarks != "undefined") {
+//           const resizedLandmarks = resizeLandmarks(resizedDetections.landmarks._positions, use, useSide);
+//           statusVector.lm = rotateLandmarks(resizedLandmarks, resizedDetections.angle.roll);
+//         } else {
+//           console.log("Landmarks not detected, returning without landmarks.");
+//         }
+//         if (typeof resizedDetections.expressions != "undefined") {
+//           statusVector.e = Object.keys(resizedDetections.expressions).reduce((a, b) => resizedDetections.expressions[a] > resizedDetections.expressions[b] ? a : b);
+//           debugging && showDetectedEmotion ? console.log("Emotion: ", statusVector.e) : "";
+//         } else {
+//           console.log("Emotion not detected, returning without emotion.");
+//         }
+//         if (statusVector.lm.length === 68) {
+//           cropRotateFace(use._x, use._y, use._width, use._height, resizedDetections.angle.roll, useSide);
+//           maskFaceNew(statusVector.lm);
+//           plotFace(statusVector.lm);
+//           statusVector.h = await getHogs();
+//           debugging && showNumberOfDetectedHogs ? console.log("# Detected Hogs: ", statusVector.h.length) : "";
+//           if (debugging && combinedPlot){
+//             const box = { x: 0, y: 0, width: 0, height: 0 }
+//             const drawOptions = {
+//               label: '# Landmarks: ' + statusVector.lm.length + ", # Hogs: " + statusVector.h.length,
+//               lineWidth: 0
+//             }
+//             const drawBox = new faceapi.draw.DrawBox(box, drawOptions)
+//             drawBox.draw(document.getElementById('canvas-combined-plot'));
+//           } 
+//         } else {
+//           debugging ? console.log("No hogs were calculated as landmarks are missing.") : "";
+//         }
+//       } else {
+//         debugging ? console.log("Face not completely in picture") : "";
+//         statusVector.err += "face not in picture"
+//       }
+//     } else {
+//       debugging ? console.log("Face was not detected") : "";
+//     }
+//   } else {
+//     debugging ? console.log("Face was not detected") : "";
+//   }
   
-  debugging && showStatusVector ? console.log("Status Vector to send: ", statusVector) : "";
-  return statusVector;
-}
+//   debugging && showStatusVector ? console.log("Status Vector to send: ", statusVector) : "";
+//   return statusVector;
+// }
 
 /**
  * sendStatus - Generates a status, then sends it to server via WebSocket.
@@ -193,37 +195,37 @@ function sendStatus() {
   });
 };
 
-function checkFullFaceInPicture(x, y, faceWidth, faceHeight) {
-  if ((x < 0) || (y < 0) || (x + faceWidth > canvasInput.width) || (y + faceHeight > canvasInput.height)) {
-    return false;
-  } else {
-    return true;
-  }
-}
+// function checkFullFaceInPicture(x, y, faceWidth, faceHeight) {
+//   if ((x < 0) || (y < 0) || (x + faceWidth > canvasInput.width) || (y + faceHeight > canvasInput.height)) {
+//     return false;
+//   } else {
+//     return true;
+//   }
+// }
 
-async function getHogs() {
-  var options = {
-    cellSize: 8,    // length of cell in px
-    blockSize: 2,   // length of block in number of cells
-    blockStride: 1, // number of cells to slide block window by (block overlap)
-    bins: 8,        // bins per histogram (=orientations)
-    norm: 'L2-hys'      // block normalization method (=standard in hog())
-  }
-  var curr_image = await IJS.Image.load(canvasCropped.toDataURL())
-  hogs = extractHOG(curr_image, options);
-  hogs = hogs.map(function (x) {
-    return Number(x.toFixed(3));
-  });
-  return hogs;
-}
+// async function getHogs() {
+//   var options = {
+//     cellSize: 8,    // length of cell in px
+//     blockSize: 2,   // length of block in number of cells
+//     blockStride: 1, // number of cells to slide block window by (block overlap)
+//     bins: 8,        // bins per histogram (=orientations)
+//     norm: 'L2-hys'      // block normalization method (=standard in hog())
+//   }
+//   var curr_image = await IJS.Image.load(canvasCropped.toDataURL())
+//   hogs = extractHOG(curr_image, options);
+//   hogs = hogs.map(function (x) {
+//     return Number(x.toFixed(3));
+//   });
+//   return hogs;
+// }
 
-function resizeLandmarks(landmarks,  use, useSide) {
-  const landmarkList = [];
-  for (let i = 0; i < landmarks.length; i++) {
-    landmarkList.push(getNewCoords(landmarks[i]._x, landmarks[i]._y, use._x, use._y, use._width, use._height, useSide));
-  }
-  return landmarkList;
-}
+// function resizeLandmarks(landmarks,  use, useSide) {
+//   const landmarkList = [];
+//   for (let i = 0; i < landmarks.length; i++) {
+//     landmarkList.push(getNewCoords(landmarks[i]._x, landmarks[i]._y, use._x, use._y, use._width, use._height, useSide));
+//   }
+//   return landmarkList;
+// }
 
 // function getNewCoords(x, y, upperLeftX, upperLeftY, lowerRightX, lowerRightY){
 //   sizeX = lowerRightX - upperLeftX;
@@ -242,17 +244,17 @@ function resizeLandmarks(landmarks,  use, useSide) {
 //   return [x.toFixed(3), (y + shiftDown).toFixed(3)];
 // }
 
-function getNewCoords(x, y, boundingBoxUpperLeftX, boundingBoxUpperLeftY, width, height, useSide){
-  x = x - boundingBoxUpperLeftX;
-  y = y - boundingBoxUpperLeftY;
-  const smallSide = Math.min(width, height);
-  const bigSide = Math.max(width, height);
-  const scaleSide = (useSide === "long") ? bigSide : smallSide;
-  const ratio = (112/scaleSide);
-  const newX = x * ratio;
-  const newY = y * ratio;
-  return [newX.toFixed(3), newY.toFixed(3)];
-}
+// function getNewCoords(x, y, boundingBoxUpperLeftX, boundingBoxUpperLeftY, width, height, useSide){
+//   x = x - boundingBoxUpperLeftX;
+//   y = y - boundingBoxUpperLeftY;
+//   const smallSide = Math.min(width, height);
+//   const bigSide = Math.max(width, height);
+//   const scaleSide = (useSide === "long") ? bigSide : smallSide;
+//   const ratio = (112/scaleSide);
+//   const newX = x * ratio;
+//   const newY = y * ratio;
+//   return [newX.toFixed(3), newY.toFixed(3)];
+// }
 
 
 /**
@@ -311,20 +313,20 @@ function getElements() {
   return [video, image, canvasInput, canvasCropped, canvasLandmarkPlot, canvasCombinedPlot, ctx1, ctx2, ctx3, ctxc, cameraSelectBox];
 }
 
-function plotFace(landmarkList) {
+// function plotFace(landmarkList) {
 
-  ctx3.clearRect(0, 0, 112, 112);
-  ctx3.drawImage(canvasCropped, 0, 0);
-  ctx3.strokeStyle = "orange";
+//   ctx3.clearRect(0, 0, 112, 112);
+//   ctx3.drawImage(canvasCropped, 0, 0);
+//   ctx3.strokeStyle = "orange";
 
-  for (let i = 0; i < landmarkList.length; i++) {
-    x = landmarkList[i][0];
-    y = landmarkList[i][1];
+//   for (let i = 0; i < landmarkList.length; i++) {
+//     x = landmarkList[i][0];
+//     y = landmarkList[i][1];
 
-    ctx3.strokeRect(x, y, 1, 1);
-    ctx3.fillRect(x, y, 1, 1);
-  }
-}
+//     ctx3.strokeRect(x, y, 1, 1);
+//     ctx3.fillRect(x, y, 1, 1);
+//   }
+// }
 
 /**
  * startWebcam - Function that starts the webcam and displays it in the "video" object.
@@ -376,25 +378,25 @@ function gotDevices(mediaDevices) {
   });
 }
 
-function cropRotateFace(x, y, width, height, angle, useSide) {  // x,y = topleft x,y
-  debugging && showRotationAngle ? console.log("Rotation angle:", angle.toFixed(3), "rad") : "";
-  const tempCanvas1 = document.createElement("canvas");
-  const tctx1 = tempCanvas1.getContext("2d");
-  tempCanvas1.height = tempCanvas1.width = 112;
-  tctx1.fillRect(0, 0, tempCanvas1.width, tempCanvas1.height);
-  //tctx1.strokeRect(tempCanvas1.width / 2, tempCanvas1.height / 2, 1, 1); //center of rotation
-  tctx1.translate(tempCanvas1.width / 2, tempCanvas1.height / 2);
-  tctx1.strokeStyle = "orange";
-  tctx1.rotate(angle);
-  tctx1.translate(-tempCanvas1.width / 2, -tempCanvas1.height / 2);
-  const longSideScale = Math.min(tempCanvas1.width / width, tempCanvas1.height / height);
-  const shortSideScale = Math.max(tempCanvas1.width / width, tempCanvas1.height / height);
-  let scale = (useSide === "long") ? longSideScale : shortSideScale;
-  tctx1.drawImage(canvasInput, x, y, width, height, 0,0, width*scale, height*scale);
+// function cropRotateFace(x, y, width, height, angle, useSide) {  // x,y = topleft x,y
+//   debugging && showRotationAngle ? console.log("Rotation angle:", angle.toFixed(3), "rad") : "";
+//   const tempCanvas1 = document.createElement("canvas");
+//   const tctx1 = tempCanvas1.getContext("2d");
+//   tempCanvas1.height = tempCanvas1.width = 112;
+//   tctx1.fillRect(0, 0, tempCanvas1.width, tempCanvas1.height);
+//   //tctx1.strokeRect(tempCanvas1.width / 2, tempCanvas1.height / 2, 1, 1); //center of rotation
+//   tctx1.translate(tempCanvas1.width / 2, tempCanvas1.height / 2);
+//   tctx1.strokeStyle = "orange";
+//   tctx1.rotate(angle);
+//   tctx1.translate(-tempCanvas1.width / 2, -tempCanvas1.height / 2);
+//   const longSideScale = Math.min(tempCanvas1.width / width, tempCanvas1.height / height);
+//   const shortSideScale = Math.max(tempCanvas1.width / width, tempCanvas1.height / height);
+//   let scale = (useSide === "long") ? longSideScale : shortSideScale;
+//   tctx1.drawImage(canvasInput, x, y, width, height, 0,0, width*scale, height*scale);
 
-  ctx2.clearRect(0, 0, 112, 112);
-  ctx2.drawImage(tempCanvas1, 0, shiftDown);
-}
+//   ctx2.clearRect(0, 0, 112, 112);
+//   ctx2.drawImage(tempCanvas1, 0, shiftDown);
+// }
 
 // Stop all camera feeds once camera selection changes
 function stopMediaTracks(stream) {
@@ -403,113 +405,113 @@ function stopMediaTracks(stream) {
   });
 }
 
-function rotateLandmarks(landmarks, angle) {
-  const rotatedLandmarks = []
-  cosAlpha = Math.cos(angle);
-  sinAlpha = Math.sin(angle);
+// function rotateLandmarks(landmarks, angle) {
+//   const rotatedLandmarks = []
+//   cosAlpha = Math.cos(angle);
+//   sinAlpha = Math.sin(angle);
 
-  for (let i = 0; i < landmarks.length; i++) {
-    currentX = landmarks[i][0] - 56;
-    currentY = landmarks[i][1] - 56;
+//   for (let i = 0; i < landmarks.length; i++) {
+//     currentX = landmarks[i][0] - 56;
+//     currentY = landmarks[i][1] - 56;
 
-    newX = currentX * cosAlpha - currentY * sinAlpha;
-    newY = currentX * sinAlpha + currentY * cosAlpha;
+//     newX = currentX * cosAlpha - currentY * sinAlpha;
+//     newY = currentX * sinAlpha + currentY * cosAlpha;
 
-    rotatedLandmarks.push([newX + 56, newY + 56]);
-  }
-  return rotatedLandmarks;
-}
+//     rotatedLandmarks.push([newX + 56, newY + 56]);
+//   }
+//   return rotatedLandmarks;
+// }
 
-function maskFace(faceLandmarks) {
-  const margin = 0;
-  ctx2.beginPath();
-  const fistCoordinateX = faceLandmarks[0][0] - margin;
-  const fistCoordinateY = faceLandmarks[0][1];
-  ctx2.moveTo(fistCoordinateX, fistCoordinateY);
-  for (let i = 1; i < 17; i++) {
-    currentCoordinate = faceLandmarks[i];
-    currentX = currentCoordinate[0];
-    currentX = i < 8 ? currentX - margin : currentX + margin;
-    currentY = currentCoordinate[1];
-    ctx2.lineTo(currentX, currentY);
-  }
+// function maskFace(faceLandmarks) {
+//   const margin = 0;
+//   ctx2.beginPath();
+//   const fistCoordinateX = faceLandmarks[0][0] - margin;
+//   const fistCoordinateY = faceLandmarks[0][1];
+//   ctx2.moveTo(fistCoordinateX, fistCoordinateY);
+//   for (let i = 1; i < 17; i++) {
+//     currentCoordinate = faceLandmarks[i];
+//     currentX = currentCoordinate[0];
+//     currentX = i < 8 ? currentX - margin : currentX + margin;
+//     currentY = currentCoordinate[1];
+//     ctx2.lineTo(currentX, currentY);
+//   }
 
-  const rightBrowRightX = faceLandmarks[26][0];
-  const rightBrowRightY = faceLandmarks[26][1];
-  ctx2.lineTo(rightBrowRightX + 10, rightBrowRightY - 3);
+//   const rightBrowRightX = faceLandmarks[26][0];
+//   const rightBrowRightY = faceLandmarks[26][1];
+//   ctx2.lineTo(rightBrowRightX + 10, rightBrowRightY - 3);
 
-  const rightBrowMiddleX = faceLandmarks[20][0];
-  const rightBrowMiddleY = faceLandmarks[20][1] - 8;
-  ctx2.lineTo(rightBrowMiddleX, rightBrowMiddleY - 3);
+//   const rightBrowMiddleX = faceLandmarks[20][0];
+//   const rightBrowMiddleY = faceLandmarks[20][1] - 8;
+//   ctx2.lineTo(rightBrowMiddleX, rightBrowMiddleY - 3);
 
-  const leftBrowMiddleX = faceLandmarks[25][0];
-  const leftBrowMiddleY = faceLandmarks[25][1] - 8;
-  ctx2.lineTo(leftBrowMiddleX, leftBrowMiddleY - 3);
+//   const leftBrowMiddleX = faceLandmarks[25][0];
+//   const leftBrowMiddleY = faceLandmarks[25][1] - 8;
+//   ctx2.lineTo(leftBrowMiddleX, leftBrowMiddleY - 3);
 
-  const leftBrowLeftX = faceLandmarks[18][0];
-  const leftBrowLeftY = faceLandmarks[18][1];
-  ctx2.lineTo(leftBrowLeftX - 10, leftBrowLeftY - 3);
+//   const leftBrowLeftX = faceLandmarks[18][0];
+//   const leftBrowLeftY = faceLandmarks[18][1];
+//   ctx2.lineTo(leftBrowLeftX - 10, leftBrowLeftY - 3);
 
-  ctx2.lineTo(fistCoordinateX, fistCoordinateY);
-  ctx2.lineTo(0, fistCoordinateY)
-  ctx2.lineTo(0, 0);
-  ctx2.lineTo(112, 0);
-  ctx2.lineTo(112, 112);
-  ctx2.lineTo(0, 112);
-  ctx2.lineTo(0, fistCoordinateY);
+//   ctx2.lineTo(fistCoordinateX, fistCoordinateY);
+//   ctx2.lineTo(0, fistCoordinateY)
+//   ctx2.lineTo(0, 0);
+//   ctx2.lineTo(112, 0);
+//   ctx2.lineTo(112, 112);
+//   ctx2.lineTo(0, 112);
+//   ctx2.lineTo(0, fistCoordinateY);
 
-  ctx2.closePath();
-  ctx2.fill();
-}
+//   ctx2.closePath();
+//   ctx2.fill();
+// }
 
-function maskFaceNew(faceLandmarks) {
-  const marginX = 0;
-  // c = sqrt((x_a - x_b)^2 + (y_a - y_b)^2)
-  const eyeEyeBrowDistance = Math.sqrt(Math.pow((faceLandmarks[37][0] - faceLandmarks[19][0]), 2) + Math.pow((faceLandmarks[37][1] - faceLandmarks[19][1]), 2));
-  // In pyfeat paper, 1.5 * eyeEyeBrowDistance was used, change rotation to not have white parts in special cases
-  const marginY = eyeEyeBrowDistance;
-  ctx2.beginPath();
-  const fistCoordinateX = faceLandmarks[0][0] += marginX;
-  const fistCoordinateY = faceLandmarks[0][1];
-  ctx2.moveTo(fistCoordinateX, fistCoordinateY);
-  for (let i = 1; i < 17; i++) {
-    currentCoordinate = faceLandmarks[i];
-    currentX = currentCoordinate[0];
-    if (i < 8){
-      currentX += marginX;
-    } else if (i > 19){
-      currentX -= marginX;
-    }
+// function maskFaceNew(faceLandmarks) {
+//   const marginX = 0;
+//   // c = sqrt((x_a - x_b)^2 + (y_a - y_b)^2)
+//   const eyeEyeBrowDistance = Math.sqrt(Math.pow((faceLandmarks[37][0] - faceLandmarks[19][0]), 2) + Math.pow((faceLandmarks[37][1] - faceLandmarks[19][1]), 2));
+//   // In pyfeat paper, 1.5 * eyeEyeBrowDistance was used, change rotation to not have white parts in special cases
+//   const marginY = eyeEyeBrowDistance;
+//   ctx2.beginPath();
+//   const fistCoordinateX = faceLandmarks[0][0] += marginX;
+//   const fistCoordinateY = faceLandmarks[0][1];
+//   ctx2.moveTo(fistCoordinateX, fistCoordinateY);
+//   for (let i = 1; i < 17; i++) {
+//     currentCoordinate = faceLandmarks[i];
+//     currentX = currentCoordinate[0];
+//     if (i < 8){
+//       currentX += marginX;
+//     } else if (i > 19){
+//       currentX -= marginX;
+//     }
     
-    currentY = currentCoordinate[1];
-    ctx2.lineTo(currentX, currentY);
-  }
-  // Brows Right
-  for (let i = 26; i > 24; i--){
-    currentCoordinate = faceLandmarks[i];
-    currentX = currentCoordinate[0];
-    currentY = currentCoordinate[1] - marginY;
-    ctx2.lineTo(currentX, currentY);
-  }
-  // Brows Left
-  for (let i = 18; i > 16; i--){
-    currentCoordinate = faceLandmarks[i];
-    currentX = currentCoordinate[0];
-    currentY = currentCoordinate[1] - marginY;
-    ctx2.lineTo(currentX, currentY);
-  }
+//     currentY = currentCoordinate[1];
+//     ctx2.lineTo(currentX, currentY);
+//   }
+//   // Brows Right
+//   for (let i = 26; i > 24; i--){
+//     currentCoordinate = faceLandmarks[i];
+//     currentX = currentCoordinate[0];
+//     currentY = currentCoordinate[1] - marginY;
+//     ctx2.lineTo(currentX, currentY);
+//   }
+//   // Brows Left
+//   for (let i = 18; i > 16; i--){
+//     currentCoordinate = faceLandmarks[i];
+//     currentX = currentCoordinate[0];
+//     currentY = currentCoordinate[1] - marginY;
+//     ctx2.lineTo(currentX, currentY);
+//   }
 
-  ctx2.lineTo(fistCoordinateX, fistCoordinateY);
-  ctx2.lineTo(0, fistCoordinateY)
-  ctx2.lineTo(0, 0);
-  ctx2.lineTo(112, 0);
-  ctx2.lineTo(112, 112);
-  ctx2.lineTo(0, 112);
-  ctx2.lineTo(0, fistCoordinateY);
+//   ctx2.lineTo(fistCoordinateX, fistCoordinateY);
+//   ctx2.lineTo(0, fistCoordinateY)
+//   ctx2.lineTo(0, 0);
+//   ctx2.lineTo(112, 0);
+//   ctx2.lineTo(112, 112);
+//   ctx2.lineTo(0, 112);
+//   ctx2.lineTo(0, fistCoordinateY);
 
-  ctx2.closePath();
-  ctx2.fill();
-}
+//   ctx2.closePath();
+//   ctx2.fill();
+// }
 
 
 function debug() {
@@ -539,6 +541,7 @@ function sendIfSecondElapsed() {
     document.getElementById("error-card").style.display = "none";
   }
   // console.log("Check if elapsed");
+  currentTime = 0; // uncomment for status every 100ms
   if (currentTime != new Date().getSeconds()) {
     // console.log("Elapsed");
     currentTime = new Date().getSeconds();
@@ -548,46 +551,21 @@ function sendIfSecondElapsed() {
 
 function secretMenu(){
 
-  document.getElementById("debug-combined-plot").addEventListener("change", function(){
-    combinedPlot = this.checked;
-    if (this.checked){
-      document.getElementById("video-input").style.display = "none";
-      document.getElementById("canvas-combined-plot").style.display = "block";
-    } else {
-      document.getElementById("video-input").style.display = "block";
-      document.getElementById("canvas-combined-plot").style.display = "none";
-    };
-  });
 
-  document.getElementById("debug-emotion").addEventListener("change", function(){
-    showDetectedEmotion = this.checked;
-  });
+  document.getElementById("debug-aus").addEventListener("change", function(){
+    showAUs = this.checked;
+  })
 
   document.getElementById("debug-status-vector").addEventListener("change", function(){
     showStatusVector = this.checked;
   });
 
-  document.getElementById("debug-rotation-angle").addEventListener("change", function(){
-    showRotationAngle = this.checked;
-  });
-
-  document.getElementById("debug-nr-hogs").addEventListener("change", function(){
-    showNumberOfDetectedHogs = this.checked;
-  });
 
   document.getElementById("debug-canvas-cropped").addEventListener("change", function(){
     if (this.checked){
       document.getElementById("canvas-cropped").style.display = "inline-block";
     } else {
       document.getElementById("canvas-cropped").style.display = "none";
-    }
-  })
-
-  document.getElementById("debug-landmark-plot").addEventListener("change", function(){
-    if (this.checked){
-      document.getElementById("canvas-landmark-plot").style.display = "inline-block";
-    } else {
-      document.getElementById("canvas-landmark-plot").style.display = "none";
     }
   })
 
@@ -598,7 +576,7 @@ function secretMenu(){
 
 function downloadSample(){
   filename = prompt("Filename: ");
-  generateStatus().then(statusVector => downloadStatusVector(statusVector, filename));  // excecute the function 
+  newGenerateStatus().then(statusVector => downloadStatusVector(statusVector, filename));  // excecute the function 
 }
 
 //function to open a folder and load the image
@@ -617,7 +595,7 @@ function generateSampleFolderData(){
       var x = (canvasInput.width / 2) - (img.width / 2) * scale;
       var y = (canvasInput.height / 2) - (img.height / 2) * scale;
       ctx1.drawImage(img, x, y, img.width * scale, img.height * scale);
-      generateStatus().then(statusVector => {
+      newGenerateStatus().then(statusVector => {
         downloadStatusVector(statusVector, file.name.split(".")[0]);
         i += 1;
         if (i == files.length){
@@ -632,9 +610,6 @@ function generateSampleFolderData(){
 
 function downloadStatusVector(statusVector, filename){
   console.log("Downloading: ", filename);
-  const downloadHogs = document.createElement("a");
-  downloadHogs.setAttribute("download", filename + "_hogs");
-  downloadHogs.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(statusVector.h));
   const downloadBig = document.createElement("a");
   downloadBig.setAttribute("download", filename + "_big");
   downloadBig.setAttribute("href", document.getElementById('canvas-input').toDataURL());
@@ -644,10 +619,13 @@ function downloadStatusVector(statusVector, filename){
   const downloadLandmarks = document.createElement("a");
   downloadLandmarks.setAttribute("download", filename +"_landmarks");
   downloadLandmarks.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(statusVector.lm));
-  downloadHogs.click();
+  const downloadAUs = document.createElement("a");
+  downloadAUs.setAttribute("download", filename +"_aus");
+  downloadAUs.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(statusVector.au));
   downloadBig.click();
   downloadSmall.click();
   downloadLandmarks.click();
+  downloadAUs.click();
 }
 
 fileUpload.onchange = readImage;
@@ -682,7 +660,7 @@ document.getElementById("take-picture-btn").addEventListener("click", function()
 })
 
 document.getElementById("generate-status-btn").addEventListener("click", function(){
-  generateStatus();
+  newGenerateStatus().then(statusVector => console.log(statusVector));
 })
 
 folderUpload.onchange = generateSampleFolderData;
