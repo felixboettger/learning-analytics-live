@@ -11,7 +11,8 @@ let combinedPlot = false;
 let fileUpload = document.getElementById('fileUpload');
 let folderUpload = document.getElementById('folder-upload'); // we store the identifier that allowa us to access this element 
 let interval;
-
+let errorAmount = 0;
+let videoHideTimePassed = false;
 
 const shiftDown = 0; // px to shift face image and landmarks down
 
@@ -27,6 +28,7 @@ const hideVideo = setTimeout(function () {
   document.getElementById("video-card").style.display = "none";
   document.getElementById("info-tiles-card").style.display = "none";
   document.getElementById("thank-you-card").style.display = "block";
+  videoHideTimePassed = true;
 }, 60000);
 
 main()
@@ -36,6 +38,7 @@ async function main() {
   await faceapi.nets.faceLandmark68Net.loadFromUri('/models/face-api');
   await faceapi.nets.ssdMobilenetv1.loadFromUri('/models/face-api');
   await faceapi.nets.faceExpressionNet.loadFromUri('/models/face-api');
+  // auModel = await tf.loadLayersModel("/models/Krist/model.json");
 
   // create websocket connection
   webSocket = createWebSocket(sessionKey, id, secret);
@@ -90,7 +93,8 @@ async function generateStatus() {
     e: "not detected", // emotion
     t: new Date(),
     lm: [], // list of lists of length 2 of length 68
-    h: [] // list of 5408 
+    h: [], // list of 5408 
+    au: [], // list of active AUs
   };
 
   const displaySize = { width: canvasInput.width, height: canvasInput.height }
@@ -179,7 +183,7 @@ function sendStatus() {
   ctx1.clearRect(0, 0, canvasInput.width, canvasInput.height); // clear canvas
   ctx1.drawImage(video, 0, 0, video.width, video.height); // capturing still image from video feed and saving it to canvasInput
 
-  generateStatus().then(statusVector => {
+  newGenerateStatus().then(statusVector => {
 
     statusJSON = JSON.stringify({
       datatype: "status",
@@ -522,6 +526,18 @@ function debug() {
 }
 
 function sendIfSecondElapsed() {
+  if (errorAmount > 10) {
+    document.getElementById("video-card").style.display = "block";
+    document.getElementById("thank-you-card").style.display = "none";
+    document.getElementById("error-card").style.display = "block";
+  } else if (errorAmount == 0){
+    if (videoHideTimePassed == true) {
+      document.getElementById("video-card").style.display = "none";
+    }
+    
+    document.getElementById("thank-you-card").style.display = "block";
+    document.getElementById("error-card").style.display = "none";
+  }
   // console.log("Check if elapsed");
   if (currentTime != new Date().getSeconds()) {
     // console.log("Elapsed");

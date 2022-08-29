@@ -23,13 +23,35 @@
       <h2>Client</h2>
     </div>
   </div>
+  <div id="thank-you-card" class="card" style="display: none">
+    <div class="header">
+      <i class="material-icons">celebration</i>
+    </div>
+    <div class="container-fluid">
+      <div class="row">
+        <h2 class="text-center" style="color: rgb(49, 49, 49)">Everything is working fine! Please do not close this window or open other tabs in this browser window.</h2>
+        <p class="text-center" style="color: rgb(49, 49, 49)">You are currently contributing to science. Please do not close the browser window, and focus on the lecture. No actions are necessary on your side until the lecture ends. When the lecture ends, you will be asked to fill out a short survey. </p>
+      </div>
+    </div>
+  </div>
+  <div id="error-card" class="card" style="display: none">
+    <div class="header">
+      <i class="material-icons">error</i>
+    </div>
+    <div class="container-fluid">
+      <div class="row">
+        <h2 class="text-center" style="color: rgb(255, 5, 5)">We have problems detecting data</h2>
+        <p class="text-center" style="color: rgb(49, 49, 49)">We have problems with detecting your face. Please make sure to look in the direction of your camera. If the problem persists, please let us know!</p>
+      </div>
+    </div>
+  </div>
   <div id="video-card" class="card">
     <div class="header">
       <i class="material-icons">videocam</i>
       <h2>Video</h2>
     </div>
     <div class="container-fluid">
-        <video id="video-input" autoplay playsinline width="480px" height="360px" style="transform: scaleX(-1)"></video>
+        <video id="video-input" autoplay playsinline width="480px" height="360px" style="transform: scaleX(-1); width: auto;"></video>
         <img id="image-input" hidden width="480px" height="360px"/>
         <canvas id="canvas-combined-plot" style="display: none" width="480px" height="360px"></canvas>
         <!-- <canvas id="canvas-input" width="480px" height="360px"></canvas> -->
@@ -71,17 +93,7 @@
       
     </div>
   </div>
-  <div id="thank-you-card" class="card" style="display: none">
-    <div class="header">
-      <i class="material-icons">celebration</i>
-    </div>
-    <div class="container-fluid">
-      <div class="row">
-        <h2 class="text-center" style="color: rgb(49, 49, 49)">Everything is working fine! Please do not close this window or open other tabs in this browser window.</h2>
-        <p class="text-center" style="color: rgb(49, 49, 49)">You are currently contributing to science. Please do not close the browser window, and focus on the lecture. No actions are necessary on your side until the lecture ends. When the lecture ends, you will be asked to fill out a short survey. </p>
-      </div>
-    </div>
-  </div>
+  
 
 </html>
 </body>
@@ -90,6 +102,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
 <script src="https://www.lactame.com/lib/image-js/0.21.2/image.min.js"></script>
 <script type="text/javascript" src="/simple-hog.js"></script>
+<script type="text/javascript" src="/processing.js"></script>
 <script type="text/javascript" src="/client.js" charset="utf-8"></script>
 
 </html>

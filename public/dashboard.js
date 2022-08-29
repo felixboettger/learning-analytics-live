@@ -155,7 +155,6 @@ function downloadJSONFile(object) {
   downloadElement.click();
 }
 
-
 /**
  * generateParticipantElement - Function that generates an HTML Element with all participant info (for the participant list)
  *
@@ -167,12 +166,22 @@ function downloadJSONFile(object) {
  * @return {string} HTML participant element.
  */
 function generateParticipantElement(name, emotion) {
+  const iconDict = {
+    "happy": "😀",
+    "neutral": "😐",
+    "sad": "😦",
+    "angry": "😠",
+    "surprised": "😲",
+    "fearful": "😱"
+  }
   const participantElement = `
     <td>` + name + `</td>
-    <td>` + emotion + `</td>
+    <td>` + emotion + " " + iconDict[emotion] + `</td>
   `;
   return participantElement;
 }
+
+
 
 /**
  * getCookieValues - Function that reads cookies.
@@ -403,13 +412,11 @@ function setCounterElements(counterElements) {
   const sadPercentage = (apc > 0) ? Math.round(100 * (ec["sa"] / apc)) : 0;
   const otherPercentage = (apc > 0) ? Math.round(100 * (otherEmotionCounter / apc)) : 0;
   const lookingPercentage = (apc > 0) ? Math.round(100 * (lacc / apc)) : 0;
-  document.getElementById("mean-concentration").innerHTML = mcs + "%";
   document.getElementById("emotion-happy-participants").innerHTML = happyPercentage + "% (" + ec["ha"] + ")";
   document.getElementById("emotion-neutral-participants").innerHTML = neutralPercentage + "% (" + ec["ne"] + ")";
   document.getElementById("emotion-sad-participants").innerHTML = sadPercentage + "% (" + ec["sa"] + ")";
   document.getElementById("emotion-other-participants").innerHTML = otherPercentage + "% (" + otherEmotionCounter + ")";
   document.getElementById("nr-participants").innerHTML = apc;
-  document.getElementById("nr-looking-at-camera").innerHTML = lookingPercentage + "% (" + lacc + ")";
 }
 
 function sendGoodbyeText(newGoodbyeText){
