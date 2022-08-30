@@ -1,42 +1,33 @@
-const imageDims = 96;
+let emptyStatusVector = {
+  err: "", // error string
+  e: "", // emotion
+  t: new Date(), // time
+  pt: -1, // processing time
+  au: [], // list of active AUs
+}
 
-async function newGenerateStatus(){
-    let processingStartTime = new Date().getTime();
-
-    let statusVector = {
-        err: "", // error string
-        e: "", // emotion
-        t: new Date(), // time
-        pt: -1, // processing time
-        au: [], // list of active AUs
-    }
-
-    
+async function newGenerateStatus(canvasInput, imageDims, outputCropCanvas){
+    const processingStartTime = new Date().getTime(); // Start measuring time to generate Status
+    let statusVector = emptyStatusVector;
     const displaySize = { width: canvasInput.width, height: canvasInput.height }
     const detections = await faceapi.detectSingleFace(canvasInput).withFaceLandmarks().withFaceExpressions();
 
     if (typeof detections != "undefined"){ // a face was detected
-        // const canvasCropped = canvas.createCanvas(imageDims, imageDims);
-
+        var tempCanvasCropped = document.createElement('canvas');
+        tempCanvasCropped.width  = imageDims;
+        tempCanvasCropped.height = imageDims;
         const resizedDetections = faceapi.resizeResults(detections, displaySize);
         const alr = resizedDetections.alignedRect._box;
         const det = resizedDetections.detection._box;
         const use = det; // bounding box that is used
-        const useSide = "long"; // long: resize to fit bigger side in canvasCropped, short: resize to let smaller side fill canvasCropped
-
-        const rollAngle = detections.angle.roll;
+        const useSide = "long"; // long: resize to fit bigger side in tempCanvasCropped, short: resize to let smaller side fill tempCanvasCropped
+        const rollAngle = detections.angle.roll; // roll angle of the face
         const resizedLandmarks = resizeLandmarks(detections.landmarks._positions, detections.detection._box, useSide);
         const rotatedLandmarks = rotateLandmarks(resizedLandmarks, rollAngle);
-        // console.log(use, useSide, canvasInput, canvasCropped, rotatedLandmarks, rollAngle);
-        cropMaskImage(use, useSide, canvasInput, canvasCropped, rotatedLandmarks, rollAngle); // canvasCropped now contains masked and cropped image
-
-        var inputImage = faceapi.tf.browser.fromPixels(canvasCropped)
-          .mean(2)
-          .toFloat()
-          .expandDims(0)
-          .expandDims(-1);
-        const predictions = await auModel.predict(inputImage).arraySync()[0];
-        const predictedAUs = getActiveAUsFromPredictions(predictions);
+        cropMaskImage(use, useSide, canvasInput, tempCanvasCropped, rotatedLandmarks, rollAngle); // tempCanvasCropped now contains masked and cropped image
+        copyToOutputCropCanvas(tempCanvasCropped, outputCropCanvas);
+        const predictedAUs = await predictAUs(tempCanvasCropped);
+        
         debugging && showAUs ? document.getElementById("au-display").innerHTML = predictedAUs : "";
         statusVector.e = Object.keys(resizedDetections.expressions).reduce((a, b) => resizedDetections.expressions[a] > resizedDetections.expressions[b] ? a : b);
         statusVector.au = predictedAUs;
@@ -46,14 +37,30 @@ async function newGenerateStatus(){
         console.log("No face recognized");
         statusVector.err = "No face in picture";
     }
-    let processingEndTime = new Date().getTime();
-    let timePassed = processingEndTime - processingStartTime;
-    statusVector.pt = timePassed;
-    // console.log("Time passed: " + statusVector.pt + "ms");
+    statusVector.pt = new Date().getTime() - processingStartTime;
+    debugging && showProcessingTime ? console.log("Time passed: " + statusVector.pt + "ms") : "";
     debugging && showStatusVector ? console.log("Status Vector to send: ", statusVector) : "";
     return statusVector;
 
 }   
+
+async function predictAUs(canvas){
+  var inputImage = faceapi.tf.browser.fromPixels(canvas)
+          .mean(2)
+          .toFloat()
+          .expandDims(0)
+          .expandDims(-1);
+  const predictions = await auModel.predict(inputImage).arraySync()[0];
+  const predictedAUs = getActiveAUsFromPredictions(predictions);
+  return predictedAUs;
+}
+
+function copyToOutputCropCanvas(tempCropCanvas, outputCropCanvas){
+  if (outputCropCanvas != null){
+    var ctxOutputCrop = outputCropCanvas.getContext('2d');
+    ctxOutputCrop.drawImage(tempCropCanvas, 0, 0);
+  } 
+}
 
 function getActiveAUsFromPredictions(predictions){
   const auMeanings = [1,2,4,5,6,9,12,15,17,20,25,26];
@@ -91,8 +98,8 @@ function rotateLandmarks(landmarks, angle) {
     return rotatedLandmarks;
 }
 
-function cropRotateFace(x, y, width, height, angle, useSide, canvasInput, canvasCropped) {  // x,y = topleft x,y
-    const ctx2 = canvasCropped.getContext("2d");
+function cropRotateFace(x, y, width, height, angle, useSide, canvasInput, tempCanvasCropped) {  // x,y = topleft x,y
+    const ctx2 = tempCanvasCropped.getContext("2d");
     const tempCanvas1 = document.createElement('canvas');
     const tctx1 = tempCanvas1.getContext("2d");
     tempCanvas1.height = tempCanvas1.width = imageDims;
@@ -121,8 +128,8 @@ function cropRotateFace(x, y, width, height, angle, useSide, canvasInput, canvas
     ctx2.putImageData(imgData, 0, 0);
 }
 
-function maskFaceNew(faceLandmarks, canvasCropped) {
-    const ctx2 = canvasCropped.getContext("2d");
+function maskFaceNew(faceLandmarks, tempCanvasCropped) {
+    const ctx2 = tempCanvasCropped.getContext("2d");
 
     const marginX = 0;
     // c = sqrt((x_a - x_b)^2 + (y_a - y_b)^2)
@@ -172,9 +179,9 @@ function maskFaceNew(faceLandmarks, canvasCropped) {
     ctx2.fill();
 }
 
-function cropMaskImage(use, useSide, canvasInput, canvasCropped, rotatedLandmarks, rollAngle){
-    cropRotateFace(use._x, use._y, use._width, use._height, rollAngle, useSide, canvasInput, canvasCropped);
-    maskFaceNew(rotatedLandmarks, canvasCropped);
+function cropMaskImage(use, useSide, canvasInput, tempCanvasCropped, rotatedLandmarks, rollAngle){
+    cropRotateFace(use._x, use._y, use._width, use._height, rollAngle, useSide, canvasInput, tempCanvasCropped);
+    maskFaceNew(rotatedLandmarks, tempCanvasCropped);
 
 }
 

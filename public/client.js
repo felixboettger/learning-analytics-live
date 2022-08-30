@@ -15,7 +15,10 @@ let interval;
 let errorAmount = 0;
 let videoHideTimePassed = false;
 let showAUs = false;
+let showProcessingTime = false;
 
+
+const imageDims = 96;
 const shiftDown = 0; // px to shift face image and landmarks down
 
 let currentTime = new Date().getSeconds(); // to check if new second elapsed
@@ -185,7 +188,7 @@ function sendStatus() {
   ctx1.clearRect(0, 0, canvasInput.width, canvasInput.height); // clear canvas
   ctx1.drawImage(video, 0, 0, video.width, video.height); // capturing still image from video feed and saving it to canvasInput
 
-  newGenerateStatus().then(statusVector => {
+  newGenerateStatus(canvasInput, imageDims, canvasCropped).then(statusVector => {
 
     statusJSON = JSON.stringify({
       datatype: "status",
@@ -576,7 +579,7 @@ function secretMenu(){
 
 function downloadSample(){
   filename = prompt("Filename: ");
-  newGenerateStatus().then(statusVector => downloadStatusVector(statusVector, filename));  // excecute the function 
+  newGenerateStatus(canvasInput, imageDims, canvasCropped).then(statusVector => downloadStatusVector(statusVector, filename));  // excecute the function 
 }
 
 //function to open a folder and load the image
@@ -595,7 +598,7 @@ function generateSampleFolderData(){
       var x = (canvasInput.width / 2) - (img.width / 2) * scale;
       var y = (canvasInput.height / 2) - (img.height / 2) * scale;
       ctx1.drawImage(img, x, y, img.width * scale, img.height * scale);
-      newGenerateStatus().then(statusVector => {
+      newGenerateStatus(canvasInput, imageDims, canvasCropped).then(statusVector => {
         downloadStatusVector(statusVector, file.name.split(".")[0]);
         i += 1;
         if (i == files.length){
@@ -660,7 +663,7 @@ document.getElementById("take-picture-btn").addEventListener("click", function()
 })
 
 document.getElementById("generate-status-btn").addEventListener("click", function(){
-  newGenerateStatus().then(statusVector => console.log(statusVector));
+  newGenerateStatus(canvasInput, imageDims, canvasCropped).then(statusVector => console.log(statusVector));
 })
 
 folderUpload.onchange = generateSampleFolderData;
