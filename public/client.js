@@ -39,7 +39,7 @@ const hideVideo = setTimeout(function () {
 main()
 
 async function main() {
-  // Load face-api neural networks
+  // Load neural networks
   await faceapi.nets.faceLandmark68Net.loadFromUri('/models/face-api');
   await faceapi.nets.ssdMobilenetv1.loadFromUri('/models/face-api');
   await faceapi.nets.faceExpressionNet.loadFromUri('/models/face-api');
