@@ -1,14 +1,13 @@
-let emptyStatusVector = {
-  err: "", // error string
-  e: "", // emotion
-  t: new Date(), // time
-  pt: -1, // processing time
-  au: [], // list of active AUs
-}
-
 async function newGenerateStatus(canvasInput, imageDims, outputCropCanvas){
     const processingStartTime = new Date().getTime(); // Start measuring time to generate Status
-    let statusVector = emptyStatusVector;
+    let statusVector = {
+      err: "", // error string
+      e: "", // emotion
+      t: new Date(), // time
+      pt: -1, // processing time
+      au: [], // list of active AUs
+      lm: [], // list of landmarks
+    };
     const displaySize = { width: canvasInput.width, height: canvasInput.height }
     const detections = await faceapi.detectSingleFace(canvasInput).withFaceLandmarks().withFaceExpressions();
 
@@ -31,6 +30,7 @@ async function newGenerateStatus(canvasInput, imageDims, outputCropCanvas){
         debugging && showAUs ? document.getElementById("au-display").innerHTML = predictedAUs : "";
         statusVector.e = Object.keys(resizedDetections.expressions).reduce((a, b) => resizedDetections.expressions[a] > resizedDetections.expressions[b] ? a : b);
         statusVector.au = predictedAUs;
+        statusVector.lm = rotatedLandmarks;
         errorAmount = 0;
     } else {
         errorAmount += 1;

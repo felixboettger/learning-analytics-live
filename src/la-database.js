@@ -44,7 +44,8 @@ const statusSchema = {
   utcTimeClient: Date,
   utcTimeServer: Date,
   aus: Array,
-  err: String
+  err: String,
+  landmarks: Array,
 };
 
 const participantSchema = {
@@ -277,8 +278,9 @@ async function markAllAsInactive() {
  * @param  {int} time Time of the status (in seconds since session start).
  */
 function updateParticipantStatus(sessionKey, participantId, statusVector, relativeTime) {
-  console.log(statusVector);
+  // console.log(statusVector);
   const newStatus = new Status({
+    landmarks: statusVector.lm,
     sessionKey: sessionKey,
     participantId: participantId,
     emotion: statusVector.e,
