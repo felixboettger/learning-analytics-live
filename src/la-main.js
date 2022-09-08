@@ -73,12 +73,12 @@ function closeClientSockets(sessionKey) {
  * @param  {string} sessionKey Unique session identifier that was generated on session creation.
  * @return {array} Array that contains the new ID of the participant and his secret.
  */
-async function createParticipant(name, sessionKey) {
+async function createParticipant(name, sessionKey, fingerprint) {
   var session = await laDB.getSessionData(sessionKey, false);
   if (session != null) {
     participantId = session.participants.length;
     secret = laHelp.generateSecret(8);
-    laDB.addParticipantToSession(participantId, name, secret, sessionKey);
+    laDB.addParticipantToSession(participantId, name, secret, sessionKey, fingerprint);
     return [participantId, secret];
   }
 }

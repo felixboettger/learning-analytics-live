@@ -53,7 +53,8 @@ const participantSchema = {
   name: String,
   secret: String,
   inactive: Boolean,
-  currentStatus: statusSchema
+  currentStatus: statusSchema,
+  fingerprint: String
 };
 
 const sessionSchema = {
@@ -90,12 +91,13 @@ markAllAsInactive();
  * @param  {string} secret Secret that is used to authenticate the participant.
  * @param  {string} sessionKey Unique session identifier that was generated on session creation.
  */
-function addParticipantToSession(participantId, name, secret, sessionKey) {
+function addParticipantToSession(participantId, name, secret, sessionKey, fingerprint) {
   const newParticipant = new Participant({
     id: participantId,
     name: name,
     secret: secret,
     inactive: true,
+    fingerprint: fingerprint
   });
   Session.updateOne({
     sessionKey: sessionKey

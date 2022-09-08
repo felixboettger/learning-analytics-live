@@ -129,7 +129,7 @@ if (testing){
 
 // Creation of new participant
 app.post("/participant", function(req, res) {
-  laMain.createParticipant(req.body.participantName, req.body.sessionKey).then((participant) => {
+  laMain.createParticipant(req.body.participantName, req.body.sessionKey, req.body.fingerprint).then((participant) => {
     if (participant === undefined) {
       res.render("participant-session-not-found", {sessionKey: req.body.sessionKey});
     } else {
