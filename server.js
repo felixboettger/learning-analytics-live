@@ -2,8 +2,11 @@
 
 // --- Imports---
 
-const dotenv = require("dotenv").config();
+
+
+
 const fs = require("fs");
+const dotenv = require("dotenv").config({ path: 'stc_data/.env' });
 const express = require("express");
 const session = require('express-session');
 const bodyParser = require("body-parser");
@@ -21,9 +24,9 @@ const laDB = require("./src/la-database")
 // --- Configs ---
 
 // Check if all environment variables are sets
-if (!(laHelp.checkEnvironmentVariables(process.env))){
-  throw ".env configuration faulty";
-};
+// if (!(laHelp.checkEnvironmentVariables(process.env))){
+//   throw ".env configuration faulty";
+// };
 
 const updateInterval = process.env.UPDATE_INTERVAL;
 const portNr = process.env.PORT;
@@ -150,36 +153,10 @@ app.post("/dashboard", function(req, res) {
 
 // --- Server setup and start ---
 
-if (!localEnv) {
-  // Running server as actual server, with security etc
-  // https server for running the actual communication, serving the website etc.
-  server = https
-    .createServer(
-      {
-        key: fs.readFileSync(process.env.SSL_KEY),
-        cert: fs.readFileSync(process.env.SSL_CERT),
-        ca: fs.readFileSync(process.env.SSL_CHAIN)
-      },
-      app
-    )
-    .listen(portNr, function() {
-      console.log("Server started on Port: " + portNr);
-    });
-  // http server used to forward incoming http requests to https to enable encrypted data transfer
-  http
-    .createServer(function(req, res) {
-      res.writeHead(301, {
-        Location: "https://" + req.headers["host"] + req.url
-      });
-      res.end();
-    })
-    .listen(process.env.HTTP_PORT);
-} else {
-  // Running the server locally for development or testing, no security etc.
-  server = app.listen(portNr, function() {
-    console.log("Server started on Port: " + portNr);
-  });
-}
+// Running the server locally for development or testing, no security etc.
+server = app.listen(portNr, function() {
+  console.log("Server started on Port: " + portNr);
+});
 
 webSocketServer = new WebSocketServer({
   httpServer: server,

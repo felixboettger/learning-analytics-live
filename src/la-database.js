@@ -11,11 +11,8 @@ const mongoose = require("mongoose");
 
 // --- Config ---
 
-// Set localEnv to false for server deploy, set to true to enable local testing
-const localEnv = ("true" === process.env.LOCAL_ENV) ? true : false;
-
 // MongoDB URL. A MongoDB is required for running the server.
-const mongodbURL = localEnv ? process.env.DB_HOST_LOCAL : process.env.DB_HOST;
+const mongodbURL = process.env.DB_HOST;
 
 // Setup and starting cleaning routine
 const keepInactiveFor = process.env.KEEP_INACTIVE_FOR * 60;

@@ -95,8 +95,7 @@ function generateSessionKey() {
 
 function checkEnvironmentVariables(environmentVariables){
   let correct = true;
-  const environmentVariablesNeeded = ["DB_HOST", "SSL_CERT", "SSL_CHAIN", "SSL_KEY",
-  "PORT", "LOCAL_ENV", "UPDATE_INTERVAL", "SECRET", "TESTING"];
+  const environmentVariablesNeeded = ["DB_HOST", "PORT", "UPDATE_INTERVAL", "SECRET", "TESTING"];
   environmentVariablesNeeded.forEach((variable) => {
     if (!(variable in environmentVariables)){
       console.log(variable + " not set! Check the .env file");
