@@ -3,6 +3,8 @@ services:
   stc-app:
     container_name: stc-server
     image: stc-server
+    volumes:
+      /home/stc/stc_data:/app/stc_data
     restart: always
     build: .
     ports: 
